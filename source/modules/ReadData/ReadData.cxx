@@ -13,6 +13,8 @@ ANLStatus ReadData::mod_define(){
   define_parameter("save_fadc_c_filter", &mod_class::SaveFADC_C_filter);
   define_parameter("fadc_c_filter_min",  &mod_class::FADC_C_filter_min);
   define_parameter("fadc_c_filter_max",  &mod_class::FADC_C_filter_max);
+  define_parameter("Image_A_C",          &mod_class::Image_A_C);
+  define_parameter("FADC_TH",            &mod_class::FADC_TH);
 
   return AS_OK;
 }
@@ -130,6 +132,7 @@ ANLStatus ReadData::mod_analyze(){
 	set_evs("IDcheck_Loopback");
       }
   }while(loop_flag!=1);
+  event_id_coincidence = max_id;
   
   ////////////////////////////////////////////////
   // Read Data...
@@ -303,6 +306,12 @@ ReadData::ReadData(){
   SaveFADC_C_filter = false;
   FADC_C_filter_min = 0;
   FADC_C_filter_max = 1023;
+  Image_A_C = false;
+  FADC_TH = false;
+  Image_A = nullptr;
+  Image_C = nullptr;
+  FADC_Wave_A = nullptr;  FADC_ev_A = nullptr;
+  FADC_Wave_C = nullptr;  FADC_ev_C = nullptr;
 }
 
 ReadData::~ReadData(){}

@@ -3,6 +3,8 @@
 
 #include <anlnext/BasicModule.hh>
 #include <sstream>
+#include <vector>
+#include <TTree.h>
 
 #include "SaveFile.h"
 #include "ReadData.h"
@@ -23,8 +25,7 @@ class TPC_Calibration : public BasicModule {
   ANLStatus mod_finalize() override;
 
   double    Get_Energy()  const {return Energy;};
-  
-  
+
  private:
   const ReadData       *RawData = nullptr;
   const CalcFADC       *Q_TPC = nullptr;
@@ -35,9 +36,13 @@ class TPC_Calibration : public BasicModule {
   std::vector<int>      HitPanel;
   std::vector<double>   cal_a, cal_b;
   TH2D                 *Image_XY;
+  // TH2D                 *Image_XYZ;
   TH2C                 *Coinci_A, *Coinci_C;
   std::string           PrmFile;
   bool                  no_cal_data;
+  bool                  Coinci_TH;
+  bool                  Image_XY_TH;
+  bool                  Spectrum_TH;
   TH1D                 *Spectrum;
 };
 

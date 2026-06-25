@@ -3,6 +3,7 @@
 ANLStatus CalcFADC::mod_define(){
   define_parameter("base_window", &mod_class::base_window);
   define_parameter("threshold", &mod_class::threshold);
+  define_parameter("save_TH_plots", &mod_class::Save_TH_plots);
 
   return AS_OK;
 }
@@ -14,7 +15,7 @@ ANLStatus CalcFADC::mod_initialize(){
   Q_anode = new double [4*(RawData->Get_AnodeID()->size())];
   Q_cathode = new double [4*(RawData->Get_CathodeID()->size())];
   
-  if(exist_module("SaveFile")){
+  if(exist_module("SaveFile")&&Save_TH_plots){
     SaveFile* saveModule = nullptr;
     get_module_NC("SaveFile", &saveModule);
     saveModule->cd();
@@ -42,15 +43,24 @@ ANLStatus CalcFADC::mod_initialize(){
     ChargeCathode->SetXTitle("[ADU]");
     ChargeCathode->SetYTitle("[ch]");
 
-    Spec1Hit_A = new TH1D* [16*N_a*N_c];
-    Spec1Hit_C = new TH1D* [16*N_a*N_c];
-    for(unsigned i=0; i<4*N_a; i++)
-      for(unsigned j=0; j<4*N_c; j++){
-	char histname[100];
-	sprintf(histname, "Anode_1Hit_A%02d_C%02d", i, j);
-	Spec1Hit_A[i*(4*N_c)+j] = new TH1D(histname, histname, 2000, 0, 1e4);
-	sprintf(histname, "Cathode_1Hit_A%02d_C%02d", i, j);
-	Spec1Hit_C[i*(4*N_c)+j] = new TH1D(histname, histname, 2000, 0, 1e4);
+   // Spec1Hit_A = new TH1D* [16*N_a*N_c];
+    Spec1Hit_A = new TH1D* [4*N_a*N_c];
+    //Spec1Hit_C = new TH1D* [16*N_a*N_c];
+    Spec1Hit_C = new TH1D* [4*N_a*N_c];
+    for(int i=0; i<(int)(4*N_a); i++)
+      for(int j=0; j<(int)(4*N_c); j++){
+        if(i/12 == j/12){
+          char histname[100];
+	        // sprintf(histname, "Anode_1Hit_A%02d_C%02d", i, j);
+	        // Spec1Hit_A[i*(4*N_c)+j] = new TH1D(histname, histname, 2000, 0, 1e4);
+	        // sprintf(histname, "Cathode_1Hit_A%02d_C%02d", i, j);
+	        // Spec1Hit_C[i*(4*N_c)+j] = new TH1D(histname, histname, 2000, 0, 1e4);
+          sprintf(histname, "Anode_1Hit_A%02d_C%02d", i, j);
+          Spec1Hit_A[(i/12)*(N_a*N_c)+(i%12)*12+(j%12)] = new TH1D(histname, histname, 2000, 0, 1e4);
+          sprintf(histname, "Cathode_1Hit_A%02d_C%02d", i, j);
+          Spec1Hit_C[(i/12)*(N_a*N_c)+(i%12)*12+(j%12)] = new TH1D(histname, histname, 2000, 0, 1e4);
+
+        }
       }				     
   }
 
@@ -70,18 +80,21 @@ ANLStatus CalcFADC::mod_analyze(){
     t.join();
 
   int hit_A=0, hit_C=0, A_ID=-1, C_ID=-1;
-  for(unsigned i=0; i<4*N_a; i++)
+  for(int i=0; i<(int)(4*N_a); i++)
     if(Q_anode[i] > 0){
       hit_A++;
       A_ID = i;
     }
-  for(unsigned i=0; i<4*N_c; i++)
+  for(int i=0; i<(int)(4*N_c); i++)
+   if(i/12 == A_ID/12){ // 20260618 小野田修正
     if(Q_cathode[i] > 0){
       hit_C++;
       C_ID = i;
     }
-  if(hit_A==1 && hit_C==1){
-    unsigned area = A_ID*(4*N_c) + C_ID;
+  }
+  if(hit_A==1 && hit_C==1 && Save_TH_plots){ //20260618 小野田修正
+    //unsigned area = A_ID*(4*N_c) + C_ID;
+    unsigned area = A_ID/12*(N_a*N_c) + A_ID%12*12 + C_ID%12; // 20260618 小野田修正
     Spec1Hit_A[area]->Fill(Q_anode[A_ID]);
     Spec1Hit_C[area]->Fill(Q_cathode[C_ID]);    
   }
@@ -90,6 +103,7 @@ ANLStatus CalcFADC::mod_analyze(){
     set_evs("FADC_NoHit");
     return AS_SKIP;
   }
+  
 
   return AS_OK;
 }
@@ -114,14 +128,14 @@ void CalcFADC::IntegWave(bool c_flag, unsigned Nid){
 
       if(c_flag){
 	Q_cathode[4*id+ch] = charge;
-	if(exist_module("SaveFile")&& charge > 0){//20260607 小野田修正
+	if(exist_module("SaveFile")&&Save_TH_plots && charge > 0){//20260607 小野田修正
 	  BaseCathode->Fill(mean, 4*id+ch);
 	  ChargeCathode->Fill(charge, 4*id+ch);
 	}
       }
       else{
 	Q_anode[4*id+ch] = charge;
-	if(exist_module("SaveFile")&& charge > 0){//20260607 小野田修正
+	if(exist_module("SaveFile")&&Save_TH_plots && charge > 0){//20260607 小野田修正
 	  BaseAnode->Fill(mean, 4*id+ch);
 	  ChargeAnode->Fill(charge, 4*id+ch);
 	}

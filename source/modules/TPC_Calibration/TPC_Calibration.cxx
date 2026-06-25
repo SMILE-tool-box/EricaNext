@@ -2,7 +2,10 @@
 
 ANLStatus TPC_Calibration::mod_define(){
   define_parameter("ParameterFile", &mod_class::PrmFile);
- define_parameter("NoCalData", &mod_class::no_cal_data);  
+  define_parameter("NoCalData",     &mod_class::no_cal_data);
+  define_parameter("Coinci_TH",     &mod_class::Coinci_TH);
+  define_parameter("Image_XY_TH",   &mod_class::Image_XY_TH);
+  define_parameter("Spectrum_TH",   &mod_class::Spectrum_TH);
   return AS_OK;
 }
 
@@ -18,6 +21,7 @@ ANLStatus TPC_Calibration::mod_initialize(){
     saveModule->cd();
     saveModule->GetDirectory()->mkdir("TPC_Calibration");
     saveModule->GetDirectory()->cd("TPC_Calibration");
+
   }
 
   int Nbin = RawData->Get_Track_A()->GetXaxis()->GetNbins();
@@ -28,41 +32,45 @@ ANLStatus TPC_Calibration::mod_initialize(){
   max_clock = RawData->Get_Track_A()->GetYaxis()->GetBinUpEdge(Nbin+1);
   Na = Q_TPC->Get_Nadc_A();
   Nc = Q_TPC->Get_Nadc_C();
-  Coinci_A = new TH2C("Coinci_A", "Coincidence_A",
-		      max_anode, -0.5, max_anode-0.5,
-		      max_clock, -0.5, max_clock-0.5);
-  Coinci_C = new TH2C("Coinci_C", "Coincidence_C",
-		      max_cathode, -0.5, max_cathode-0.5,
-		      max_clock, -0.5, max_clock-0.5);
-  Image_XY = new TH2D("Image_XY", "Image_XY",
-		      max_anode, -0.5, max_anode-0.5,
-		      max_cathode, -0.5, max_cathode-0.5);
-  Image_XY->SetXTitle("Anode");
-  Image_XY->SetYTitle("Cathode");
-  Spectrum = new TH1D("Spectrum", "TPC_Spec", 2000, 0, 400);
-  Spectrum->SetXTitle("Energy [keV]");
+  if(Coinci_TH){
+    Coinci_A = new TH2C("Coinci_A", "Coincidence_A",
+			max_anode, -0.5, max_anode-0.5,
+			max_clock, -0.5, max_clock-0.5);
+    Coinci_C = new TH2C("Coinci_C", "Coincidence_C",
+			max_cathode, -0.5, max_cathode-0.5,
+			max_clock, -0.5, max_clock-0.5);
+  }
+  if(Image_XY_TH){
+    Image_XY = new TH2D("Image_XY", "Image_XY",
+			max_anode, -0.5, max_anode-0.5,
+			max_cathode, -0.5, max_cathode-0.5);
+    Image_XY->SetXTitle("Anode");
+    Image_XY->SetYTitle("Cathode");
+  }
+  if(Spectrum_TH){
+    Spectrum = new TH1D("Spectrum", "TPC_Spec", 2000, 0, 400);
+    Spectrum->SetXTitle("Energy [keV]");
+  }
   
   HitPanel.resize(Na*Nc);
   cal_a.resize(Na*Nc);
   cal_b.resize(Na*Nc);
-  std::ifstream cal_dat(PrmFile.c_str());
-  if(!cal_dat)  return AS_QUIT;
-  while(cal_dat){
-    int na, nc;
-    cal_dat >> na >> nc;
-    if(cal_dat.eof())  break;
-
-    cal_dat >> cal_a[na*Nc+nc] >> cal_b[na*Nc+nc];
+  if(!no_cal_data){
+    std::ifstream cal_dat(PrmFile.c_str());
+    if(!cal_dat)  return AS_QUIT;
+    while(cal_dat){
+      int na, nc;
+      cal_dat >> na >> nc;
+      if(cal_dat.eof())  break;
+      cal_dat >> cal_a[na*Nc+nc] >> cal_b[na*Nc+nc];
+    }
   }
-  
-  define_evs("No_TrackCoincidence");
   
   return AS_OK;
 }
 
 ANLStatus TPC_Calibration::mod_analyze(){
-  Coinci_A->Reset("ICES");
-  Coinci_C->Reset("ICES");
+  if(Coinci_TH){ Coinci_A->Reset("ICES"); Coinci_C->Reset("ICES"); }
   std::fill(HitPanel.begin(), HitPanel.end(), 0);
   int min_a = RawData->GetMinAnode();
   int max_a = RawData->GetMaxAnode();
@@ -89,30 +97,37 @@ ANLStatus TPC_Calibration::mod_analyze(){
   //20260605 小野田修正
    for(int clk=min_d; clk<=max_d; clk++){
     for(int ai=min_a; ai<=max_a; ai++){
-      char hit_a = RawData->Get_Track_A()->GetBinContent(ai+1, clk);
+      char hit_a = RawData->Get_Track_A()->GetBinContent(ai+1, clk+1);
       int a_adc = (ai) / (max_anode/Na);
       int div_a = (ai) / 384;
       if(hit_a){
 	for(int cj=min_c; cj<=max_c; cj++){
-	  char hit_c = RawData->Get_Track_C()->GetBinContent(cj+1, clk);	
+	  char hit_c = RawData->Get_Track_C()->GetBinContent(cj+1, clk+1);
 	  int c_adc = (cj) / (max_cathode/Nc);
     int div_c = (cj) / 384;
 
 	  if(hit_a & hit_c & (div_a == div_c)){
-	    Coinci_A->Fill(ai, clk);
-	    Coinci_C->Fill(cj, clk);
-	    Image_XY->Fill(ai, cj);
+	    if(Coinci_TH){ Coinci_A->Fill(ai, clk); Coinci_C->Fill(cj, clk); }
+	    if(Image_XY_TH) Image_XY->Fill(ai, cj);
 	    HitPanel.at(a_adc*Nc+c_adc) += 1;
-
-
+      // short tx, ty;
+      // if(div_a ==0){
+      //   tx = 384+ai%384; ty = cj%384;
+      // }
+      // else if(div_a ==1){
+      //   tx = 767-cj%384; ty = 384+ai%384;
+      // }
+      // else if(div_a ==2){
+      //   tx = 383-ai%384; ty = 767-cj%384;
+      // }
+      // else {
+      //   tx = cj%384; ty = 383-ai%384;
+      // }
+   
 	  }
 	}
       }
     }
-  }
-  if(Coinci_A->GetEntries() ==0){
-    set_evs("No_TrackCoincidence");
-    return AS_SKIP;
   }
 
   Energy = 0;
@@ -129,8 +144,9 @@ ANLStatus TPC_Calibration::mod_analyze(){
     if(no_cal_data)  Energy = +charge;
     }
   }
-  Spectrum->Fill(Energy);
-  
+  if(Spectrum_TH) Spectrum->Fill(Energy);
+
+
   return AS_OK;
 }
 
@@ -141,6 +157,9 @@ ANLStatus TPC_Calibration::mod_finalize(){
 
 TPC_Calibration::TPC_Calibration(){
   PrmFile = "./Calibration.dat";
+  Coinci_TH   = false;
+  Image_XY_TH = false;
+  Spectrum_TH = false;
 }
 
 TPC_Calibration::~TPC_Calibration(){

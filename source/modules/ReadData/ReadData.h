@@ -44,10 +44,15 @@ public:
   const std::vector<int>*  Get_CathodeID()  const {return &N_cathode;};
   const TH2C*              Get_Track_A()    const {return Track_A;};
   const TH2C*              Get_Track_C()    const {return Track_C;};
+
+  struct Hit { short strip; short clock; };
+  const std::vector<Hit>& Get_Anode_Hits()   const { return anode_hits_; }
+  const std::vector<Hit>& Get_Cathode_Hits() const { return cathode_hits_; }
   int                GetMinAnode()    const {return min_a;};
   int                GetMaxAnode()    const {return max_a;};
   int                GetMinCathode()  const {return min_c;};
   int                GetMaxCathode()  const {return max_c;};
+  unsigned           Get_EventID_coincidence()    const {return event_id_coincidence;};
   int                GetMinClock()    const {
     int val = (min_ad > min_cd) ? min_cd : min_ad;
     return val;
@@ -70,12 +75,16 @@ public:
   bool              SaveFADC_C_filter;
   int               FADC_C_filter_min;
   int               FADC_C_filter_max;
+  bool              Image_A_C;
+  bool              FADC_TH;
+  unsigned          event_id_coincidence;
 
   ANLStatus         ScanFiles();
   bool              FileExists(std::string);
   
   std::vector<int>  N_anode, N_cathode, N_HA2p;
   std::vector<unsigned> Event_ID;
+  unsigned          event_id = 0;
   
   TPC_Encoder     **Anode, **Cathode;
   TH2D             *Image_A, **FADC_Wave_A, **FADC_ev_A;
@@ -86,6 +95,7 @@ public:
   TGraph           *FADC_A_filter_graph = nullptr;
   int               min_a, max_a, min_c, max_c;
   int               min_ad, max_ad, min_cd, max_cd;
+  std::vector<Hit>  anode_hits_, cathode_hits_;
   void              Scan_Encoder();
   void              Read_Anode();
   void              Read_Cathode();
