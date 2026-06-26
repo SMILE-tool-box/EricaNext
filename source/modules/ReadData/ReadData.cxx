@@ -308,6 +308,7 @@ ReadData::ReadData(){
   FADC_C_filter_max = 1023;
   Image_A_C = false;
   FADC_TH = false;
+  Track_A = nullptr;  Track_C = nullptr;
   Image_A = nullptr;
   Image_C = nullptr;
   FADC_Wave_A = nullptr;  FADC_ev_A = nullptr;

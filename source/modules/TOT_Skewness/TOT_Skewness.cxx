@@ -23,6 +23,9 @@ ANLStatus TOT_Skewness::mod_define() {
 ANLStatus TOT_Skewness::mod_initialize() {
   get_module("ReadData", &RawData);
 
+  if (!RawData->Get_Track_A() || !RawData->Get_Track_C())
+    return AS_QUIT;
+
   TPC_Pitch[0]  = Pitch_X;
   TPC_Pitch[1]  = Pitch_Y;
   TPC_Pitch[2]  = Pitch_Z;

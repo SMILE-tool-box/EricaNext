@@ -16,7 +16,7 @@ void ReadData::Scan_Encoder(){
   if(N_anode.size()){
     define_evs("Anode_Data");
     Track_A = new TH2C("Track_A", "Track_A",
-		       128*N_anode.size(), -0.5, 128*N_anode.size()-0.5,
+		       128*12, -0.5, 128*12-0.5,
 		       1024, -0.5, 1023.5);			 
     if(exist_module("SaveFile")){
 		if(SaveFADC_A_filter){
@@ -30,7 +30,7 @@ void ReadData::Scan_Encoder(){
       Anode = new TPC_Encoder* [N_anode.size()];
 	  if(Image_A_C){
 		Image_A = new TH2D("Image_A", "Image_A",
-			 128*N_anode.size(), -0.5, 128*N_anode.size()-0.5,
+			 128*12, -0.5, 128*12-0.5,
 			 1024, -0.5, 1023.5);
 		}
       if(FADC_TH){
@@ -56,7 +56,7 @@ void ReadData::Scan_Encoder(){
   if(N_cathode.size()){
     define_evs("Cathode_Data");
     Track_C = new TH2C("Track_C", "Track_C",
-		       128*N_cathode.size(), -0.5, 128*N_cathode.size()-0.5,
+		       128*12, -0.5, 128*12-0.5,
 		       1024, -0.5, 1023.5);			 
     if(exist_module("SaveFile")){
 		if(SaveFADC_C_filter){
@@ -70,7 +70,7 @@ void ReadData::Scan_Encoder(){
       Cathode = new TPC_Encoder* [N_cathode.size()];
 	  if(Image_A_C){
       	Image_C = new TH2D("Image_C", "Image_C",
-			 128*N_cathode.size(), -0.5, 128*N_cathode.size()-0.5,
+			 128*12, -0.5, 128*12-0.5,
 			 1024, -0.5, 1023.5);
       }
 	  if(FADC_TH){
@@ -100,7 +100,7 @@ void ReadData::Scan_Encoder(){
 void ReadData::Read_Anode(){
   Track_A->Reset("ICES");
   anode_hits_.clear();
-  min_a = 128 * N_anode.size();  max_a = -1;
+  min_a = 128 * 12;  max_a = -1;
   min_ad = 1024;  max_ad = -1;
   
   for(unsigned i=0; i<N_anode.size(); i++){
@@ -130,7 +130,7 @@ void ReadData::Read_Anode(){
 	      str_data = ((Anode[i]->TrackData(j+ch+1)) >> bit) & 0x1;
 		 }
 	      if(str_data){
-		int n_strip = (int)i*128+32*ch+bit;
+		int n_strip = N_anode[i]*128+32*ch+bit;
 		anode_hits_.push_back({(short)n_strip, (short)clk});
 		if(Image_A_C)
 		Image_A->Fill(n_strip, clk);
@@ -151,7 +151,7 @@ void ReadData::Read_Anode(){
 void ReadData::Read_Cathode(){
   Track_C->Reset("ICES");
   cathode_hits_.clear();
-  min_c = 128 * N_cathode.size();  max_c = -1;
+  min_c = 128 * 12;  max_c = -1;
   min_cd = 1024;  max_cd = -1;
   
   for(unsigned i=0; i<N_cathode.size(); i++){
@@ -180,7 +180,7 @@ void ReadData::Read_Cathode(){
 	      str_data = ((Cathode[i]->TrackData(j+ch+1)) >> bit) & 0x1;
 		 }
 	      if(str_data){
-		int n_strip = (int)i*128+32*ch+bit;
+		int n_strip = N_cathode[i]*128+32*ch+bit;
 		cathode_hits_.push_back({(short)n_strip, (short)clk});
 		if(Image_C)
 		  Image_C->Fill(n_strip, clk);

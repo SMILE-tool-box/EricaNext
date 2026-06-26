@@ -24,6 +24,9 @@ ANLStatus TPC_Calibration::mod_initialize(){
 
   }
 
+  if (!RawData->Get_Track_A() || !RawData->Get_Track_C())
+    return AS_QUIT;
+
   int Nbin = RawData->Get_Track_A()->GetXaxis()->GetNbins();
   max_anode = RawData->Get_Track_A()->GetXaxis()->GetBinUpEdge(Nbin+1);
   Nbin = RawData->Get_Track_C()->GetXaxis()->GetNbins();
