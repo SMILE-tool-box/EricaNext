@@ -42,6 +42,7 @@ class CalcFADC : public BasicModule {
   TH2D             *BaseAnode, *BaseCathode;
   TH2D             *ChargeAnode, *ChargeCathode;
   TH1D            **Spec1Hit_A, **Spec1Hit_C;
+  bool              Save_TH_plots;
   
   const ReadData*          RawData = nullptr;
 };
