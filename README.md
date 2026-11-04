@@ -9,87 +9,231 @@ EricaNext は、SMILE-3 プロジェクトの検出器生データ（detector ra
 ANLnext フレームワークをベースに構築されており、解析モジュールを組み合わせて
 データ処理フローを構成します。
 
+SMILE-2+ のデータでの使い方とチュートリアルは [EricaNext_try](https://github.com/SMILE-tool-box/EricaNext_try) にあります。
+このリポジトリの構成(`config/`、`run_script/`、`scripts/env/`)はそれに合わせています。
+
+SMILE-3 の検出器の構成と SMILE-2+ からの変更点(μ-PIC の 4 分割、ストリップ 0.4 mm、MPPC の PSA)は
+[`tutorials/0_Introduction`](tutorials/0_Introduction/Introduction.ipynb) にまとめています。
+
+## 使い方(まずここ)
+
+実行するスクリプトは [`run_script/run_chain.py`](run_script/run_chain.py) です。**最初の引数に設定ファイル** を渡します。
+設定ファイル [`config/<名前>.json`](config/) に、つなぐモジュールとそのパラメータ、データの場所をすべて書いておき、
+スクリプトはそれを読んでチェーンを組んで実行します。
+
+```bash
+cd run_script
+
+# TPC だけ(ReadData → CalcFADC): 設定ファイル smile3_tpc_only(= config/smile3_tpc_only.json)
+python3 run_chain.py smile3_tpc_only -o out.root                    # 設定ファイルに書いたランの全イベント
+python3 run_chain.py smile3_tpc_only -o test.root -n 10000          # 先頭 1 万イベント
+python3 run_chain.py smile3_tpc_only -o out.root --data-dir ../mount_data/storage_g0/run_20260618T010203Z   # ランを変える
+
+# 電子の飛跡まで(ReadData → CalcFADC → TPC_Calibration → TOT_Skewness)
+python3 run_chain.py smile3_tot_skewness -o tot.root
+
+# 複数のランをまとめて(1 ランに 1 ファイル)
+bash run_runs.sh smile3_tpc_only ../root_data/board/output20_0618 ../mount_data/storage_g0/run_20260618*
+```
+
+- 設定ファイルは名前(拡張子なし)で書くと `config/` から探します。`.json` のパスを直接書いても構いません。
+- 値を変えるときは、設定ファイルをコピーして書き換えるか、`--set モジュール.パラメータ=値` でその場だけ上書きします。
+- 設定ファイルの各モジュールには、全パラメータの説明(`_doc`)と単位(`_units`)を書いています。書き方は [`config/README.md`](config/README.md)。
+- 失敗すると終了コード 1 で終わり、出力ファイルは残しません。
+- スクリプトの詳しい使い方は [`run_script/README.md`](run_script/README.md)。
+
+| `run_chain.py` の引数 | 意味 |
+| --- | --- |
+| `<設定>` | 設定ファイル(必須) |
+| `-o` | 出力の ROOT ファイル(必須) |
+| `-n` | 処理するイベント数。省略すると全イベント |
+| `--data-dir` | ランのディレクトリ(設定ファイルの `ReadData.data_dir` を置き換える) |
+| `--set モジュール.パラメータ=値` | パラメータの上書き(何回でも)。小数は `10.0` のように書く |
+
+## 解析チェーン
+
+### 設定ファイルからチェーンを組む
+
+```mermaid
+flowchart LR
+  CFG["config/&lt;名前&gt;.json<br>chain: モジュールの順番<br>parameters: パラメータ(_doc, _units)"]
+  EC["config/ericanext_config.py<br>{data_root} などを置き換え<br>_ で始まるキーを捨てる"]
+  RUN["run_script/run_chain.py<br>--data-dir, --set で上書き"]
+  CH["ANLNext の AnalysisChain<br>SaveFile → chain の順にモジュール"]
+  OUT[("出力の ROOT ファイル<br>(成功したときだけ)")]
+  CFG --> EC --> RUN --> CH --> OUT
+```
+
+モジュールの順番とパラメータはすべて設定ファイルに書き、スクリプトには書きません。
+新しい解析の組み方を作るときは、`config/` に設定ファイルを足します(書き方は [`config/README.md`](config/README.md))。
+
+| 設定ファイル | つなぐモジュール |
+| --- | --- |
+| [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC` |
+| [`smile3_tot_skewness`](config/smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
+| [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
+
+### モジュールのつながり
+
+SMILE-2+ から変わったのは検出器のセットアップ(μ-PIC の 4 分割、ストリップ 0.4 mm、HA の読み出しが MPPC)で、
+解析の中身はほとんど同じです。そのためチェーンの構成は SMILE-2+ と同じにし、
+**HA の部分(点線)だけを PSA(MPPC の波形)用に作り直します**。
+
+```mermaid
+flowchart TD
+  RAW[("生データ<br>tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA *.dat(MPPC の波形)")]
+  subgraph L0["層0 入力"]
+    RD["ReadData<br>読み込み・ボード間のイベント同期"]
+  end
+  subgraph L1["層1 検出器ごとの処理"]
+    CF[CalcFADC] --> TC[TPC_Calibration]
+    TOT[TOT_Skewness]
+    HG["HA_CenterGravity"] --> HC["HA_Calc"]
+  end
+  subgraph L2["層2 イベント再構成"]
+    REC[Reconstruct]
+  end
+  subgraph L3["層3 出力"]
+    OUT["Reconstruct/single_hit<br>再構成 TTree"]
+    TOTT["TOT_Skewness/tot_skewness<br>電子飛跡の TTree"]
+    RAWT["RawTreeWriter_sm3/raw<br>同期済み生データ TTree"]
+  end
+  PRM["パラメータファイル<br>ゲインマップ<br>HA の較正値・位置<br>ドリフト速度"]
+
+  RAW --> RD
+  PRM -.-> TC
+  PRM -.-> HC
+  PRM -.-> TOT
+  RD -- "FADC 波形(48 ch × 2)" --> CF
+  RD -- "TPC ヒット(パネル 0〜3)" --> TC
+  RD -- "TPC ヒット・時刻" --> TOT
+  RD -. "HA の波形" .-> HG
+  CF -- "電荷" --> TC
+  HG -. "位置・生エネルギー" .-> HC
+  TC -- "Ke" --> REC
+  HC -. "Eg, Pg, ピクセル" .-> REC
+  TOT -- "Pe, Ve, Len" --> REC
+  REC --> OUT
+  TOT --> TOTT
+  RD -- "RawTreeWriter_sm3<br>(較正・診断用)" --> RAWT
+
+  classDef todo stroke-dasharray: 5 5
+  class HG,HC todo
+```
+
+- 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みと、HA(作り直す部分)のデータです。
+- 実際の実行順は設定ファイルの `chain` の順です(全部つなぐと `ReadData → CalcFADC → TPC_Calibration → HA_CenterGravity → HA_Calc → TOT_Skewness → Reconstruct`)。
+- 今の設定ファイルは TPC の部分だけです(`smile3_tpc_only`、`smile3_tot_skewness`)。ゲインマップは `TPC_Calibration.NoCalData: false` のときだけ読みます。
+- HA の部分: `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のままです。SMILE-3 では PSA の `.dat` を読み、
+  波形の積分・位置(重心)・ピクセルの決定(今は `~/PSA_analysis` の `psa_decode.py` → `pixel_id.py`)をモジュールにします。
+
+| モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
+| --- | --- | --- |
+| `SaveFile` | 出力の ROOT ファイルを開く(`run_chain.py` が先頭に必ずつなぐ) | |
+| `ReadData` | 生データを読み、ボード間でイベント ID をそろえる | `ReadData/`: `Image_A`, `Image_C`(`Image_A_C`)、FADC 波形(`FADC_TH`) |
+| `CalcFADC` | FADC 波形からベースラインを引いて電荷を積分する | `CalcFADC/`: ch ごとの電荷、1-hit スペクトル(`save_TH_plots`, `save_board_plots`) |
+| `TPC_Calibration` | 電荷とゲインマップから反跳電子のエネルギー | `TPC_Calibration/`: `Spectrum` など |
+| `TOT_Skewness` | 飛跡から散乱点 `Pe`、電子の方向 `Ve`、飛程 `Len` | `TOT_Skewness/tot_skewness`(TTree) |
+| `HA_CenterGravity` | HA の位置(重心)と生エネルギー。**SMILE-3 では PSA の波形用に作り直す** | |
+| `HA_Calc` | HA の較正: 散乱ガンマ線のエネルギー `Eg`、吸収点 `Pg`、ピクセル。**SMILE-3 では PSA 用に作り直す** | |
+| `Reconstruct` | TPC と HA を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree) |
+| `RawTreeWriter_sm3` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `RawTreeWriter_sm3/raw`, `RawTreeWriter_sm3/run_info`(TTree) |
+
+- イベント ID には、ボードのトリガーカウンタを使います(`ReadData.event_id: true`)。
+  すべてのボードで同じ ID になるまで、小さい ID のボードを読み進めてそろえます。
+
 ---
 
 ## 依存関係
 
-- [ANLnext](https://github.com/odakahirokazu/ANLNext)
-- [ROOT](https://root.cern/)
-- [Boost](https://www.boost.org/) 1.80.0 以降
-- CMake 3.8 以降
-- C++ コンパイラ（C++17 対応）
-- [SWIG](https://www.swig.org/)（Python 拡張の生成に必須）
-- Python 3
-
-### 環境変数
-
-ビルド前に、以下の環境変数を設定しておきます（各自の環境に合わせる）。
-
-| 環境変数 | 説明 |
-| --- | --- |
-| `ANLNEXT_INSTALL` | ANLnext のインストール先。未設定の場合は `$HOME` が使われる。 |
+| ソフト | 版 | |
+| --- | --- | --- |
+| [ANLnext](https://github.com/odakahirokazu/ANLNext) | c22eb3e で確認 | EricaNext_try の `~/opt/anlnext-g4` でもよい |
+| [ROOT](https://root.cern/) | 6.36 で確認 | |
+| [Boost](https://www.boost.org/) | 1.80.0 以降 | |
+| CMake | 3.8 以降 | |
+| C++ コンパイラ | C++17 | |
+| [SWIG](https://www.swig.org/) | | Python 拡張の生成に必須 |
+| Python 3 | | |
 
 ---
 
 ## インストール
 
-### 1. ANLnext のインストール
-
-先に ANLnext をインストールしておきます。
-（インストール手順は ANLnext のドキュメントを参照してください。）
-
-### 2. EricaNext のビルド
-
-リポジトリのルートディレクトリで、以下を実行します。
+### 0. EricaNext を取ってくる
 
 ```bash
-mkdir build install
-cd build
-cmake ../source/ \
-  -DCMAKE_INSTALL_PREFIX=../install \
-  -DUSE_PYTHON=ON
-make -j8
-make install
+git clone https://github.com/SMILE-tool-box/EricaNext.git      # SSH の鍵を登録していれば git@github.com:SMILE-tool-box/EricaNext.git
+cd EricaNext
 ```
 
-> **メモ:** `USE_PYTHON` は `source/CMakeLists.txt` 内で既に `ON` に設定されているため、
-> `-DUSE_PYTHON=ON` の指定は実際には省略可能です（明示のために残しています）。
+以下のコマンドは、このリポジトリの一番上のディレクトリで実行します。
+
+### 1. ANLnext を入れる
+
+先に ANLnext をインストールしておきます(手順は ANLnext のドキュメントを参照)。
+EricaNext_try を入れてあれば、その ANLNext(`~/opt/anlnext-g4`)を使えます。その場合は先に `source ~/opt/setup_ericanext.sh` します
+(この ANLNext は `import anlnext` だけでも Geant4 のライブラリを使うため)。
+
+### 2. EricaNext をビルドする
+
+```bash
+export ANLNEXT_INSTALL=<ANLnext のインストール先>      # setup_ericanext.sh を読んだなら不要
+bash scripts/env/build_ericanext.sh
+```
+
+`build/` でビルドし、リポジトリの `install/` に入れます(`/usr/local` には入れないので `sudo` は要りません)。
+`run_script/run_chain.py` は `install/lib/python` の `EricaPy` を自分で読み込むので、`PYTHONPATH` を設定しなくても動きます。
+コードを直したあとも同じコマンドでビルドし直します。
+
+手で実行するときは次と同じです。
+
+```bash
+mkdir build install && cd build
+cmake ../source -DCMAKE_INSTALL_PREFIX=../install -DANLNEXT_INSTALL=$ANLNEXT_INSTALL -DPython3_EXECUTABLE=$(which python3)
+make -j8 && make install
+```
+
+| オプション | 説明 |
+| --- | --- |
+| `-DCMAKE_INSTALL_PREFIX=../install` | インストール先。`run_script/run_chain.py` はリポジトリの `install/lib/python` を読むので、この場所のままにする(未指定だと `$HOME`) |
+| `-DANLNEXT_INSTALL=...` | ANLnext の場所(未指定なら環境変数 `ANLNEXT_INSTALL`、それも無ければ `$HOME`) |
+| `-DPython3_EXECUTABLE=...` | Python が何種類も入っている環境(conda / pyenv / system など)で、使う Python を固定する(`CreateSwigPython.cmake` は `find_package(Python3 ...)` を使う。ANLnext を入れたときと同じ Python にする) |
+| `make -j8` | ビルドの並列数。使うコア数に合わせて変える |
+
+`USE_PYTHON` は `source/CMakeLists.txt` で `ON` になっているので指定は要りません。
 
 ---
 
-## 環境依存の設定（各自の環境に合わせて変更してください）
+## データの置き場所
 
-上記コマンドのうち、以下のオプションは **実行環境ごとに変わります**。
-自分の環境に合わせて書き換えてください。
+設定ファイルの `ReadData.data_dir` は `{data_root}/storage_g0/run_<日時>` のように書き、`{data_root}` は読み込むときに次に置き換わります
+(`config/ericanext_config.py`)。
 
-| オプション | 説明 | 
-| --- | --- | 
-| `-DCMAKE_INSTALL_PREFIX=../install` | インストール先のディレクトリ。任意の場所に変更可。未指定時は `$HOME` にインストールされる。 | 
-| `-DUSE_PYTHON=ON` | Python 拡張のビルド。ソース側で既定 `ON`。 | 
-| `make -j8` | ビルドの並列数。`8` は使用するコア数に合わせて変更。 | 
+| 優先 | 場所 |
+| --- | --- |
+| 1 | 環境変数 `SMILE3_DATA` |
+| 2 | このリポジトリの `mount_data/`(`ericanext_config.py` の `DATA_DIR`) |
 
-### Python インタプリタを明示指定したい場合
+中の並び:
 
-`CreateSwigPython.cmake` は `find_package(Python3 REQUIRED COMPONENTS Interpreter Development)`
-を使うため、複数の Python（conda / pyenv / system など）が混在する環境で使用する
-Python を固定したい場合は、`Python3_EXECUTABLE` にパスを渡します(ANLnext install時も)。
-
-```bash
-cmake ../source/ \
-  -DCMAKE_INSTALL_PREFIX=../install \
-  -DPython3_EXECUTABLE=$(which python3)
+```
+<data_root>/
+  storage_g0/
+    run_20260628T232149Z/        1 ラン: tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw
+    ...
 ```
 
----
+ほかの場所を探すことはしません。`<data_root>` に `storage_g*/` が無いときは、どのディレクトリを見たかを警告します。
+1 つのランだけなら、`--data-dir` にランのディレクトリを直接渡しても構いません。
 
-## 使い方
+## リポジトリの構成
 
-実行スクリプトは `run_script/` ディレクトリにあります。
-（詳細は各スクリプトを参照してください。）
-
-ビルドした Python モジュールは `<CMAKE_INSTALL_PREFIX>/lib/python` にインストールされます。
-Python から import するには、このディレクトリを `PYTHONPATH` に追加してください。
-
-```bash
-export PYTHONPATH=<CMAKE_INSTALL_PREFIX>/lib/python:$PYTHONPATH
-```
+| 場所 | 中身 |
+| --- | --- |
+| [`source/`](source/) | モジュール(C++)と Python 拡張 `EricaPy` |
+| [`config/`](config/README.md) | 設定ファイル(チェーンとパラメータ)と読み込み(`ericanext_config.py`) |
+| [`tutorials/`](tutorials/README.md) | チュートリアル(まず `0_Introduction` で SMILE-3 の構成と SMILE-2+ からの変更点) |
+| [`run_script/`](run_script/README.md) | 実行スクリプト(`run_chain.py`, `run_runs.sh`)と図を描くスクリプト |
+| [`scripts/env/`](scripts/env/) | ビルドのスクリプト |
+| `mount_data/`, `root_data/` | データと出力の置き場所(git では管理しない) |
