@@ -7,13 +7,13 @@ import EricaPy as th # Python extension library using ANL Next
 def setup(module):
     module.chain(th.SaveFile)
     module.with_parameters({
-        "filename": "output_3.root"
+        "filename": "output_run_20260628T232149Z.root"
     })
 
     module.chain(th.ReadData)
     module.with_parameters({
       
-        "data_dir": "/mnt/d/data/0625/run_20260625T053901Z",
+        "data_dir": "/home/onoda/ANLNext/Erica_git_dev/EricaNext/mount_data/storage_g0/run_20260628T232149Z",
        #"data_dir": "/mnt/d/DAQ/20260616/run_20260616T070422Z",
        #"data_dir": "/mnt/d/DAQ/20260607/run_20260607T160702Z",
        # "data_dir": "/mnt/d/DAQ/20260606/run_20260606T123236Z",
@@ -31,7 +31,7 @@ def setup(module):
         "reverse_TPC" : False,
         "TPC_Only" : True,
         "event_id" : True,
-        "Image_A_C" : False,
+        "Image_A_C" : True,
         "FADC_TH" : False,
         "save_track_png" : False,
         "save_fadc_png" : False,
@@ -47,24 +47,26 @@ def setup(module):
     module.with_parameters({
         "base_window": 30.0,
         "threshold": 20.0, #20.0
-        "save_TH_plots": True #20260618 小野田修正
+        "save_TH_plots": True, #20260618 小野田修正
+        "save_board_plots": False, #20260618 小野田修正
+
     })
     
-    module.chain(th.TPC_Calibration)
-    module.with_parameters({
-        ##"ParameterFile": "/home/onoda/ANLNext/SMILEsoft/src/data/Calibration20190130.dat",
-        "NoCalData": True
-    })
+    # module.chain(th.TPC_Calibration)
+    # module.with_parameters({
+    #     ##"ParameterFile": "/home/onoda/ANLNext/SMILEsoft/src/data/Calibration20190130.dat",
+    #     "NoCalData": True
+    # })
     
-    module.chain(th.TOT_Skewness)
-    module.with_parameters({
-        "pitch_x_mm_per_strip": 0.4,
-        "pitch_y_mm_per_strip": 0.4,
-        "pitch_z_mm_per_clock": 0.5,
-        "clock_offset":         90.0,
-        "flag_pixel_cut":       False,
-        "flag_save_cloud":      True
-    })
+    # module.chain(th.TOT_Skewness)
+    # module.with_parameters({
+    #     "pitch_x_mm_per_strip": 0.4,
+    #     "pitch_y_mm_per_strip": 0.4,
+    #     "pitch_z_mm_per_clock": 0.5,
+    #     "clock_offset":         90.0,
+    #     "flag_pixel_cut":       False,
+    #     "flag_save_cloud":      True
+    # })
 
 
 ### run analysis chain

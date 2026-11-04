@@ -1,0 +1,67 @@
+{
+  "_comment": [
+    "SMILE-3 TPC only: ReadData -> CalcFADC (FADC charge and 1-hit spectra). Same as run_script/test3.py.",
+    "{data_root} is replaced by $SMILE3_DATA, else mount_data/ of this repository (config/ericanext_config.py DATA_DIR).",
+    "Change the run with --data-dir <run directory> (run_chain.py) or edit ReadData.data_dir."
+  ],
+  "chain": [
+    "ReadData",
+    "CalcFADC"
+  ],
+  "parameters": {
+    "ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "reverse_TPC": false,
+      "TPC_Only": true,
+      "event_id": true,
+      "Image_A_C": true,
+      "FADC_TH": false,
+      "save_track_png": false,
+      "save_fadc_png": false,
+      "save_fadc_a_filter": false,
+      "fadc_a_filter_min": 50,
+      "fadc_a_filter_max": 800,
+      "save_fadc_c_filter": false,
+      "fadc_c_filter_min": 200,
+      "fadc_c_filter_max": 950,
+      "_units": {
+        "fadc_a_filter_min": "ADU",
+        "fadc_a_filter_max": "ADU",
+        "fadc_c_filter_min": "ADU",
+        "fadc_c_filter_max": "ADU"
+      },
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
+        "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
+        "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
+        "Image_A_C": "true: 全イベントのヒットを積算した図 Image_A / Image_C(ストリップ × クロック)を保存する",
+        "FADC_TH": "true: FADC 波形のヒストグラム(ボード・ch ごと、全イベントの積算 FADC_Anode<i>_Ch<ch> とイベントごと FADC_ev_*)を作る。save_fadc_png と save_fadc_*_filter にも必要",
+        "save_track_png": "true: イベントごとの飛跡(ストリップ × クロック)の PNG を ./png_A, ./png_C に書く",
+        "save_fadc_png": "true: イベントごとの FADC 波形の PNG を ./png_FADC_A, ./png_FADC_C に書く(FADC_TH: true が必要)",
+        "save_fadc_a_filter": "true: アノードの FADC 波形に fadc_a_filter_min 以下か fadc_a_filter_max 以上のサンプルがあるイベントだけ、PNG を ./png_FADC_A_filter に書き、N_time と鳴った ch 数のグラフを保存する(FADC_TH: true が必要)",
+        "fadc_a_filter_min": "save_fadc_a_filter の下側の閾値(この値以下のサンプルがあれば選ぶ)[ADU]",
+        "fadc_a_filter_max": "save_fadc_a_filter の上側の閾値(この値以上のサンプルがあれば選ぶ)[ADU]",
+        "save_fadc_c_filter": "save_fadc_a_filter のカソード版(./png_FADC_C_filter)",
+        "fadc_c_filter_min": "save_fadc_c_filter の下側の閾値 [ADU]",
+        "fadc_c_filter_max": "save_fadc_c_filter の上側の閾値 [ADU]"
+      }
+    },
+    "CalcFADC": {
+      "base_window": 30.0,
+      "threshold": 20.0,
+      "save_TH_plots": true,
+      "save_board_plots": false,
+      "_units": {
+        "base_window": "samples (20 ns each)",
+        "threshold": "ADU (above the baseline)"
+      },
+      "_doc": {
+        "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]",
+        "save_TH_plots": "true: ch ごとのベースラインと電荷の図(BaselineAnode/Cathode, ChargeAnode/Cathode)と、アノード ch × カソード ch ごとの 1-hit スペクトル(Anode/Cathode_1Hit_A<a>_C<c>、横軸は ADU の積分値)を保存する",
+        "save_board_plots": "true: アノードボード × カソードボードごとの 1-hit スペクトル(Anode/Cathode_1Hit_board_A<a>_C<c>)を保存する。鳴ったボードがアノード・カソード(同じパネル)とも 1 枚のイベントで、そのボードの 4 ch の和を詰める"
+      }
+    }
+  }
+}

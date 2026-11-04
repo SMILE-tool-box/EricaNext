@@ -1,0 +1,41 @@
+{
+  "_comment": [
+    "SMILE-3 TPC raw data tree: ReadData -> RawTreeWriter_sm3 (event-synchronized TPC hits and FADC waveforms, for calibrations).",
+    "{data_root} is replaced by $SMILE3_DATA, else mount_data/ of this repository (config/ericanext_config.py DATA_DIR).",
+    "Change the run with --data-dir <run directory> (run_chain.py) or edit ReadData.data_dir."
+  ],
+  "chain": [
+    "ReadData",
+    "RawTreeWriter_sm3"
+  ],
+  "parameters": {
+    "ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "reverse_TPC": false,
+      "TPC_Only": true,
+      "event_id": true,
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
+        "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
+        "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff"
+      }
+    },
+    "RawTreeWriter_sm3": {
+      "save_threshold": 0.0,
+      "base_window": 30,
+      "save_fadc": true,
+      "save_hits": true,
+      "_units": {
+        "save_threshold": "ADU (above the baseline)",
+        "base_window": "samples (20 ns each)"
+      },
+      "_doc": {
+        "save_threshold": "FADC の波形を保存する閾値。波形の最大値 − ベースラインがこれ以下の ch は保存しない。0 なら、データのあるボードの全 ch を保存する [ADU]",
+        "base_window": "save_threshold の判定に使うベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "save_fadc": "true: FADC の波形(fadc_ch, fadc_wave)を保存する",
+        "save_hits": "true: ヒット(hit_a/c_strip, hit_a/c_clock)とエンコーダーのレコード(rec_a/c_board, rec_a/c_clock)を保存する"
+      }
+    }
+  }
+}
