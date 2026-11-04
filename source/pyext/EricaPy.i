@@ -11,6 +11,7 @@
 #include "TPC_Calibration.h"
 #include "TOT_Skewness.h"
 #include "Reconstruct.h"
+#include "RawTreeWriter_sm3.h"
 
 %}
 
@@ -27,3 +28,4 @@ class CalcFADC         : public anlnext::BasicModule {};
 class TPC_Calibration  : public anlnext::BasicModule {};
 class TOT_Skewness     : public anlnext::BasicModule {};
 class Reconstruct      : public anlnext::BasicModule {};
+class RawTreeWriter_sm3: public anlnext::BasicModule {};

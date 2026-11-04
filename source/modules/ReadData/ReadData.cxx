@@ -133,6 +133,7 @@ ANLStatus ReadData::mod_analyze(){
       }
   }while(loop_flag!=1);
   event_id_coincidence = max_id;
+  sevt_id_ = next_sevt_id_++;
   
   ////////////////////////////////////////////////
   // Read Data...

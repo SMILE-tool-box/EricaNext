@@ -100,6 +100,7 @@ void ReadData::Scan_Encoder(){
 void ReadData::Read_Anode(){
   Track_A->Reset("ICES");
   anode_hits_.clear();
+  anode_records_.clear();
   min_a = 128 * 12;  max_a = -1;
   min_ad = 1024;  max_ad = -1;
   
@@ -120,6 +121,7 @@ void ReadData::Read_Anode(){
 	
 	for(unsigned j=0; j<Anode[i]->TrackSize(); j+=5){
 	  int clk = (Anode[i]->TrackData(j)) & 0x7ff;
+	  anode_records_.push_back({(short)N_anode[i], (short)clk});
 	  for(int ch=0; ch<4; ch++){
 	    for(int bit=0; bit<32; bit++){
 	      char str_data;
@@ -151,6 +153,7 @@ void ReadData::Read_Anode(){
 void ReadData::Read_Cathode(){
   Track_C->Reset("ICES");
   cathode_hits_.clear();
+  cathode_records_.clear();
   min_c = 128 * 12;  max_c = -1;
   min_cd = 1024;  max_cd = -1;
   
@@ -170,6 +173,7 @@ void ReadData::Read_Cathode(){
 	}
 	for(unsigned j=0; j<Cathode[i]->TrackSize(); j+=5){
 	  int clk = (Cathode[i]->TrackData(j)) & 0x7ff;
+	  cathode_records_.push_back({(short)N_cathode[i], (short)clk});
 	  for(int ch=0; ch<4; ch++){
 	    for(int bit=0; bit<32; bit++){
 	      char str_data;

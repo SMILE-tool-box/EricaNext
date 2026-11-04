@@ -53,6 +53,15 @@ public:
   int                GetMinCathode()  const {return min_c;};
   int                GetMaxCathode()  const {return max_c;};
   unsigned           Get_EventID_coincidence()    const {return event_id_coincidence;};
+  // 0-based count of the merged (board-synchronized) events processed so far
+  unsigned           Get_SEvtID()     const {return sevt_id_;};
+  // header time word N_time of anode / cathode board i (index in Get_AnodeID() / Get_CathodeID())
+  unsigned           Get_AnodeTime(int i)   const {return Anode[i]->GetNtime();};
+  unsigned           Get_CathodeTime(int i) const {return Cathode[i]->GetNtime();};
+  // every hit record of the encoder (board number, clock), also records whose strip bits are all zero
+  struct Record { short board; short clock; };
+  const std::vector<Record>& Get_Anode_Records()   const { return anode_records_; }
+  const std::vector<Record>& Get_Cathode_Records() const { return cathode_records_; }
   int                GetMinClock()    const {
     int val = (min_ad > min_cd) ? min_cd : min_ad;
     return val;
@@ -96,6 +105,8 @@ public:
   int               min_a, max_a, min_c, max_c;
   int               min_ad, max_ad, min_cd, max_cd;
   std::vector<Hit>  anode_hits_, cathode_hits_;
+  std::vector<Record> anode_records_, cathode_records_;
+  unsigned          sevt_id_ = 0, next_sevt_id_ = 0;
   void              Scan_Encoder();
   void              Read_Anode();
   void              Read_Cathode();

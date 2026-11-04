@@ -7,6 +7,7 @@ set(SUB_DIRS
   TPC_Calibration
   TOT_Skewness
   Reconstruct
+  RawTreeWriter_sm3
 )
 
 foreach(dir ${SUB_DIRS})
