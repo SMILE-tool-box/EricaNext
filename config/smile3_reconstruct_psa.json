@@ -1,0 +1,182 @@
+{
+  "_comment": [
+    "SMILE-3 ETCC: TPC (ReadData -> CalcFADC -> TPC_Calibration) + scintillator (PSA_* -> PSA_Event) -> Reconstruct.",
+    "PSA_ReadData follows the events of ReadData (sync_tpc). --data-dir changes ReadData.data_dir and PSA_ReadData.data_dir.",
+    "ReadData reads one directory: put the files of both storages (tpc_enc_a*, tpc_enc_c*, ha*.dat) in one directory (symbolic links) when the run is split.",
+    "Needs calib/psa/energy_haNN.csv and calib/psa/geometry.csv (not made yet); without them PSA_Event has no hits and single_hit is empty.",
+    "Ke is the charge [ADU] while TPC_Calibration.NoCalData is true."
+  ],
+  "chain": [
+    "ReadData",
+    "CalcFADC",
+    "TPC_Calibration",
+    "PSA_ReadData",
+    "PSA_CalcFADC",
+    "PSA_CenterGravity",
+    "PSA_Calibration",
+    "PSA_TreeWriter",
+    "PSA_Event",
+    "Reconstruct"
+  ],
+  "parameters": {
+    "ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "reverse_TPC": false,
+      "TPC_Only": true,
+      "event_id": true,
+      "Image_A_C": false,
+      "FADC_TH": false,
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
+        "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
+        "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
+        "Image_A_C": "true: 全イベントのヒットを積算した図 Image_A / Image_C(ストリップ × クロック)を保存する",
+        "FADC_TH": "true: FADC 波形のヒストグラムを作る(PNG を書くパラメータは config/smile3_tpc_only.json を参照)"
+      }
+    },
+    "CalcFADC": {
+      "base_window": 30.0,
+      "threshold": 20.0,
+      "save_TH_plots": false,
+      "save_board_plots": false,
+      "_units": {
+        "base_window": "samples (20 ns each)",
+        "threshold": "ADU (above the baseline)"
+      },
+      "_doc": {
+        "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]",
+        "save_TH_plots": "true: ch ごとのベースライン・電荷の図と、アノード ch × カソード ch ごとの 1-hit スペクトルを保存する",
+        "save_board_plots": "true: アノードボード × カソードボードごとの 1-hit スペクトルを保存する"
+      }
+    },
+    "TPC_Calibration": {
+      "NoCalData": true,
+      "Coinci_TH": false,
+      "Image_XY_TH": false,
+      "Spectrum_TH": false,
+      "_doc": {
+        "NoCalData": "true: ゲインマップを使わず、エネルギー = 電荷 [ADU] とする(ParameterFile は読まない)。false のときは ParameterFile にゲインマップ(E = Ka Q + Kb)を指定する",
+        "Coinci_TH": "true: アノードとカソードが同じクロック・同じパネル(384 ストリップごと)で鳴ったヒット(ストリップ × クロック)の図 Coinci_A / Coinci_C を作る(イベントごとに作り直す)",
+        "Image_XY_TH": "true: 同時ヒットのアノード × カソードの位置の図 Image_XY を作る",
+        "Spectrum_TH": "true: エネルギーのスペクトル Spectrum(0–400 keV、2000 ビン)を作る。NoCalData: true のときは中身が電荷 [ADU] なので、範囲に入らないことが多い"
+      }
+    },
+    "PSA_ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "extra_data_dirs": [],
+      "sync_tpc": true,
+      "save_hit_pattern": true,
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(ha<ボード>_<番号>.dat)のディレクトリ。.dat が無い番号は .dat.tmp を読む。TPC と同じランのディレクトリ(--data-dir で ReadData.data_dir と一緒に変わる)",
+        "extra_data_dirs": "ほかにも HA のファイルがあるディレクトリ(同じランの別の storage ノード、例 storage_g0/<ラン>)。同じボードは最初に見つかった所だけ使う",
+        "sync_tpc": "true: チェーンに ReadData があれば、そのイベント(トリガーカウンタ、ReadData.event_id = true)に合わせて読む。ReadData が無いときは HA のボード同士をトリガーカウンタでそろえる",
+        "save_hit_pattern": "true: ボード × ch のヒット数(PSA_ReadData/HitPattern)を保存する"
+      }
+    },
+    "PSA_CalcFADC": {
+      "pedestal_samples": 23,
+      "window_front": 4,
+      "window_back": 9,
+      "fixed_window": false,
+      "fixed_start": 25,
+      "fixed_stop": 41,
+      "psa_param_file": "{repo}/calib/psa/psa_param.csv",
+      "save_spectra": true,
+      "hg_max": 400000.0,
+      "lg_max": 100000.0,
+      "spec_bins": 400,
+      "_units": {
+        "pedestal_samples": "samples",
+        "window_front": "samples",
+        "window_back": "samples",
+        "fixed_start": "sample index (0-49)",
+        "fixed_stop": "sample index (0-49)",
+        "hg_max": "ADC x sample",
+        "lg_max": "ADC x sample"
+      },
+      "_doc": {
+        "pedestal_samples": "ペデスタル(波形の最初のこのサンプル数の平均、信号ごと)",
+        "window_front": "積分の窓の始まり: ピーク(LG の和が最大のサンプル)のこのサンプル数前",
+        "window_back": "積分の窓の終わり: ピークのこのサンプル数後",
+        "fixed_window": "true: ピークによらず fixed_start から fixed_stop まで積分する(psa_decode.py の --constpeak)",
+        "fixed_start": "fixed_window のときの積分の始まり",
+        "fixed_stop": "fixed_window のときの積分の終わり",
+        "psa_param_file": "温度センサーの較正(HA 列が ha<NN> の行の TL..BR _A, _B)。無いボードは psa_decode.py の既定値",
+        "save_spectra": "true: ボードごとの hg, lg スペクトル(HG_haNN, LG_haNN、ch ごと)を保存する",
+        "hg_max": "hg スペクトルの上限",
+        "lg_max": "lg スペクトルの上限",
+        "spec_bins": "hg, lg スペクトルのビン数"
+      }
+    },
+    "PSA_CenterGravity": {
+      "save_maps": true,
+      "map_peak_id_min": 0,
+      "map_skip_saturated": true,
+      "map_hg_min": 0.0,
+      "_units": {
+        "map_peak_id_min": "sample index",
+        "map_hg_min": "ADC x sample"
+      },
+      "_doc": {
+        "save_maps": "true: ボード・ch ごとの x_hg-y_hg の図(Map_haNN_chC)を保存する",
+        "map_peak_id_min": "図に入れるヒットの peak_id の下限(HA_cal で時刻のずれた信号を除くなら 25 前後、grid_spect.py は 25 より大)",
+        "map_skip_saturated": "true: 飽和したヒットを図に入れない",
+        "map_hg_min": "図に入れるヒットの hg の下限"
+      }
+    },
+    "PSA_Calibration": {
+      "position_dir": "{repo}/calib/psa",
+      "energy_dir": "{repo}/calib/psa",
+      "temp_coef": 0.0,
+      "temp_ref": 25.0,
+      "save_maps": true,
+      "hg_max": 400000.0,
+      "hg_bins": 400,
+      "energy_max": 1000.0,
+      "energy_bins": 1000,
+      "_units": {
+        "temp_coef": "1/degC",
+        "temp_ref": "degC",
+        "hg_max": "ADC x sample",
+        "energy_max": "keV"
+      },
+      "_doc": {
+        "position_dir": "position_ha<NN>.csv(peak_search.py の出力、ch ごとに 64 点)を置いたディレクトリ。無いボードはピクセルを求めない",
+        "energy_dir": "energy_ha<NN>.csv(ch,n,m,p0,p1。energy = p0 + p1 × hg)を置いたディレクトリ。無いボードは energy = -1",
+        "temp_coef": "ゲインの温度係数。hg を hg / (1 + temp_coef × (T − temp_ref)) に直してからエネルギーにする。0 なら直さない",
+        "temp_ref": "温度補正の基準の温度",
+        "save_maps": "true: 補正後の位置の図(Corrected_haNN_chC)、ピクセルごとの hg スペクトル(PixelHG_haNN)、エネルギーのスペクトルを保存する",
+        "hg_max": "PixelHG の hg の上限",
+        "hg_bins": "PixelHG の hg のビン数",
+        "energy_max": "エネルギーのスペクトルの上限",
+        "energy_bins": "エネルギーのスペクトルのビン数"
+      }
+    },
+    "PSA_TreeWriter": {
+      "save_waveform": false,
+      "_doc": {
+        "save_waveform": "true: 波形(50 サンプル × HG0-3, LG0-3 の生の ADC 値)も adc[400] に保存する"
+      }
+    },
+    "PSA_Event": {
+      "geometry_file": "{repo}/calib/psa/geometry.csv",
+      "energy_min": 0.0,
+      "save_hists": true,
+      "_units": {
+        "energy_min": "keV"
+      },
+      "_doc": {
+        "geometry_file": "ブロック(board, ch)ごとの位置と向き(board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch)。ピクセル (n, m) の吸収点 = (x0,y0,z0) + pitch((n-4.5)u + (m-4.5)v) [mm]。書き方は config/README.md",
+        "energy_min": "このエネルギーより大きいヒットだけ使う(ピクセルとエネルギーがあり、geometry_file にあるブロックのヒット)",
+        "save_hists": "true: 使ったヒットの数(NHits)と 1 ヒットのイベントのエネルギー(SingleHitEnergy)を保存する"
+      }
+    },
+    "Reconstruct": {
+      "_doc": {
+        "_": "パラメータ無し。PSA_SingleHit(使ったヒットが 1 つ)のイベントで Eg = PSA のエネルギー、Pg = 吸収点、Ke = TPC_Calibration のエネルギーから single_hit の TTree を作る"
+      }
+    }
+  }
+}

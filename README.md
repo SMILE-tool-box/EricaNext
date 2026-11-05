@@ -15,6 +15,8 @@ SMILE-2+ のデータでの使い方とチュートリアルは [EricaNext_try](
 SMILE-3 の検出器の構成と SMILE-2+ からの変更点(μ-PIC の 4 分割、ストリップ 0.4 mm、MPPC の PSA)は
 [`tutorials/0_Introduction`](tutorials/0_Introduction/Introduction.ipynb) にまとめています。
 
+開発の引き継ぎ(環境の落とし穴、検証のやり方、残りの仕事)は [`AGENTS.md`](AGENTS.md) にあります。
+
 ## 使い方(まずここ)
 
 実行するスクリプトは [`run_script/run_chain.py`](run_script/run_chain.py) です。**最初の引数に設定ファイル** を渡します。
@@ -76,13 +78,13 @@ flowchart LR
 | [`smile3_tot_skewness`](config/smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
 | [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
+| [`smile3_reconstruct_psa`](config/smile3_reconstruct_psa.json) | `ReadData → CalcFADC → TPC_Calibration → PSA_* → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
 
 ### モジュールのつながり
 
 SMILE-2+ から変わったのは検出器のセットアップ(μ-PIC の 4 分割、ストリップ 0.4 mm、HA の読み出しが MPPC)で、
 解析の中身はほとんど同じです。そのためチェーンの構成は SMILE-2+ と同じにし、
 **HA の部分だけを PSA(MPPC の波形)用の `PSA_*` モジュールに作り直しました**。
-点線は、まだつないでいない所(PSA から `Reconstruct` へ)です。
 
 ```mermaid
 flowchart TD
@@ -94,7 +96,7 @@ flowchart TD
   subgraph L1["層1 検出器ごとの処理"]
     CF[CalcFADC] --> TC[TPC_Calibration]
     TOT[TOT_Skewness]
-    PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration]
+    PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration] --> PEV[PSA_Event]
   end
   subgraph L2["層2 イベント再構成"]
     REC[Reconstruct]
@@ -106,7 +108,7 @@ flowchart TD
     PSAT["PSA_TreeWriter/psa<br>シンチレータのヒットの TTree"]
   end
   PRM["パラメータファイル<br>ゲインマップ<br>ドリフト速度"]
-  PPRM["calib/psa/<br>温度センサー・位置(64 点)・エネルギー"]
+  PPRM["calib/psa/<br>温度センサー・位置(64 点)<br>エネルギー・ジオメトリ(未)"]
 
   RAW --> RD
   RAW --> PRD
@@ -114,6 +116,7 @@ flowchart TD
   PRM -.-> TOT
   PPRM -.-> PCF
   PPRM -.-> PCAL
+  PPRM -.-> PEV
   RD -- "FADC 波形(48 ch × 2)" --> CF
   RD -- "TPC ヒット(パネル 0〜3)" --> TC
   RD -- "TPC ヒット・時刻" --> TOT
@@ -121,7 +124,7 @@ flowchart TD
   PRD -- "MPPC の波形(ボード × 6 ch)" --> PCF
   CF -- "電荷" --> TC
   TC -- "Ke" --> REC
-  PCAL -. "Eg, ピクセル(未接続)" .-> REC
+  PEV -- "Eg, Pg(1 ヒットのイベント)" --> REC
   PCAL --> PSAT
   TOT -- "Pe, Ve, Len" --> REC
   REC --> OUT
@@ -130,15 +133,18 @@ flowchart TD
 
 ```
 
-- 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みと、まだつないでいない所です。
+- 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みです。
 - 実際の実行順は設定ファイルの `chain` の順です。TPC と PSA を一緒に読むときは `ReadData` を `PSA_ReadData` より前に置きます
   (`PSA_ReadData.sync_tpc: true` で `ReadData` のトリガーカウンタに合わせて読む)。
 - ゲインマップは `TPC_Calibration.NoCalData: false` のときだけ読みます。
 - PSA の部分は `analysis_sm3_FM/PSA_analysis` の `psa_decode.py` → `pixel_id.py` と同じ計算です
   (同じ .dat で、ヒット・peak_id・ピクセルは全部一致、hg などは Python の float32 の丸めの範囲で一致)。
   較正ファイルは [`calib/psa/`](calib/psa/)(作り方は [`config/README.md`](config/README.md#psa-の較正ファイル-calibpsa))。
-- まだ: `PSA_Calibration` の結果を `Reconstruct` に渡すこと、エネルギーの較正ファイル `energy_haNN.csv`。
-  `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のまま残しています。
+- `Reconstruct` は、チェーンに `PSA_Event` があればそれ(`PSA_SingleHit` のイベント)、無ければ `HA_Calc`(SMILE-2+)を使います。
+- まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
+  この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
+  `CalcFADC` が FADC にヒットの無いイベントを飛ばすので、`smile3_reconstruct_psa` の PSA のツリーは TPC にヒットのあるイベントだけです。
+- `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のまま残しています。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
@@ -152,8 +158,9 @@ flowchart TD
 | `PSA_CenterGravity` | 4 隅の信号の重心 `x_hg`, `y_hg`(`x_lg`, `y_lg`) | `PSA_CenterGravity/Map_haNN_chC` |
 | `PSA_Calibration` | 位置の補正(64 点の薄板スプライン)、ピクセル (n, m)、エネルギー | `PSA_Calibration/Corrected_haNN_chC`, `PixelHG_haNN`, `Energy_haNN` |
 | `PSA_TreeWriter` | PSA のヒットを 1 ヒット 1 行で書く | `PSA_TreeWriter/psa`(TTree) |
+| `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` [mm]、使えるヒットの数(`PSA_SingleHit` / `MultiHit` / `NoHits`)。`Reconstruct` に渡す | `PSA_Event/NHits`, `SingleHitEnergy` |
 | `HA_CenterGravity`, `HA_Calc` | SMILE-2+(PMT の ADC)の HA 用。SMILE-3 では上の `PSA_*` を使う | |
-| `Reconstruct` | TPC と HA を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree) |
+| `Reconstruct` | TPC と HA(`PSA_Event` か `HA_Calc`)を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
 | `RawTreeWriter_sm3` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `RawTreeWriter_sm3/raw`, `RawTreeWriter_sm3/run_info`(TTree) |
 
 - イベント ID には、ボードのトリガーカウンタを使います(`ReadData.event_id: true`)。

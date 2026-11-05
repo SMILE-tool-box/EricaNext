@@ -1,0 +1,6 @@
+# PSA_Event geometry: one row per scintillator block (HA board, ch 0-5). Units: mm.
+# (x0, y0, z0): center of the 8x8 block; u: unit vector of increasing pixel n (1-8); v: of increasing m.
+# Coordinates of tutorials/0_Introduction: origin at the center of the mu-PIC, X: W -> E, Y: N -> S, Z: downward.
+# Absorption point of pixel (n, m) = (x0, y0, z0) + pitch * ((n - 4.5) u + (m - 4.5) v).
+# Copy to geometry.csv and fill in the measured values; blocks without a row are not used.
+board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch

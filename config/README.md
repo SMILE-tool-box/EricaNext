@@ -8,6 +8,7 @@
 | [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC`(FADC の電荷と 1-hit スペクトル) |
 | [`smile3_tot_skewness.json`](smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
+| [`smile3_reconstruct_psa.json`](smile3_reconstruct_psa.json) | `ReadData → CalcFADC → TPC_Calibration → PSA_* → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 
 スクリプトには、名前(拡張子なし)かファイルのパスを渡します。
@@ -79,7 +80,8 @@
 | --- | --- | --- |
 | `psa_param.csv` | 全ボードの表(`analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー)。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | psa_decode.py の既定値(a = 3.9258, b = 1230.30)。`HA` 列の無い古い `param/psa_param.csv` は使えない |
 | `position_ha<NN>.csv` | `peak_search.py` の出力(`ch,No,x,y,z`、ch ごとに 64 点)に、ピクセル番号 `n,m` を足したもの | そのボードはピクセルを求めない(`pixel = -1`) |
-| `energy_ha<NN>.csv` | `ch,n,m,p0,p1`。`energy = p0 + p1 × hg` [keV] | `energy = -1` |
+| `energy_ha<NN>.csv` | `ch,n,m,p0,p1`。`energy = p0 + p1 × hg` [keV](**まだ無い**) | `energy = -1` |
+| `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明(**まだ無い**。ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
 
 `position_ha<NN>.csv` は、`peak_search.py` の出力を `run_script/psa_position_nm.py` に通して作ります。
 `n,m` は grid_spect.py と同じ並べ方(x で 8 列に分け、列ごとに y で並べる)ですが、x や y が同じ値のピークがあると
@@ -100,3 +102,23 @@ cd run_script
   ```
 - TPC と一緒に読むときは、`chain` の `PSA_ReadData` より前に `ReadData` を置きます(`PSA_ReadData.sync_tpc: true`)。
   `ReadData` は `data_dir` を 1 つしか読まないので、アノードとカソードが別の storage にあるランは、両方のファイルを 1 つのディレクトリに(シンボリックリンクで)集めてから読みます。
+
+### `geometry.csv`(PSA_Event)
+
+1 行に 1 ブロック(HA のボード `board` と ch 0〜5)で、単位は mm です。座標は [`tutorials/0_Introduction`](../tutorials/0_Introduction/Introduction.ipynb) のもの
+(原点は μ-PIC の中央、X は W → E、Y は N → S、Z は下向き)。
+
+```
+board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch
+```
+
+| 列 | 中身 |
+| --- | --- |
+| `x0, y0, z0` | 8 × 8 のブロックの中心(吸収点の深さで決める) |
+| `ux, uy, uz` | ピクセル番号 n(1〜8)が増える向きの単位ベクトル |
+| `vx, vy, vz` | m が増える向きの単位ベクトル |
+| `pitch` | ピクセルの間隔 |
+
+ピクセル (n, m) の吸収点は `(x0, y0, z0) + pitch × ((n − 4.5) u + (m − 4.5) v)` です。`#` で始まる行はコメントです。
+n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、ブロックの中の MPPC の 4 隅(I0〜I3)の並びと、ch(TL〜BR)の位置に合わせて決めます。
+

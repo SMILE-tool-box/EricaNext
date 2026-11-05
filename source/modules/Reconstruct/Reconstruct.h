@@ -7,6 +7,7 @@
 #include "SaveFile.h"
 #include "ReadData.h"
 #include "HA_Calc.h"
+#include "PSA_Event.h"
 #include "TPC_Calibration.h"
 
 using namespace anlnext;
@@ -25,6 +26,7 @@ class Reconstruct : public BasicModule {
   
  private:
   TTree        *tree;
+  unsigned      evt_id;   // trigger counter of the event (ReadData)
   double        Eg, Pg[3], Vg[3];
   double        Ke, Pe[3], Ve[3];
   double        E0, V0[3];
@@ -35,6 +37,7 @@ class Reconstruct : public BasicModule {
   
   const ReadData*         RawData = nullptr;
   const HA_Calc*          HA2p_data = nullptr;
+  const PSA_Event*        PSA_data = nullptr;   // SMILE-3: used instead of HA_Calc when in the chain
   const TPC_Calibration*  TPC_FADC = nullptr;
 };
 

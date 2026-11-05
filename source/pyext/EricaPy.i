@@ -17,6 +17,7 @@
 #include "PSA_CenterGravity.h"
 #include "PSA_Calibration.h"
 #include "PSA_TreeWriter.h"
+#include "PSA_Event.h"
 
 %}
 
@@ -39,3 +40,4 @@ class PSA_CalcFADC     : public anlnext::BasicModule {};
 class PSA_CenterGravity: public anlnext::BasicModule {};
 class PSA_Calibration  : public anlnext::BasicModule {};
 class PSA_TreeWriter   : public anlnext::BasicModule {};
+class PSA_Event        : public anlnext::BasicModule {};

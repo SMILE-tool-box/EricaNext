@@ -13,6 +13,7 @@ set(SUB_DIRS
   PSA_CenterGravity
   PSA_Calibration
   PSA_TreeWriter
+  PSA_Event
 )
 
 foreach(dir ${SUB_DIRS})
