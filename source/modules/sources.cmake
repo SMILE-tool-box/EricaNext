@@ -8,6 +8,11 @@ set(SUB_DIRS
   TOT_Skewness
   Reconstruct
   RawTreeWriter_sm3
+  PSA_ReadData
+  PSA_CalcFADC
+  PSA_CenterGravity
+  PSA_Calibration
+  PSA_TreeWriter
 )
 
 foreach(dir ${SUB_DIRS})

@@ -8,6 +8,7 @@
 | [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC`(FADC の電荷と 1-hit スペクトル) |
 | [`smile3_tot_skewness.json`](smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
+| [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 
 スクリプトには、名前(拡張子なし)かファイルのパスを渡します。
 新しい設定は、近いファイルをコピーして書き換えるのが簡単です(このディレクトリの外に置いても構いません)。
@@ -68,3 +69,34 @@
 - 値の型はモジュールのパラメータの型に合わせます。小数のパラメータは `30.0` のように書きます(`30` だと整数になり、型が合わずに止まる)。
 - パラメータの名前は、各モジュールの `mod_define()` の `define_parameter("名前", ...)` です。
 - 実行すると、ANLNext が全モジュールのパラメータの値(既定値を含む)を表示するので、何が使われたかはそこでも確かめられます。
+
+## PSA の較正ファイル (`calib/psa/`)
+
+`smile3_psa.json` の `PSA_CalcFADC.psa_param_file`、`PSA_Calibration.position_dir`、`energy_dir` は `{repo}/calib/psa/` を指しています。
+ボード `ha<NN>` ごとに次のファイルを置きます。無いボードは、そのファイルを使う処理だけを飛ばします(実行は止まりません)。
+
+| ファイル | 中身 | 無いとき |
+| --- | --- | --- |
+| `psa_param.csv` | 全ボードの表(`analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー)。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | psa_decode.py の既定値(a = 3.9258, b = 1230.30)。`HA` 列の無い古い `param/psa_param.csv` は使えない |
+| `position_ha<NN>.csv` | `peak_search.py` の出力(`ch,No,x,y,z`、ch ごとに 64 点)に、ピクセル番号 `n,m` を足したもの | そのボードはピクセルを求めない(`pixel = -1`) |
+| `energy_ha<NN>.csv` | `ch,n,m,p0,p1`。`energy = p0 + p1 × hg` [keV] | `energy = -1` |
+
+`position_ha<NN>.csv` は、`peak_search.py` の出力を `run_script/psa_position_nm.py` に通して作ります。
+`n,m` は grid_spect.py と同じ並べ方(x で 8 列に分け、列ごとに y で並べる)ですが、x や y が同じ値のピークがあると
+C++ と numpy で並びが変わることがあるので、numpy の決めた並びを書き込んでおきます。
+
+```bash
+cd run_script
+/usr/bin/python3 psa_position_nm.py ~/analysis_sm3_FM/PSA_analysis/peak_runs_run01-11_ha*/position_ha*.csv -o ../calib/psa
+```
+
+- numpy の入った Python で実行します(miniforge の `python3` には numpy が無いので `/usr/bin/python3`)。
+- 今の `calib/psa/` は `psa_param_20261029.csv` と `peak_runs_run01-11_ha*`(2026-11-05 の peak_search)から作ったものです。
+- ボードが 2 つの storage に分かれたラン(`storage_g0` と `storage_g1`)は、`--data-dir` に片方、`PSA_ReadData.extra_data_dirs` にもう片方を書きます。
+
+  ```bash
+  python3 run_chain.py smile3_psa -o psa.root --data-dir ../mount_data/storage_g1/<ラン> \
+      --set 'PSA_ReadData.extra_data_dirs=["../mount_data/storage_g0/<ラン>"]'
+  ```
+- TPC と一緒に読むときは、`chain` の `PSA_ReadData` より前に `ReadData` を置きます(`PSA_ReadData.sync_tpc: true`)。
+  `ReadData` は `data_dir` を 1 つしか読まないので、アノードとカソードが別の storage にあるランは、両方のファイルを 1 つのディレクトリに(シンボリックリンクで)集めてから読みます。

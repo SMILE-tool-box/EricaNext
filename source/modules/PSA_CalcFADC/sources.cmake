@@ -1,0 +1,4 @@
+set(ANL_MODULES
+  ${CUR_DIR}/PSA_CalcFADC.cxx
+  ${ANL_MODULES}
+)

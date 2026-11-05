@@ -12,6 +12,11 @@
 #include "TOT_Skewness.h"
 #include "Reconstruct.h"
 #include "RawTreeWriter_sm3.h"
+#include "PSA_ReadData.h"
+#include "PSA_CalcFADC.h"
+#include "PSA_CenterGravity.h"
+#include "PSA_Calibration.h"
+#include "PSA_TreeWriter.h"
 
 %}
 
@@ -29,3 +34,8 @@ class TPC_Calibration  : public anlnext::BasicModule {};
 class TOT_Skewness     : public anlnext::BasicModule {};
 class Reconstruct      : public anlnext::BasicModule {};
 class RawTreeWriter_sm3: public anlnext::BasicModule {};
+class PSA_ReadData     : public anlnext::BasicModule {};
+class PSA_CalcFADC     : public anlnext::BasicModule {};
+class PSA_CenterGravity: public anlnext::BasicModule {};
+class PSA_Calibration  : public anlnext::BasicModule {};
+class PSA_TreeWriter   : public anlnext::BasicModule {};

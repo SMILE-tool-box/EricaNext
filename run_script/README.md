@@ -5,6 +5,7 @@
 | [`run_chain.py`](run_chain.py) | 設定ファイル(`config/*.json`)を指定して EricaNext のチェーンを実行する。**通常はこれを使う** |
 | [`run_runs.sh`](run_runs.sh) | 複数のランに `run_chain.py` を順に実行する(1 ランに 1 ファイル) |
 | [`plot_track3d.py`](plot_track3d.py) | `TOT_Skewness/tot_skewness` の点群(`flag_save_cloud: true`)から 1 イベントの飛跡を 3 次元で描く |
+| [`psa_position_nm.py`](psa_position_nm.py) | `peak_search.py` の `position_haNN.csv` にピクセル番号 `n,m` を足して `calib/psa/` に書く(`PSA_Calibration` 用。numpy の入った `/usr/bin/python3` で実行) |
 | [`anl_run.py`](anl_run.py) | `run_chain.py` が使う、失敗を終了コードにするための関数(直接は実行しない) |
 | `test2.py`, `test3.py` | 前の実行スクリプト(チェーンとパラメータを中に書いたもの)。`config/smile3_tot_skewness.json`、`config/smile3_tpc_only.json` が同じ内容 |
 
@@ -28,7 +29,7 @@ python3 run_chain.py <設定名> -o <出力ファイル> [-n <イベント数>] 
 | `<設定名>` | `config/` の中の設定ファイルの名前(拡張子なし、例 `smile3_tpc_only`)。`.json` のパスを直接書いてもよい |
 | `-o`, `--output` | 出力する ROOT ファイル(必須) |
 | `-n`, `--n-events` | 処理するイベント数。省略すると全イベント(`-1`) |
-| `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw` などがある所)。設定ファイルの `ReadData.data_dir` を置き換える |
+| `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)を置き換える |
 | `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0`、`--set CalcFADC.save_board_plots=true` |
 
 ### 例
@@ -48,6 +49,10 @@ python3 run_chain.py smile3_tot_skewness -o tot.root
 
 # 同期した生データのツリー(較正・診断用)
 python3 run_chain.py smile3_raw -o raw.root
+
+# シンチレータ(PSA)だけ。ボードが storage_g0 と g1 に分かれたランは extra_data_dirs にもう片方
+python3 run_chain.py smile3_psa -o psa.root --data-dir ../mount_data/storage_g1/run_20261029T071524Z \
+    --set 'PSA_ReadData.extra_data_dirs=["../mount_data/storage_g0/run_20261029T071524Z"]'
 ```
 
 ### 終了コード
