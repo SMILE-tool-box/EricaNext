@@ -45,7 +45,7 @@ class PSA_TreeWriter : public BasicModule {
   double   hg_, lg_, x_hg_, y_hg_, x_lg_, y_lg_;
   float    wave_sum_[8], ped_[8], temp_[6];
   float    temp_mean_;
-  double   x_corr_, y_corr_, energy_;
+  double   x_corr_, y_corr_, energy_, hg_corr_;
   short    pix_n_, pix_m_, pixel_;
   unsigned short adc_[PSA_Board::N_SAMPLE * PSA_Board::N_SIG];
 };

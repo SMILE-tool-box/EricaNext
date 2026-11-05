@@ -22,15 +22,22 @@ std::vector<std::string> split_csv(const std::string& line){
   return out;
 }
 
-// rows of a csv with a header, as {column: value}
+inline bool skip_line(const std::string& line){   // empty or a comment (# ...)
+  size_t k = line.find_first_not_of(" \t\r");
+  return k == std::string::npos || line[k] == '#';
+}
+
+// rows of a csv with a header, as {column: value}; lines starting with # are comments
 std::vector<std::map<std::string, std::string>> read_csv(const std::string& path){
   std::vector<std::map<std::string, std::string>> rows;
   std::ifstream in(path);
   std::string line;
-  if(!in || !std::getline(in, line))  return rows;
+  if(!in)  return rows;
+  while(std::getline(in, line) && skip_line(line)){}
+  if(!in)  return rows;
   std::vector<std::string> head = split_csv(line);
   while(std::getline(in, line)){
-    if(line.find_first_not_of(" \t\r") == std::string::npos)  continue;
+    if(skip_line(line))  continue;
     std::vector<std::string> cell = split_csv(line);
     std::map<std::string, std::string> row;
     for(size_t k=0; k<head.size() && k<cell.size(); k++)  row[head[k]] = cell[k];
@@ -49,6 +56,7 @@ std::string board_file(const std::string& dir, const char* prefix, int id){
 ANLStatus PSA_Calibration::mod_define(){
   define_parameter("position_dir", &mod_class::position_dir_);
   define_parameter("energy_dir",   &mod_class::energy_dir_);
+  define_parameter("temp_gain_dir", &mod_class::temp_gain_dir_);
   define_parameter("temp_coef",    &mod_class::temp_coef_);
   define_parameter("temp_ref",     &mod_class::temp_ref_);
   define_parameter("save_maps",    &mod_class::save_maps_);
@@ -140,6 +148,40 @@ bool PSA_Calibration::LoadEnergy(int i, const std::string& path){
   return n_ok > 0;
 }
 
+bool PSA_Calibration::LoadTempGain(int i, const std::string& path){
+  auto rows = read_csv(path);
+  auto& tg = temp_gain_[i];
+  tg.assign(N_CH, {});
+  for(auto& r : rows){
+    if(!r.count("ch") || !r.count("temp") || !r.count("gain"))  continue;
+    int ch = std::stoi(r["ch"]);
+    double g = std::stod(r["gain"]);
+    if(ch < 0 || ch >= N_CH || !(g > 0))  continue;
+    tg[ch].emplace_back(std::stod(r["temp"]), g);
+  }
+  int n_ch = 0;
+  for(auto& v : tg){
+    std::sort(v.begin(), v.end());
+    n_ch += !v.empty();
+  }
+  std::cout << "PSA_Calibration: " << PSA_Board::Name(rd_->BoardID(i)) << ": temperature gain of " << n_ch
+            << " ch from " << path << std::endl;
+  if(n_ch == 0)  tg.clear();
+  return n_ch > 0;
+}
+
+double PSA_Calibration::Gain(int i, int ch, double temp) const {
+  if(temp_gain_[i].empty() || temp_gain_[i][ch].empty())
+    return 1. + temp_coef_ * (temp - temp_ref_);
+  const auto& v = temp_gain_[i][ch];
+  if(temp <= v.front().first)  return v.front().second;
+  if(temp >= v.back().first)   return v.back().second;
+  auto hi = std::lower_bound(v.begin(), v.end(), std::make_pair(temp, -1e300));
+  auto lo = hi - 1;
+  double f = (temp - lo->first) / (hi->first - lo->first);
+  return lo->second + f * (hi->second - lo->second);
+}
+
 ANLStatus PSA_Calibration::mod_initialize(){
   if(!exist_module("PSA_ReadData") || !exist_module("PSA_CalcFADC") || !exist_module("PSA_CenterGravity"))
     return AS_QUIT;
@@ -150,7 +192,8 @@ ANLStatus PSA_Calibration::mod_initialize(){
 
   tps_.assign(nb_, std::vector<ThinPlateSpline>(N_CH));
   x_corr_.assign(nb_, std::vector<double>(N_CH, NAN));
-  y_corr_ = energy_ = x_corr_;
+  y_corr_ = energy_ = hg_corr_ = x_corr_;
+  temp_gain_.assign(nb_, {});
   pix_n_.assign(nb_, std::vector<int>(N_CH, -1));
   pix_m_ = pix_n_;
   has_energy_.assign(nb_, false);
@@ -168,6 +211,9 @@ ANLStatus PSA_Calibration::mod_initialize(){
     }
     else
       std::cerr << "PSA_Calibration: " << PSA_Board::Name(id) << ": no " << pos << "; no pixel for this board" << std::endl;
+    std::string tgf = board_file(temp_gain_dir_, "temp_gain", id);
+    if(!temp_gain_dir_.empty() && std::ifstream(tgf))
+      LoadTempGain(i, tgf);
     std::string en = board_file(energy_dir_, "energy", id);
     if(!energy_dir_.empty() && std::ifstream(en))
       has_energy_[i] = LoadEnergy(i, en);
@@ -192,7 +238,7 @@ ANLStatus PSA_Calibration::mod_initialize(){
       }
       // hg spectrum of every pixel, for the energy calibration
       snprintf(name, sizeof(name), "PixelHG_ha%02d", id);
-      pixel_spec_.push_back(new TH2D(name, (std::string(name) + ";pixel (64 ch + 8 (n-1) + m-1);hg [ADC x sample]").c_str(),
+      pixel_spec_.push_back(new TH2D(name, (std::string(name) + ";pixel (64 ch + 8 (n-1) + m-1);hg_corr (hg / gain(T)) [ADC x sample]").c_str(),
                                      N_CH * 64, -0.5, N_CH * 64 - 0.5, hg_bins_, 0, hg_max_));
       if(has_energy_[i]){
         snprintf(name, sizeof(name), "Energy_ha%02d", id);
@@ -211,11 +257,14 @@ ANLStatus PSA_Calibration::mod_analyze(){
     for(int ch=0; ch<N_CH; ch++){
       x_corr_[i][ch] = y_corr_[i][ch] = NAN;
       energy_[i][ch] = -1;
+      hg_corr_[i][ch] = NAN;
       pix_n_[i][ch] = pix_m_[i][ch] = -1;
     }
     if(!rd_->Present(i))  continue;
     for(int ch=0; ch<N_CH; ch++){
-      if(!fadc_->Hit(i, ch) || !tps_[i][ch].Ready())  continue;
+      if(!fadc_->Hit(i, ch))  continue;
+      hg_corr_[i][ch] = fadc_->HG(i, ch) / Gain(i, ch, fadc_->TempMean(i));
+      if(!tps_[i][ch].Ready())  continue;
       double xc, yc;
       tps_[i][ch].Eval(cg_->XHG(i, ch), cg_->YHG(i, ch), xc, yc);
       x_corr_[i][ch] = xc;
@@ -226,11 +275,9 @@ ANLStatus PSA_Calibration::mod_analyze(){
         pix_m_[i][ch] = m;
       }
       int pix = Pixel(i, ch);
-      double hg = fadc_->HG(i, ch);
-      if(pix >= 0 && has_energy_[i] && !std::isnan(p1_[i][pix])){
-        double hg_t = hg / (1. + temp_coef_ * (fadc_->TempMean(i) - temp_ref_));
-        energy_[i][ch] = p0_[i][pix] + p1_[i][pix] * hg_t;
-      }
+      double hg = hg_corr_[i][ch];
+      if(pix >= 0 && has_energy_[i] && !std::isnan(p1_[i][pix]))
+        energy_[i][ch] = p0_[i][pix] + p1_[i][pix] * hg;
       if(!corr_maps_.empty()){
         corr_maps_[i][ch]->Fill(xc, yc);
         if(pix >= 0)  pixel_spec_[i]->Fill(pix, hg);
@@ -244,6 +291,7 @@ ANLStatus PSA_Calibration::mod_analyze(){
 PSA_Calibration::PSA_Calibration(){
   position_dir_ = "";
   energy_dir_ = "";
+  temp_gain_dir_ = "";
   temp_coef_ = 0.;
   temp_ref_ = 25.;
   save_maps_ = true;

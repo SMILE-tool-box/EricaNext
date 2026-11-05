@@ -13,3 +13,4 @@ root_data/
 test.data/
 tutorials/**/.ipynb_checkpoints/
 tutorials/cache/
+calib/**/qa/

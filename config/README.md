@@ -8,7 +8,7 @@
 | [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC`(FADC の電荷と 1-hit スペクトル) |
 | [`smile3_tot_skewness.json`](smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
-| [`smile3_reconstruct_psa.json`](smile3_reconstruct_psa.json) | `ReadData → CalcFADC → TPC_Calibration → PSA_* → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
+| [`smile3_reconstruct_psa.json`](smile3_reconstruct_psa.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 
 スクリプトには、名前(拡張子なし)かファイルのパスを渡します。
@@ -73,27 +73,40 @@
 
 ## PSA の較正ファイル (`calib/psa/`)
 
-`smile3_psa.json` の `PSA_CalcFADC.psa_param_file`、`PSA_Calibration.position_dir`、`energy_dir` は `{repo}/calib/psa/` を指しています。
+`smile3_psa.json` の `PSA_CalcFADC.psa_param_file`、`PSA_Calibration.position_dir`、`temp_gain_dir`、`energy_dir` は `{repo}/calib/psa/` を指しています。
 ボード `ha<NN>` ごとに次のファイルを置きます。無いボードは、そのファイルを使う処理だけを飛ばします(実行は止まりません)。
+EricaNext_try のゲインマップやドリフト速度と同じく、**較正のランから `scripts/calib/` のスクリプトで作り、チェーンはファイルを読むだけ**です。
+どのファイルも `#` で始まる行はコメントで、作ったスクリプトが入力のファイルと条件を書き込みます。
 
-| ファイル | 中身 | 無いとき |
-| --- | --- | --- |
-| `psa_param.csv` | 全ボードの表(`analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー)。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | psa_decode.py の既定値(a = 3.9258, b = 1230.30)。`HA` 列の無い古い `param/psa_param.csv` は使えない |
-| `position_ha<NN>.csv` | `peak_search.py` の出力(`ch,No,x,y,z`、ch ごとに 64 点)に、ピクセル番号 `n,m` を足したもの | そのボードはピクセルを求めない(`pixel = -1`) |
-| `energy_ha<NN>.csv` | `ch,n,m,p0,p1`。`energy = p0 + p1 × hg` [keV](**まだ無い**) | `energy = -1` |
-| `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明(**まだ無い**。ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
+| ファイル | 中身 | 作り方 | 無いとき |
+| --- | --- | --- | --- |
+| `psa_param.csv` | 全ボードの表。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | `analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー(`HA` 列のある版) | psa_decode.py の既定値(a = 3.9258, b = 1230.30) |
+| `position_ha<NN>.csv` | ch ごとにフラッドマップの 64 点(`x,y`)とピクセル番号(`n,m`)。(x_hg, y_hg) → (n, m) の薄板スプラインはこれで決まる | `scripts/calib/make_psa_position.py` | ピクセルを求めない(`pixel = -1`) |
+| `temp_gain_ha<NN>.csv` | ch ごとの温度と相対ゲインの表(`ch,temp,gain`)。`hg_corr = hg / gain(T)` | `scripts/calib/make_psa_temp_gain.py` | `PSA_Calibration.temp_coef` の式(既定 0 = 直さない) |
+| `energy_ha<NN>.csv` | ピクセルごとの `p0,p1`(`ch,n,m,p0,p1`)。`energy = p0 + p1 × hg_corr` [keV] | `scripts/calib/make_psa_energy.py`(線源のラン) | `energy = -1` |
+| `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明 | 検出器の配置から手で書く(ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
 
-`position_ha<NN>.csv` は、`peak_search.py` の出力を `run_script/psa_position_nm.py` に通して作ります。
-`n,m` は grid_spect.py と同じ並べ方(x で 8 列に分け、列ごとに y で並べる)ですが、x や y が同じ値のピークがあると
-C++ と numpy で並びが変わることがあるので、numpy の決めた並びを書き込んでおきます。
+### 作る順番
+
+温度ゲインはピクセルによらないので位置と並べて作れますが、エネルギーはピクセルと `hg_corr` を使うので最後です。
 
 ```bash
 cd run_script
-/usr/bin/python3 psa_position_nm.py ~/analysis_sm3_FM/PSA_analysis/peak_runs_run01-11_ha*/position_ha*.csv -o ../calib/psa
+# 0. 較正のランをチェーンに通す(位置・温度ゲインは HA_cal のランを何本でも。ヒットが多いほどよい)
+python3 run_chain.py smile3_psa -o cal_run01.root --data-dir <ラン> --set 'PSA_ReadData.extra_data_dirs=["<もう片方の storage>"]'
+# 1. 位置(フラッドマップの 64 点)。ch あたり --min-hits(既定 1 万)ヒット未満の ch は作らない
+/usr/bin/python3 ../scripts/calib/make_psa_position.py cal_run*.root -o ../calib/psa
+# 2. 温度ゲイン(温度の違うランを合わせて入れる)
+/usr/bin/python3 ../scripts/calib/make_psa_temp_gain.py cal_run*.root -o ../calib/psa
+# 3. 線源のランを、1 と 2 を置いた状態でチェーンに通してから、エネルギー
+python3 run_chain.py smile3_psa -o src_run01.root --data-dir <線源のラン> ...
+/usr/bin/python3 ../scripts/calib/make_psa_energy.py src_run*.root -o ../calib/psa --line 662
 ```
 
-- numpy の入った Python で実行します(miniforge の `python3` には numpy が無いので `/usr/bin/python3`)。
-- 今の `calib/psa/` は `psa_param_20261029.csv` と `peak_runs_run01-11_ha*`(2026-11-05 の peak_search)から作ったものです。
+- スクリプトは `/usr/bin/python3`(numpy、scipy、PyROOT のある Python)で動かします。
+- どのスクリプトも、既にあるファイルは `--overwrite` を付けないと上書きしません。`<out>/qa/` に確認の図を書くので、使う前に見てください。
+- 位置のピークの探し方は、今は `peak_search.py` と同じです(同じヒストグラムで同じ 64 点になることを確かめた)。格子の制約が無いので、統計が少ないと外側の列を取り逃したり、1 つの山で 2 点取ったりします。その ch は図で見て、ファイルから外してください(外した ch はピクセルを求めない)。
+- **今の `position_ha<NN>.csv` は、2026-11-03 の UVSOR の HA_cal(run01〜11)を `peak_search.py` で探したものに、`run_script/psa_position_nm.py` で `n,m` を足したものです。統計が少なく 64 点がきれいな格子として取れていないので、補正後の位置はどの ch でも格子にならず、`pixel` はまだ正しくありません(仕組みを動かすための仮のもの)。** 本番の較正データで作り直す予定です。
 - ボードが 2 つの storage に分かれたラン(`storage_g0` と `storage_g1`)は、`--data-dir` に片方、`PSA_ReadData.extra_data_dirs` にもう片方を書きます。
 
   ```bash

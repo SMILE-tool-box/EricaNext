@@ -49,6 +49,7 @@ ANLStatus PSA_TreeWriter::mod_initialize(){
     tree_->Branch("pix_n",  &pix_n_,  "pix_n/S");
     tree_->Branch("pix_m",  &pix_m_,  "pix_m/S");
     tree_->Branch("pixel",  &pixel_,  "pixel/S");
+    tree_->Branch("hg_corr", &hg_corr_, "hg_corr/D");
     tree_->Branch("energy", &energy_, "energy/D");
   }
   if(save_waveform_)
@@ -92,6 +93,7 @@ ANLStatus PSA_TreeWriter::mod_analyze(){
         pix_m_  = cal_->PixM(i, ch);
         pixel_  = cal_->Pixel(i, ch);
         energy_ = cal_->Energy(i, ch);
+        hg_corr_ = cal_->HGCorr(i, ch);
       }
       if(save_waveform_)
         for(int r=0; r<PSA_Board::N_SAMPLE; r++)

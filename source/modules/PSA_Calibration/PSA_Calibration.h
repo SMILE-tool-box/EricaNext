@@ -27,9 +27,15 @@ using namespace anlnext;
 // outside 8x8: pix_n = pix_m = -1 (same as pixel_id.py).
 // pixel = 64 ch + 8 (n - 1) + (m - 1), 0-383, -1 outside.
 //
+// Temperature: the gain of the MPPC changes with the temperature (about -6 %/degC), so hg is divided by
+// the relative gain at the temperature T of the event (mean of the 6 sensors of the board):
+//   hg_corr = hg / gain(T)
+// gain(T) of every ch: temp_gain_haNN.csv in temp_gain_dir (columns ch,temp,gain; linear between the
+// rows, constant outside them; made by scripts/calib/make_psa_temp_gain.py). Without the file:
+// gain(T) = 1 + temp_coef (T - temp_ref) (temp_coef = 0: hg_corr = hg).
+//
 // Energy (optional, energy_haNN.csv in energy_dir, columns ch,n,m,p0,p1):
-//   hg_t = hg / (1 + temp_coef (T - temp_ref)),  T = mean of the 6 temperatures of the board
-//   energy = p0 + p1 hg_t   [keV]
+//   energy = p0 + p1 hg_corr   [keV]
 // -1 when the board or pixel has no energy calibration or the hit is outside 8x8.
 // x_corr, y_corr are NaN (pixel -1) for a ch without position calibration.
 class PSA_Calibration : public BasicModule {
@@ -52,15 +58,19 @@ class PSA_Calibration : public BasicModule {
   int    PixM(int i, int ch)   const { return pix_m_[i][ch]; }
   int    Pixel(int i, int ch)  const { return pix_n_[i][ch] < 0 ? -1 : 64*ch + 8*(pix_n_[i][ch]-1) + (pix_m_[i][ch]-1); }
   double Energy(int i, int ch) const { return energy_[i][ch]; }
+  double HGCorr(int i, int ch) const { return hg_corr_[i][ch]; }   // hg / gain(T)
+  double Gain(int i, int ch, double temp) const;                   // relative gain at temp
+  bool   HasTempGain(int i)    const { return !temp_gain_[i].empty(); }
   bool   HasPosition(int i, int ch) const { return tps_[i][ch].Ready(); }
   bool   HasEnergy(int i)       const { return has_energy_[i]; }
 
  private:
   bool LoadPosition(int i, const std::string& path);
   bool LoadEnergy(int i, const std::string& path);
+  bool LoadTempGain(int i, const std::string& path);
 
   // parameters
-  std::string position_dir_, energy_dir_;
+  std::string position_dir_, energy_dir_, temp_gain_dir_;
   double temp_coef_, temp_ref_;
   bool   save_maps_;
   double hg_max_;
@@ -73,7 +83,9 @@ class PSA_Calibration : public BasicModule {
   const PSA_CenterGravity* cg_   = nullptr;
   int nb_ = 0;
   std::vector<std::vector<ThinPlateSpline>> tps_;
-  std::vector<std::vector<double>> x_corr_, y_corr_, energy_;
+  std::vector<std::vector<double>> x_corr_, y_corr_, energy_, hg_corr_;
+  // per board, per ch: (temp, gain) sorted by temp; empty = no file
+  std::vector<std::vector<std::vector<std::pair<double, double>>>> temp_gain_;
   std::vector<std::vector<int>> pix_n_, pix_m_;
   std::vector<bool> has_energy_;
   // per board: p0, p1 of pixel 0-383 (NaN = no calibration)
