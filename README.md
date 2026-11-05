@@ -78,7 +78,7 @@ flowchart LR
 | [`smile3_tot_skewness`](config/smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
 | [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
-| [`smile3_reconstruct_psa`](config/smile3_reconstruct_psa.json) | `ReadData → CalcFADC → TPC_Calibration → PSA_* → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
+| [`smile3_reconstruct_psa`](config/smile3_reconstruct_psa.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
 
 ### モジュールのつながり
 
@@ -143,7 +143,7 @@ flowchart TD
 - `Reconstruct` は、チェーンに `PSA_Event` があればそれ(`PSA_SingleHit` のイベント)、無ければ `HA_Calc`(SMILE-2+)を使います。
 - まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
   この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
-  `CalcFADC` が FADC にヒットの無いイベントを飛ばすので、`smile3_reconstruct_psa` の PSA のツリーは TPC にヒットのあるイベントだけです。
+  `CalcFADC` は FADC にヒットの無いイベントを `AS_SKIP` で飛ばし、その後ろのモジュールはそのイベントでは動きません。そのため `smile3_reconstruct_psa` では PSA_* を `CalcFADC` より前に置いています(PSA のツリーには全イベントが入り、`Reconstruct` は TPC にヒットのあるイベントだけ)。
 - `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のまま残しています。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |

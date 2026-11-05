@@ -40,6 +40,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
   - `/usr/bin/python3`: numpy、scipy、h5py、numba、natsort、PyROOT が入っている。`psa_position_nm.py` や `scripts/check/*.py`、`analysis_sm3_FM/PSA_analysis` のスクリプトはこちらで動かす。
 - **push は SSH の URL を直接指定する**。`origin` は https で、このマシンには認証情報が無い。
   `git push git@github.com:SMILE-tool-box/EricaNext.git <ブランチ>`
+- **チェーンの中で `AS_SKIP` を返すと、そのイベントの後ろのモジュールは全部動かない**(ANLNext の仕様)。`CalcFADC` は FADC にヒットの無いイベントで `AS_SKIP` を返すので、TPC と関係なく全イベントで動かしたいモジュール(PSA_* など)は `CalcFADC` より前に置く。
 - `--data-dir` を指定しても `ericanext_config: WARNING: no storage_g*/ in .../mount_data` が出る。`mount_data/` が空なだけなので、気にしなくてよい(以前からの動き)。
 - `build/`、`install/`、`mount_data/`、`root_data/` は `.gitignore` に入っている。
 
@@ -128,7 +129,6 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/run06.root \
    - 値は人(検出器の担当)に聞く。`0_Introduction` の配置図は模式図なので、そのまま使わない。
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
-   - `CalcFADC` が FADC にヒットの無いイベントを飛ばすので、`smile3_reconstruct_psa` では TPC にヒットのあるイベントしか PSA を処理しない(意図どおりか確かめる)。
 4. **`ReadData` が複数のディレクトリを読めるようにする**(`PSA_ReadData.extra_data_dirs` と同じ形)。2 つの storage に分かれたランをシンボリックリンク無しで読めるようにする。
 5. ノートブック `tutorials/` に PSA のチュートリアル(フラッドマップ、ピクセル、スペクトル)を足す。`0_Introduction` の 6 節は、まだ「解析は EricaNext の外」と書いてあるので直す。
 6. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
