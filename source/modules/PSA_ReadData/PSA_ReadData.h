@@ -2,6 +2,7 @@
 #define PSA_ReadData_h 1
 
 #include <anlnext/BasicModule.hh>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -15,8 +16,10 @@ using namespace anlnext;
 class ReadData;
 
 // Reads the SMILE-3 scintillator (PSA) raw data, ha<NN>_<number>.dat of all HA
-// boards found in the run directory (and extra_data_dirs, e.g. the other storage
-// node), and gives one event per trigger:
+// boards found in the run directory and extra_data_dirs (the other storage node;
+// with recursive, also the subdirectories, e.g. part0, part1, ... of a long run;
+// the files of a board may be spread over the directories and are merged by number),
+// and gives one event per trigger:
 //   - without ReadData in the chain (HA_cal etc.), the boards are merged by the
 //     trigger counter: an event is the smallest (epoch, trig) of the boards, and
 //     the boards with that trig are "present". This works when every board sends
@@ -52,16 +55,20 @@ class PSA_ReadData : public BasicModule {
 
  private:
   void ScanDir(const std::string& dir);
+  void CollectFiles();
 
   std::string data_dir_;
   std::vector<std::string> extra_data_dirs_;
   bool sync_tpc_;
   bool save_hit_pattern_;
+  bool recursive_;
 
   std::vector<PSA_Board*> boards_;
   std::vector<int> board_ids_;
   std::vector<bool> present_, consumed_;
   std::vector<std::vector<std::string>> files_;   // per board id 0-99
+  // board -> number -> (path, is .dat.tmp), from all directories
+  std::map<int, std::map<int, std::pair<std::string, bool>>> found_;
   const ReadData* tpc_ = nullptr;
   bool sync_ = false;
   unsigned trig_ = 0;

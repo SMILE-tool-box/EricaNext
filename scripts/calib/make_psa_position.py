@@ -14,11 +14,17 @@ input files, the 64 peaks are found, and pixel numbers (n, m) are given to them 
 (x_hg, y_hg) -> (n, m) by the thin-plate spline through the 64 points; PSA_Event then converts the
 pixel to detector coordinates [mm] with calib/psa/geometry.csv.
 
-The peak finder is the one of peak_search.py (analysis_sm3_FM/PSA_analysis): the 64 highest local maxima
-of the box-smoothed map, at least min_dist bins apart. It has no grid constraint, so with few hits it can
-miss an outer column or take two maxima in one cluster; look at the QA figures (<out>/qa/) before using
-the file, and remove a ch (or a board file) whose peaks are not an 8x8 grid: PSA_Calibration then gives
-no pixel for it.
+Peak finders (--method):
+  grid (default): the 8 columns are the 8 most prominent maxima of the x projection; in every column
+      (between the midpoints to the next columns) the 8 rows are the 8 most prominent maxima of minus the
+      second derivative of the y projection (the outer rows of the central columns are only shoulders of
+      the steep edge); a spot is (column, row), and (n, m) = (column, row) order.
+      Made because localmax takes several maxima in the long central spots and pushes the outer columns
+      out of the 64 (UVSOR 2026-11-03, see the Notion page of the HA_cal analysis).
+  localmax: the one of peak_search.py (analysis_sm3_FM/PSA_analysis): the 64 highest local maxima of the
+      box-smoothed map, at least min_dist bins apart, (n, m) as grid_spect.py.
+Look at the QA figures (<out>/qa/) before using the file, and remove a ch whose peaks are not an 8x8 grid:
+PSA_Calibration then gives no pixel for it.
 
 Output, per board: <out>/position_haNN.csv (comment lines '# ...' with the inputs and cuts, then
 ch,No,x,y,z,n,m; z = counts at the peak) and <out>/qa/position_haNN.png (map + peaks, corrected map).
@@ -83,6 +89,49 @@ def find_peaks(counts, x_edges, y_edges, npeaks=NPEAKS, thr_rel=0.01, smooth=(3,
         if len(peaks) >= npeaks:
             break
     return peaks
+
+
+def peaks_1d(v, centers, npeaks, min_sep, smooth, min_rel=0.0, curvature=False):
+    """positions of the npeaks most prominent maxima of the smoothed 1D histogram v (curvature: of minus its
+    second derivative, so that shoulders count too), at least min_sep apart, sorted by position; None when
+    fewer are found. min_rel: only maxima of the smoothed histogram above this fraction of the highest."""
+    from scipy.ndimage import gaussian_filter1d
+    from scipy.signal import find_peaks as sp_find_peaks
+    v = v.astype(float)
+    s = -gaussian_filter1d(v, max(smooth, 0.5), order=2) if curvature else (gaussian_filter1d(v, smooth) if smooth > 0 else v)
+    step = centers[1] - centers[0]
+    kw = {} if curvature else {"height": min_rel * s.max()}
+    idx, prop = sp_find_peaks(s, distance=max(1, int(round(min_sep / step))), prominence=0, **kw)
+    if len(idx) < npeaks:
+        return None
+    keep = np.sort(idx[np.argsort(prop["prominences"])[::-1][:npeaks]])
+    return centers[keep]
+
+
+def find_grid(x, y, args):
+    """grid method: 8 columns = maxima of the x projection; in every column 8 rows = maxima of minus the second
+    derivative of its y projection (the outer rows are shoulders of the steep edge, not maxima). The spot is
+    (column, row). Returns [(x, y, hits in its cell, n, m)] or (None, reason)."""
+    nb = 400
+    xe = np.linspace(*X_RANGE, nb + 1)
+    xc = 0.5 * (xe[:-1] + xe[1:])
+    cols = peaks_1d(np.histogram(x, bins=xe)[0], xc, N_GRID, args.col_sep, args.grid_smooth, args.min_rel)
+    if cols is None:
+        return None, "fewer than 8 columns in the x projection"
+    xb = np.concatenate([[X_RANGE[0]], 0.5 * (cols[1:] + cols[:-1]), [X_RANGE[1]]])
+    ye = np.linspace(*Y_RANGE, nb + 1)
+    yc = 0.5 * (ye[:-1] + ye[1:])
+    out = []
+    for n in range(N_GRID):
+        inc = (x >= xb[n]) & (x < xb[n + 1])
+        rows = peaks_1d(np.histogram(y[inc], bins=ye)[0], yc, N_GRID, args.row_sep, args.row_smooth, curvature=True)
+        if rows is None:
+            return None, f"fewer than 8 rows in column n={n + 1}"
+        yb = np.concatenate([[Y_RANGE[0]], 0.5 * (rows[1:] + rows[:-1]), [Y_RANGE[1]]])
+        for m in range(N_GRID):
+            near = inc & (y >= yb[m]) & (y < yb[m + 1])
+            out.append((float(cols[n]), float(rows[m]), float(near.sum()), n + 1, m + 1))
+    return out, ""
 
 
 def assign_nm(x, y):
@@ -157,7 +206,17 @@ def main():
     ap.add_argument("--smooth", type=int, nargs=2, default=[3, 3], help="half widths of the box smoothing [bins]")
     ap.add_argument("--thr-rel", type=float, default=0.01, help="local maxima above this fraction of the highest")
     ap.add_argument("--min-dist", type=int, default=3, help="peaks at least this far apart [bins]")
+    ap.add_argument("--method", choices=["grid", "localmax"], default="grid",
+                    help="grid: 8 columns from the x projection, 8 rows per column (default); "
+                         "localmax: the 64 highest local maxima of the map (peak_search.py)")
+    ap.add_argument("--col-sep", type=float, default=0.03, help="grid: columns at least this far apart in x_hg")
+    ap.add_argument("--row-sep", type=float, default=0.006, help="grid: rows at least this far apart in y_hg")
+    ap.add_argument("--min-rel", type=float, default=0.1, help="grid: a column must be at least this fraction of the highest")
+    ap.add_argument("--grid-smooth", type=float, default=1.5, help="grid: Gaussian smoothing of the x projection [bins of 0.0016]")
+    ap.add_argument("--row-smooth", type=float, default=2.5, help="grid: Gaussian sigma of the second derivative of the y projections [bins of 0.0008]")
     ap.add_argument("--min-hits", type=int, default=10000, help="skip a ch with fewer hits")
+    ap.add_argument("--min-frac", type=float, default=0.9,
+                    help="do not write a ch where fewer of its hits than this fall in 8x8 after the correction")
     ap.add_argument("--no-qa", action="store_true", help="do not write the QA figures")
     ap.add_argument("--overwrite", action="store_true", help="overwrite existing position_haNN.csv")
     args = ap.parse_args()
@@ -182,12 +241,21 @@ def main():
                 notes.append(f"ch{c}: {len(x)} hits < --min-hits {args.min_hits}, no peaks")
                 continue
             maps[c] = np.histogram2d(x, y, bins=[x_edges, y_edges])[0]
-            pk = find_peaks(maps[c], x_edges, y_edges, NPEAKS, args.thr_rel, tuple(args.smooth), args.min_dist)
-            if len(pk) != NPEAKS:
-                notes.append(f"ch{c}: {len(pk)} peaks found, expected {NPEAKS}; ch not written")
-                continue
-            px, py = np.array([p[0] for p in pk]), np.array([p[1] for p in pk])
-            n, m = assign_nm(px, py)
+            if args.method == "grid":
+                g, why = find_grid(x, y, args)
+                if g is None:
+                    notes.append(f"ch{c}: {why}; ch not written")
+                    continue
+                pk = [(a[0], a[1], a[2]) for a in g]
+                n, m = np.array([a[3] for a in g]), np.array([a[4] for a in g])
+                px, py = np.array([p[0] for p in pk]), np.array([p[1] for p in pk])
+            else:
+                pk = find_peaks(maps[c], x_edges, y_edges, NPEAKS, args.thr_rel, tuple(args.smooth), args.min_dist)
+                if len(pk) != NPEAKS:
+                    notes.append(f"ch{c}: {len(pk)} peaks found, expected {NPEAKS}; ch not written")
+                    continue
+                px, py = np.array([p[0] for p in pk]), np.array([p[1] for p in pk])
+                n, m = assign_nm(px, py)
             peaks[c] = list(zip(pk, n, m))
             rows += [(c, k + 1, p[0], p[1], p[2], n[k], m[k]) for k, p in enumerate(pk)]
             from scipy.interpolate import RBFInterpolator
@@ -197,6 +265,11 @@ def main():
             inside = np.all((np.floor(cxy + 0.5) >= 1) & (np.floor(cxy + 0.5) <= N_GRID), axis=1)
             frac[c] = float(inside.mean())
             corrected[c] = (cxy[:, 0], cxy[:, 1])
+            if frac[c] < args.min_frac:
+                notes.append(f"ch{c}: {len(x)} hits, only {100 * frac[c]:.1f} % in 8x8 after the correction "
+                             f"(< --min-frac {args.min_frac}); ch not written")
+                rows = [r for r in rows if r[0] != c]
+                continue
             notes.append(f"ch{c}: {len(x)} hits, {100 * frac[c]:.1f} % of them in 8x8 after the correction")
         if not rows:
             print(f"ha{b:02d}: no ch with 64 peaks; nothing written")
@@ -208,8 +281,12 @@ def main():
             for f in args.root:
                 w.write(f"# input: {os.path.abspath(f)}\n")
             w.write(f"# hits: {sel}\n")
-            w.write(f"# map: bins {args.bins[0]} x {args.bins[1]} in x {X_RANGE}, y {Y_RANGE}; smooth {args.smooth}, "
-                    f"thr_rel {args.thr_rel}, min_dist {args.min_dist}\n")
+            if args.method == "grid":
+                w.write(f"# method grid: col_sep {args.col_sep}, row_sep {args.row_sep}, grid_smooth {args.grid_smooth}, "
+                        f"row_smooth {args.row_smooth}, min_rel {args.min_rel}; z = hits in the cell\n")
+            else:
+                w.write(f"# method localmax: bins {args.bins[0]} x {args.bins[1]} in x {X_RANGE}, y {Y_RANGE}; "
+                        f"smooth {args.smooth}, thr_rel {args.thr_rel}, min_dist {args.min_dist}\n")
             for s in notes:
                 w.write(f"# {s}\n")
             w.write("ch,No,x,y,z,n,m\n")

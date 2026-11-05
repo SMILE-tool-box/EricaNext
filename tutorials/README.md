@@ -21,7 +21,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | `4_MakeCalibration/` | 較正ファイルを作る(EricaNext_try のゲインマップ、ドリフト速度と同じ扱い。チェーンはファイルを読むだけ) |
 | ├ [`PSA_Position`](4_MakeCalibration/PSA_Position.ipynb) | フラッドマップの 64 点 → `calib/psa/position_haNN.csv` |
 | ├ [`PSA_TempGain`](4_MakeCalibration/PSA_TempGain.ipynb) | 温度ごとの相対ゲイン → `calib/psa/temp_gain_haNN.csv` |
-| └ [`PSA_Energy`](4_MakeCalibration/PSA_Energy.ipynb) | ピクセルごとの hg_corr → keV → `calib/psa/energy_haNN.csv`(線源のランが要る。まだ無い) |
+| └ [`PSA_Energy`](4_MakeCalibration/PSA_Energy.ipynb) | ピクセルごとの hg_corr → keV(Cs-137 の 662 keV)→ `calib/psa/energy_haNN.csv` |
 
 ## 準備
 
@@ -32,7 +32,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 
    | 使うノートブック | データ | 場所(環境変数で変えられる) |
    | --- | --- | --- |
-   | PSA のモジュール、4_MakeCalibration | 2026-11-03 の UVSOR の HA_cal(`20261103_run01`〜) | `/mnt/d/UVSOR2026_late`(`SMILE3_PSA_CAL_DATA`)。解析用の計算機の D ドライブ |
+   | PSA のモジュール、4_MakeCalibration | 2026-11-03 の UVSOR の HA_cal(Cs-137 の `20261103_run01`〜`11`、Co の `run12`) | `/mnt/d/UVSOR2026_late`(`SMILE3_PSA_CAL_DATA`)。解析用の計算機の D ドライブ |
    | 10_PSA_Event | 2026-11-02 の ETCC(`20261102_run04`、TPC + PSA) | `/mnt/nas_eureka/SMILE-3FM_data`(`SMILE3_FM_DATA`)。研究室の NAS |
 
 チェーンの出力は `tutorials/cache/` に置き(git には入れない)、ノートブックの間で共有します。

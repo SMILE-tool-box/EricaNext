@@ -1,0 +1,55 @@
+# made by scripts/calib/make_psa_temp_gain.py, 2026-11-05T18:00:03
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run01.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run02.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run03.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run04.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run05.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run06.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run07.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run08.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run09.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run10.root
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/tutorials/cache/psa_20261103_run11.root
+# hits: !satu_h && !satu_l, peak_id 27-28; T = temp_mean, bins of 1 degC with >= 5000 hits
+# photopeak of hg above 15000 (250 bins up to 100000)
+# ch0: 5 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 1.000-1.431
+# ch1: 5 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 0.987-1.471
+# ch2: 6 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 1.000-1.463
+# ch3: 6 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 0.985-1.504
+# ch4: 6 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 0.969-1.443
+# ch5: 6 bins 41.5-46.5 degC, gain = 1 at 45.5 degC, gain 1.000-1.348
+ch,temp,gain,photopeak,hits
+0,41.5,1.43114,47800,16564
+0,42.5,1.2994,43400,10916
+0,44.5,1.09581,36600,30517
+0,45.5,1,33400,67040
+0,46.5,1.01198,33800,9263
+1,41.5,1.47134,46200,17726
+1,42.5,1.35669,42600,11754
+1,44.5,1.12739,35400,31559
+1,45.5,1,31400,67393
+1,46.5,0.987261,31000,9537
+2,41.5,1.46259,43000,19802
+2,42.5,1.32653,39000,12981
+2,43.5,1.31293,38600,5455
+2,44.5,1.12245,33000,34700
+2,45.5,1,29400,74808
+2,46.5,1,29400,10367
+3,41.5,1.50382,39400,21733
+3,42.5,1.38168,36200,13991
+3,43.5,1.35115,35400,5873
+3,44.5,1.12214,29400,34440
+3,45.5,1,26200,73742
+3,46.5,0.984733,25800,10196
+4,41.5,1.44275,37800,26279
+4,42.5,1.33588,35000,16464
+4,43.5,1.32061,34600,7026
+4,44.5,1.10687,29000,42667
+4,45.5,1,26200,91751
+4,46.5,0.969466,25400,12886
+5,41.5,1.34783,31000,26400
+5,42.5,1.22609,28200,16706
+5,43.5,1.24348,28600,6860
+5,44.5,1.03478,23800,39519
+5,45.5,1,23000,67505
+5,46.5,1,23000,8587

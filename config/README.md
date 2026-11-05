@@ -105,8 +105,12 @@ python3 run_chain.py smile3_psa -o src_run01.root --data-dir <線源のラン> .
 
 - スクリプトは `/usr/bin/python3`(numpy、scipy、PyROOT のある Python)で動かします。
 - どのスクリプトも、既にあるファイルは `--overwrite` を付けないと上書きしません。`<out>/qa/` に確認の図を書くので、使う前に見てください。
-- 位置のピークの探し方は、今は `peak_search.py` と同じです(同じヒストグラムで同じ 64 点になることを確かめた)。格子の制約が無いので、統計が少ないと外側の列を取り逃したり、1 つの山で 2 点取ったりします。その ch は図で見て、ファイルから外してください(外した ch はピクセルを求めない)。
-- **今の `position_ha<NN>.csv` は、2026-11-03 の UVSOR の HA_cal(run01〜11)を `peak_search.py` で探したものに、`run_script/psa_position_nm.py` で `n,m` を足したものです。統計が少なく 64 点がきれいな格子として取れていないので、補正後の位置はどの ch でも格子にならず、`pixel` はまだ正しくありません(仕組みを動かすための仮のもの)。** 本番の較正データで作り直す予定です。
+- 位置のピークの探し方は 2 つあります。既定の `--method grid` は、x の射影で 8 列、列ごとに y の射影(の 2 階微分)で 8 行を探します。
+  `--method localmax` は `peak_search.py` と同じ(同じヒストグラムで同じ 64 点になることを確かめた)ですが、縦に長い中央のスポットから何個もピークを拾い、端の列を取り逃します。
+  補正後に 8 × 8 に入るヒットが `--min-frac`(既定 0.9)未満の ch は書きません(その ch はピクセルを求めない)。
+- **今のファイル**: `position_haNN.csv` は 2026-11-03 の UVSOR の Co のラン run12 から `grid` で作ったもの(ha04 だけは run12 に無いので、前の peak_search の仮のもの)。
+  `temp_gain_haNN.csv` と `energy_haNN.csv`(662 keV の 1 本、`p0 = 0`)は同じ日の Cs-137 のラン run01〜11 から作ったもの(ha04 は無い)。ランの記録は Notion(「SMILE-3 FM UVSOR 試験(2026-11-03)データ確認と HA_cal の解析」)。
+- 長いランで `.dat` が `part0`, `part1`, … のサブディレクトリに分かれているときは、`--set PSA_ReadData.recursive=true` を付けます。
 - ボードが 2 つの storage に分かれたラン(`storage_g0` と `storage_g1`)は、`--data-dir` に片方、`PSA_ReadData.extra_data_dirs` にもう片方を書きます。
 
   ```bash

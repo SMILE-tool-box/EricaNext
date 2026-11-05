@@ -49,7 +49,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 | データ | 場所 |
 | --- | --- |
 | SMILE-3 FM の生データ(NAS) | `/mnt/nas_eureka/SMILE-3FM_data/<日付>/<storage>/<日付>_runNN/`。`calltt` = storage_g0(アノード `tpc_enc_a*`、ha06〜ha16)、`killua` = storage_g1(カソード `tpc_enc_c*`、ha00〜ha05)。モードは `run_meta.json` の `mode`(TPC_cal、HA_cal、ETCC) |
-| PSA の較正データ(UVSOR、2026-11-03〜04) | `/mnt/d/UVSOR2026_late/{calltt,killua}/20261103_runNN`(HA_cal、run01〜12。このマシンの D ドライブだけ)。位置の較正とチュートリアルに使う。環境変数 `SMILE3_PSA_CAL_DATA` |
+| PSA の較正データ(UVSOR、2026-11-03) | `/mnt/d/UVSOR2026_late/{calltt,killua}/20261103_runNN`(このマシンの D ドライブだけ。環境変数 `SMILE3_PSA_CAL_DATA`)。run01〜11 は Cs-137 の HA_cal(39〜49 °C、1 ランは約 2 分、多くは storage の OOM で途中で止まり .dat.tmp が残る)、run12 は Co の HA_cal(4 時間、47〜49 °C、ha04 なし)。run12 は `part0`〜`part4` のサブディレクトリに分かれ、killua の part0 と part2 には同じファイルのコピーが重なっている(13172 組、大きさは全部同じ) → `PSA_ReadData.recursive: true` で読む(重なりは警告して 1 つだけ使う)。ランの記録は Notion の「SMILE-3 FM UVSOR 試験(2026-11-03)データ確認と HA_cal の解析」と「UVSOR 試験 run12(Co)の HA_cal の解析」 |
 | PSA の小さいテストラン | `~/analysis_sm3_FM/PSA_analysis/data/cal_psa/run_kyoto/20261029_run06`(ha03 だけ、4 ファイル、約 1.5 万ヒット) |
 | PSA の Python 解析(参照の実装) | `~/analysis_sm3_FM/PSA_analysis/src_onoda`(`psa_decode.py`、`peak_search.py`、`grid_spect.py`、`pixel_id.py`)。リポジトリは haru2510/QL |
 
@@ -72,7 +72,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 
 | モジュール | すること |
 | --- | --- |
-| `PSA_ReadData` | `ha<NN>_<番号>.dat` を全ボード読む。`ReadData` があればそのトリガーカウンタに合わせて読み(`sync_tpc`)、無ければボード同士をトリガーカウンタでそろえる。中身の読み取りは `PSA_Board` |
+| `PSA_ReadData` | `ha<NN>_<番号>.dat` を全ボード読む(複数のディレクトリに散らばったボードのファイルは番号でまとめる。`recursive` でサブディレクトリも)。`ReadData` があればそのトリガーカウンタに合わせて読み(`sync_tpc`)、無ければボード同士をトリガーカウンタでそろえる。中身の読み取りは `PSA_Board` |
 | `PSA_CalcFADC` | ペデスタル(最初の 23 サンプル)、ピーク(LG の和の最大)、台形積分(前 4〜後 9)、`hg`・`lg`、温度 |
 | `PSA_CenterGravity` | 4 隅の重心 `x_hg`, `y_hg`, `x_lg`, `y_lg` |
 | `PSA_Calibration` | 64 点の薄板スプラインで位置を直してピクセル (n, m)、温度ゲインの表で `hg_corr = hg / gain(T)`、`energy = p0 + p1 × hg_corr` |
@@ -115,20 +115,20 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | ファイル | 作るスクリプト | 状態 |
 | --- | --- | --- |
 | `psa_param.csv` | (`PSA_analysis/param/psa_param_20261029.csv` のコピー) | あり。ha09、ha10、ha12、ha13、ha15 の温度センサーの較正は仮の値(`CAL_NOTE` 列) |
-| `position_haNN.csv` | `make_psa_position.py`(ピークの探し方は `peak_search.py` と同じ。同じヒストグラムで 64 点が一致することを確かめた) | 14 ボード分あるが、`peak_runs_run01-11`(peak_search の結果)に `psa_position_nm.py` で n, m を足した**仮のもの**。統計が少なく 64 点がきれいな格子として取れていない(1 つの山で 2 点、外側の列の取り逃し)ので、補正後の位置はどの ch でも格子にならず、`pixel` はまだ正しくない(8 × 8 に入るのは条件で選んだヒットの 40〜90%、どのボードも ch4 が一番低い)。本番の較正データで作り直す |
-| `temp_gain_haNN.csv` | `make_psa_temp_gain.py`(光電ピークの探し方とトリガー時刻の範囲は `temp_spectra.py` と同じ) | **無い**。今は `hg_corr = hg` |
-| `energy_haNN.csv` | `make_psa_energy.py`(`--line E` か `E:lo:hi`) | **無い**(線源のランが無い)。今は `energy = -1` |
+| `position_haNN.csv` | `make_psa_position.py --method grid`(既定。x の射影で 8 列、列ごとに y の射影の 2 階微分で 8 行。`--method localmax` は `peak_search.py` と同じで、同じヒストグラムで 64 点が一致することを確かめた) | run12(Co、トリガー時刻 peak_id 26〜29、hg ≥ 3 万、飽和なし)から作った 13 ボード(ha04 以外)。補正後に 8 × 8 に入る割合は 92〜99%。ha01 の ch4 はフラッドマップがにじんでいて 83.6% なので書いていない(`--min-frac 0.9`)。ha04 は run12 に無いので、前の仮のもの(peak_search の結果)のまま |
+| `temp_gain_haNN.csv` | `make_psa_temp_gain.py`(光電ピークの探し方とトリガー時刻の範囲は `temp_spectra.py` と同じ) | Cs の run01〜11 から作った 13 ボード(ha04 は Cs のランにほぼ無いので無い)。1 °C ごと。基準の温度(gain = 1)はボードごとにヒットの一番多い区間 |
+| `energy_haNN.csv` | `make_psa_energy.py`(`--line E` か `E:lo:hi`) | Cs の run01〜11 を位置と温度ゲインを置いた状態で流し直したもの(`tutorials/cache/psa_cal_*.root`)から、662 keV の光電ピーク 1 本で作った 13 ボード(`p0 = 0`。直線性はまだ確かめていない)。ha04 は Cs のデータが run01 だけで信用できないので置いていない。ha01 の ch4 はピクセルが無いので無い |
 | `geometry.csv` | 手で書く(形式は `geometry_template.csv`) | **無い**。今は `PSA_Event` がヒットを使わない |
 
 - 作る順番: 位置、温度ゲイン → (それを置いて線源のランを流す) → エネルギー。エネルギーは `hg_corr` とピクセルを使う。
 - `<out>/qa/` に確認の図が出る(git には入れない)。使う前に必ず見る。
-- 位置の 64 点には格子の制約が無い。統計が足りないと崩れるので、ch ごとに図で確かめ、悪い ch はファイルから行を消す(その ch はピクセルを求めない)。
+- `--method localmax`(peak_search.py と同じ)は、縦に長い中央のスポットから何個もピークを拾って端の列を押し出す(統計を増やしても直らない)。`grid` はそのために作った。中央の列の上下の行は山ではなく列の端の斜面の肩なので、極大ではなく 2 階微分で探している。
+- ch ごとに図で確かめ、悪い ch はファイルから行を消す(その ch はピクセルを求めない)。
+- 温度ゲインは、39.5〜41.5 °C ではほぼ一定で、42.5 °C で約 15% 下がる(ha02)。HV(設定値もフレームの DAC 値も 15853)と Vth は run01〜11 で同じ。温度依存性は過去にも報告されている。
 
 ## 6. 残りの仕事(上ほど優先)
 
-1. **本番の較正データで較正ファイルを作る**(位置・温度ゲイン・エネルギー。スクリプトとノートブックはある)
-   - 位置は統計の足りるだけの HA_cal のランを全部入れる。統計が足りても格子が崩れる ch があれば、ピークの探し方に格子の制約を入れる(`make_psa_position.py`)。
-   - どのランが何の線源か(エネルギー)は人に確かめる。
+1. **エネルギーの直線性**: 今のエネルギーの較正は Cs の 662 keV 1 本(`p0 = 0`)。Co(run12)の約 5 万の山が光電ピークかコンプトン端か(Notion で未確認)が分かれば、2 本目の線として `--line E:lo:hi` で使える。ha04 の較正(位置・温度ゲイン・エネルギー)は、ha04 のデータのある較正ランが要る。
 2. **ジオメトリ**(`geometry.csv`)
    - 必要な値: ボードの位置(底面 HA0〜5、側面 N/W/S/E の HA6〜17)、モジュールの中の ch(TL〜BR)の位置、ピクセルの間隔、n, m の向き。
    - 値は人(検出器の担当)に聞く。`0_Introduction` の配置図は模式図なので、そのまま使わない。
@@ -147,3 +147,5 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `0ca45c8` | PSA_ReadData〜PSA_TreeWriter、`smile3_psa.json`、`calib/psa/`(psa_param、position) |
 | `c85494a` | PSA_Event、Reconstruct が PSA を使う、`smile3_reconstruct_psa.json`、`geometry_template.csv`、`scripts/check/compare_psa_python.py`、この AGENTS.md |
 | `daede13` | `smile3_reconstruct_psa` で PSA_* を CalcFADC より前に(CalcFADC の AS_SKIP で PSA が止まらないように) |
+| `c132646` | 温度ゲインの表と hg_corr、`scripts/calib/`(位置・温度ゲイン・エネルギー)、PSA のモジュールのチュートリアル |
+| (この次) | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
