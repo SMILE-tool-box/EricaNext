@@ -41,7 +41,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
   - `/usr/bin/python3`: numpy、scipy、h5py、numba、natsort、PyROOT が入っている。`psa_position_nm.py` や `scripts/check/*.py`、`analysis_sm3_FM/PSA_analysis` のスクリプトはこちらで動かす。
 - **push は SSH の URL を直接指定する**。`origin` は https で、このマシンには認証情報が無い。
   `git push git@github.com:SMILE-tool-box/EricaNext.git <ブランチ>`
-- **チェーンの中で `AS_SKIP` を返すと、そのイベントの後ろのモジュールは全部動かない**(ANLNext の仕様)。TPC の `CalcFADC` は 2026-11-06 まで「アノード 1 ch・カソードあり」以外のイベントを `FADC_NoHit` で `AS_SKIP` していた(6 月の TPC_cal で 62%、うち 29% はアノード 2 ch 以上の普通のイベント)。SMILE_tool_box(`~/SMILE_tool_box_v2.20/Erica/CalcFADC`)と EricaNext_try に合わせて、今は飛ばさずに印(`FADC_NoHit`、`FADC_1Hit`)を付けるだけ。`TPC_Calibration` は `TPC_Ee_Valid`(エネルギー ≠ 0)を立て、`Reconstruct` はそれを見る。SMILE_tool_box の TPC_Calibration にある「同時計数が 100 個を超えるパネルだけ足す」条件は、SMILE-3 版にはまだ無い。
+- **チェーンの中で `AS_SKIP` を返すと、そのイベントの後ろのモジュールは全部動かない**(ANLNext の仕様)。TPC の `CalcFADC` は 2026-11-06 まで「アノード 1 ch・カソードあり」以外のイベントを `FADC_NoHit` で `AS_SKIP` していた(6 月の TPC_cal で 62%、うち 29% はアノード 2 ch 以上の普通のイベント)。SMILE_tool_box(`~/SMILE_tool_box_v2.20/Erica/CalcFADC`)と EricaNext_try に合わせて、今は飛ばさない。2026-11-06 からは、CalcFADC は電荷を計算するだけで、図も印も作らない(ベースライン・電荷の分布と 1-hit スペクトルは、生データのツリーから `scripts/calib/make_tpc_spec1hit.py` で後段で作る。前の CalcFADC の図 808 個とビンまで一致を確認)。`TPC_Calibration` は `TPC_Ee_Valid`(エネルギー ≠ 0)を立て、`Reconstruct` はそれを見る。SMILE_tool_box の TPC_Calibration にある「同時計数が 100 個を超えるパネルだけ足す」条件は、SMILE-3 版にはまだ無い。
 - `--data-dir` を指定しても `ericanext_config: WARNING: no storage_g*/ in .../mount_data` が出る。`mount_data/` が空なだけなので、気にしなくてよい(以前からの動き)。
 - `build/`、`install/`、`mount_data/`、`root_data/` は `.gitignore` に入っている。
 
@@ -116,7 +116,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | ファイル | 作るスクリプト | 状態 |
 | --- | --- | --- |
 | `psa_param.csv` | (`PSA_analysis/param/psa_param_20261029.csv` のコピー) | あり。ha09、ha10、ha12、ha13、ha15 の温度センサーの較正は仮の値(`CAL_NOTE` 列) |
-| `position_haNN.csv` | `make_psa_position.py --method grid`(既定。x の射影で 8 列、列ごとに y の射影の 2 階微分で 8 行。`--method localmax` は `peak_search.py` と同じで、同じヒストグラムで 64 点が一致することを確かめた) | run12(Co、トリガー時刻 peak_id 26〜29、hg ≥ 3 万、飽和なし)から作った 13 ボード(ha04 以外)。補正後に 8 × 8 に入る割合は 92〜99%。ha01 の ch4 はフラッドマップがにじんでいて 83.6% なので書いていない(`--min-frac 0.9`)。ha04 は run12 に無いので、前の仮のもの(peak_search の結果)のまま |
+| `position_haNN.csv` | `make_psa_position.py --method grid`(既定。x の射影で 8 列、列ごとに y の射影の 2 階微分で 8 行。`--method localmax` は `peak_search.py` と同じで、同じヒストグラムで 64 点が一致することを確かめた) | run12(Co、トリガー時刻 peak_id 26〜29、hg ≥ 3 万、飽和なし)から作った 13 ボード(ha04 以外)。補正後に 8 × 8 に入る割合は 92〜99%。ha01 の ch4 はバタフライマップがにじんでいて 83.6% なので書いていない(`--min-frac 0.9`)。ha04 は run12 に無いので、前の仮のもの(peak_search の結果)のまま |
 | `temp_gain_haNN.csv` | `make_psa_temp_gain.py`(光電ピークの探し方とトリガー時刻の範囲は `temp_spectra.py` と同じ) | Cs の run01〜11 から作った 13 ボード(ha04 は Cs のランにほぼ無いので無い)。1 °C ごと。基準の温度(gain = 1)はボードごとにヒットの一番多い区間 |
 | `energy_haNN.csv` | `make_psa_energy.py`(`--line E` か `E:lo:hi`) | Cs の run01〜11 を位置と温度ゲインを置いた状態で流し直したもの(`tutorials/cache/psa_cal_*.root`)から、662 keV の光電ピーク 1 本で作った 13 ボード(`p0 = 0`。直線性はまだ確かめていない)。ha04 は Cs のデータが run01 だけで信用できないので置いていない。ha01 の ch4 はピクセルが無いので無い |
 | `geometry.csv` | 手で書く(形式は `geometry_template.csv`) | **無い**。今は `PSA_Event` がヒットを使わない |
@@ -166,3 +166,4 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `c9a8343` | TPC のモジュールのチュートリアル(1_ReadData、7_CalcFADC、8_TPC_Calibration、9_TOT_Skewness、11_Reconstruct、12_RawTreeWriter_sm3) |
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
 | `e1c2070` | EricaNext_try の SMILE-2+ のモジュールを `*_2p` で取り込み、`smile2p_*.json`、古い HA_Calc / HA_CenterGravity を削除、`run_chain.py --raw --compression` |
+| `5343695` | 設定ファイルの名前(`smile3_tpc_only` = TPC だけ TOT_Skewness まで、`smile3_reconstruct`)、PSA_Calibration の `temp_coef`・`temp_ref` を削除、`calib/tpc/`、test2/test3/run_all を削除 |

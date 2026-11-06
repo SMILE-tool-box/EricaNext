@@ -39,12 +39,6 @@ class CalcFADC : public BasicModule {
  private:
   double           *Q_anode, *Q_cathode;
   double            base_window, threshold;
-  TH2D             *BaseAnode, *BaseCathode;
-  TH2D             *ChargeAnode, *ChargeCathode;
-  TH1D            **Spec1Hit_A, **Spec1Hit_C;
-  TH1D            **Spec1Hit_boardA, **Spec1Hit_boardC;
-  bool              Save_TH_plots;
-  bool              Save_board_plots;
   
   const ReadData*          RawData = nullptr;
 };

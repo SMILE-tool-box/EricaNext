@@ -1,7 +1,7 @@
 {
   "_comment": [
     "SMILE-3 ETCC: ReadData -> PSA_* (scintillator) -> CalcFADC -> TPC_Calibration -> PSA_Event -> Reconstruct.",
-    "PSA_* come before CalcFADC (any module that returns AS_SKIP stops the later ones for that event; CalcFADC and TPC_Calibration do not skip since 2026-11-06, they set the evs FADC_NoHit, FADC_1Hit, TPC_Ee_Valid). Reconstruct writes events with PSA_SingleHit and TPC_Ee_Valid.",
+    "PSA_* come before CalcFADC (any module that returns AS_SKIP stops the later ones for that event; CalcFADC and TPC_Calibration do not skip; TPC_Calibration sets the evs TPC_Ee_Valid). Reconstruct writes events with PSA_SingleHit and TPC_Ee_Valid.",
     "PSA_ReadData follows the events of ReadData (sync_tpc). --data-dir changes ReadData.data_dir and PSA_ReadData.data_dir.",
     "ReadData reads one directory: put the files of both storages (tpc_enc_a*, tpc_enc_c*, ha*.dat) in one directory (symbolic links) when the run is split.",
     "Needs calib/psa/energy_haNN.csv and calib/psa/geometry.csv (not made yet); without them PSA_Event has no hits and single_hit is empty.",
@@ -39,17 +39,13 @@
     "CalcFADC": {
       "base_window": 30.0,
       "threshold": 20.0,
-      "save_TH_plots": false,
-      "save_board_plots": false,
       "_units": {
         "base_window": "samples (20 ns each)",
         "threshold": "ADU (above the baseline)"
       },
       "_doc": {
         "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
-        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]",
-        "save_TH_plots": "true: ch ごとのベースライン・電荷の図と、アノード ch × カソード ch ごとの 1-hit スペクトルを保存する",
-        "save_board_plots": "true: アノードボード × カソードボードごとの 1-hit スペクトルを保存する"
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]"
       }
     },
     "TPC_Calibration": {

@@ -5,7 +5,7 @@
 
 | ファイル | チェーン |
 | --- | --- |
-| [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで。1-hit スペクトルの図は `--set CalcFADC.save_TH_plots=true`) |
+| [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
 | [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
@@ -86,7 +86,7 @@ EricaNext_try のゲインマップやドリフト速度と同じく、**較正�
 | ファイル | 中身 | 作り方 | 無いとき |
 | --- | --- | --- | --- |
 | `psa_param.csv` | 全ボードの表。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | `analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー(`HA` 列のある版) | psa_decode.py の既定値(a = 3.9258, b = 1230.30) |
-| `position_ha<NN>.csv` | ch ごとにフラッドマップの 64 点(`x,y`)とピクセル番号(`n,m`)。(x_hg, y_hg) → (n, m) の薄板スプラインはこれで決まる | `scripts/calib/make_psa_position.py` | ピクセルを求めない(`pixel = -1`) |
+| `position_ha<NN>.csv` | ch ごとにバタフライマップの 64 点(`x,y`)とピクセル番号(`n,m`)。(x_hg, y_hg) → (n, m) の薄板スプラインはこれで決まる | `scripts/calib/make_psa_position.py` | ピクセルを求めない(`pixel = -1`) |
 | `temp_gain_ha<NN>.csv` | ch ごとの温度と相対ゲインの表(`ch,temp,gain`)。`hg_corr = hg / gain(T)` | `scripts/calib/make_psa_temp_gain.py` | 直さない(`hg_corr = hg`、警告を出す) |
 | `energy_ha<NN>.csv` | ピクセルごとの `p0,p1`(`ch,n,m,p0,p1`)。`energy = p0 + p1 × hg_corr` [keV] | `scripts/calib/make_psa_energy.py`(線源のラン) | `energy = -1` |
 | `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明 | 検出器の配置から手で書く(ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
@@ -99,13 +99,21 @@ EricaNext_try のゲインマップやドリフト速度と同じく、**較正�
 cd run_script
 # 0. 較正のランをチェーンに通す(位置・温度ゲインは HA_cal のランを何本でも。ヒットが多いほどよい)
 python3 run_chain.py smile3_psa -o cal_run01.root --data-dir <ラン> --set 'PSA_ReadData.extra_data_dirs=["<もう片方の storage>"]'
-# 1. 位置(フラッドマップの 64 点)。ch あたり --min-hits(既定 1 万)ヒット未満の ch は作らない
+# 1. 位置(バタフライマップの 64 点)。ch あたり --min-hits(既定 1 万)ヒット未満の ch は作らない
 /usr/bin/python3 ../scripts/calib/make_psa_position.py cal_run*.root -o ../calib/psa
 # 2. 温度ゲイン(温度の違うランを合わせて入れる)
 /usr/bin/python3 ../scripts/calib/make_psa_temp_gain.py cal_run*.root -o ../calib/psa
 # 3. 線源のランを、1 と 2 を置いた状態でチェーンに通してから、エネルギー
 python3 run_chain.py smile3_psa -o src_run01.root --data-dir <線源のラン> ...
 /usr/bin/python3 ../scripts/calib/make_psa_energy.py src_run*.root -o ../calib/psa --line 662
+```
+
+TPC の 1-hit スペクトル(ゲインマップの材料。ゲインマップを作るスクリプトはまだ無い。置き場は [`calib/tpc/`](../calib/tpc/README.md)):
+
+```bash
+cd run_script
+python3 run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal のラン> --compression 505
+/usr/bin/python3 ../scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root   # qa/spec1hit_board.png も書く
 ```
 
 - スクリプトは `/usr/bin/python3`(numpy、scipy、PyROOT のある Python)で動かします。

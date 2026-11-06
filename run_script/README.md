@@ -29,7 +29,7 @@ python3 run_chain.py <設定名> -o <出力ファイル> [-n <イベント数>] 
 | `-o`, `--output` | 出力する ROOT ファイル(必須) |
 | `-n`, `--n-events` | 処理するイベント数。省略すると全イベント(`-1`) |
 | `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)を置き換える |
-| `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0`、`--set CalcFADC.save_board_plots=true` |
+| `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0` |
 
 ### 例
 
@@ -40,8 +40,9 @@ python3 run_chain.py smile3_tpc_only -o out.root
 # 別のランの先頭 1 万イベントだけ試す
 python3 run_chain.py smile3_tpc_only -o test.root -n 10000 --data-dir ../mount_data/storage_g0/run_20260618T010203Z
 
-# ボードごとの 1-hit スペクトルも保存する
-python3 run_chain.py smile3_tpc_only -o board.root --set CalcFADC.save_board_plots=true
+# ボードごとの 1-hit スペクトル: 生データのツリーを書いて、後段の解析で作る
+python3 run_chain.py smile3_raw -o raw.root --data-dir ../mount_data/storage_g0/run_20260618T010203Z --compression 505
+/usr/bin/python3 ../scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root
 
 # 飛跡の点群も保存して描く
 python3 run_chain.py smile3_tpc_only -o tot.root   # 点群(flag_save_cloud)は既定で保存する
@@ -90,7 +91,7 @@ bash run_runs.sh <設定名> <出力ディレクトリ> <ラン>... [-- <run_cha
 bash run_runs.sh smile3_tpc_only ../root_data/board/output20_0618 ../mount_data/storage_g0/run_20260618*
 
 # run_chain.py の引数を足す(-- の後ろ)
-bash run_runs.sh smile3_tpc_only out ../mount_data/storage_g0/run_2026061* -- --set CalcFADC.save_board_plots=true -n 10000
+bash run_runs.sh smile3_tpc_only out ../mount_data/storage_g0/run_2026061* -- --set CalcFADC.threshold=30.0 -n 10000
 ```
 
 出力は `<出力ディレクトリ>/output_<ラン名>.root` です。

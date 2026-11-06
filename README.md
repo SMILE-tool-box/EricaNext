@@ -140,14 +140,14 @@ flowchart TD
 - `Reconstruct` は `PSA_Event`(`PSA_SingleHit` のイベント)を使います。SMILE-2+ の HA(PMT)は `Reconstruct_2p` と `HA_Calc_2p` です。
 - まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
   この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
-  `CalcFADC` と `TPC_Calibration` はイベントを飛ばさず(SMILE_tool_box と同じ)、`FADC_NoHit`・`FADC_1Hit`・`TPC_Ee_Valid` の印を付けるだけです。
+  `CalcFADC` と `TPC_Calibration` はイベントを飛ばしません(SMILE_tool_box と同じ)。`TPC_Calibration` は TPC のエネルギーがあるイベントに `TPC_Ee_Valid` の印を付けます。
   `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
 | `SaveFile` | 出力の ROOT ファイルを開く(`run_chain.py` が先頭に必ずつなぐ) | |
 | `ReadData` | 生データを読み、ボード間でイベント ID をそろえる | `ReadData/`: `Image_A`, `Image_C`(`Image_A_C`)、FADC 波形(`FADC_TH`) |
-| `CalcFADC` | FADC 波形からベースラインを引いて電荷を積分する | `CalcFADC/`: ch ごとの電荷、1-hit スペクトル(`save_TH_plots`, `save_board_plots`) |
+| `CalcFADC` | FADC 波形からベースラインを引いて電荷を積分し、`TPC_Calibration` に渡す | なし(ベースライン・電荷の分布と 1-hit スペクトルは、生データのツリーから `scripts/calib/make_tpc_spec1hit.py` で後段で作る) |
 | `TPC_Calibration` | 電荷とゲインマップから反跳電子のエネルギー | `TPC_Calibration/`: `Spectrum` など |
 | `TOT_Skewness` | 飛跡から散乱点 `Pe`、電子の方向 `Ve`、飛程 `Len` | `TOT_Skewness/tot_skewness`(TTree) |
 | `PSA_ReadData` | PSA の生データ `ha<NN>_<番号>.dat` を全ボード読み、トリガーカウンタでイベントをそろえる(`ReadData` があればそれに合わせる)。別の storage は `extra_data_dirs` | `PSA_ReadData/HitPattern` |

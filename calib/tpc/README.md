@@ -10,4 +10,4 @@ TPC の較正ファイルの置き場です。PSA の `calib/psa/` と同じく�
 | ドリフト速度 | z = `pitch_z_mm_per_clock` × (クロック − `clock_offset`) + 27 mm の 2 つの値 | `TOT_Skewness` | 無い。設定ファイルに SMILE-2+ の値(0.5 mm/clock、90 clock)を書いている |
 
 作り方は、EricaNext_try の `tutorials_caldata/4_MakeCalibration/GainMap.ipynb`、`DriftVelocity.ipynb` と同じ方法にする予定です。
-作るスクリプトは `scripts/calib/` に置きます。
+作るスクリプトは `scripts/calib/` に置きます。最初の手順の 1-hit スペクトルは `scripts/calib/make_tpc_spec1hit.py`(生データのツリー `smile3_raw` から)で作れます。

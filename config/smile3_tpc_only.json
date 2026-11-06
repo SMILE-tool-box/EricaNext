@@ -53,13 +53,9 @@
     "CalcFADC": {
       "base_window": 30.0,
       "threshold": 20.0,
-      "save_TH_plots": false,
-      "save_board_plots": false,
       "_doc": {
         "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
-        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]",
-        "save_TH_plots": "true: ch ごとのベースラインと電荷の図(BaselineAnode/Cathode, ChargeAnode/Cathode)と、アノード ch × カソード ch ごとの 1-hit スペクトル(Anode/Cathode_1Hit_A<a>_C<c>、横軸は ADU の積分値)を保存する",
-        "save_board_plots": "true: アノードボード × カソードボードごとの 1-hit スペクトル(Anode/Cathode_1Hit_board_A<a>_C<c>)を保存する。鳴ったボードがアノード・カソード(同じパネル)とも 1 枚のイベントで、そのボードの 4 ch の和を詰める"
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]"
       },
       "_units": {
         "base_window": "samples (20 ns each)",

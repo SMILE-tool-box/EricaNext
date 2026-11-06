@@ -9,7 +9,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`1_ReadData/`](1_DataIO/modules/1_ReadData/ReadData.ipynb) | TPC の生データの読み込みとボード間のイベント同期 |
 | ├ [`2_PSA_ReadData/`](1_DataIO/modules/2_PSA_ReadData/PSA_ReadData.ipynb) | シンチレータ(PSA)の生データの読み込みとイベントの同期 |
 | ├ [`3_PSA_CalcFADC/`](1_DataIO/modules/3_PSA_CalcFADC/PSA_CalcFADC.ipynb) | 波形の積分(hg, lg)、ピークの時刻、飽和、温度 |
-| ├ [`4_PSA_CenterGravity/`](1_DataIO/modules/4_PSA_CenterGravity/PSA_CenterGravity.ipynb) | 4 隅の信号の重心(フラッドマップ) |
+| ├ [`4_PSA_CenterGravity/`](1_DataIO/modules/4_PSA_CenterGravity/PSA_CenterGravity.ipynb) | 4 隅の信号の重心(バタフライマップ) |
 | ├ [`5_PSA_Calibration/`](1_DataIO/modules/5_PSA_Calibration/PSA_Calibration.ipynb) | 位置の補正とピクセル、温度補正、エネルギー |
 | ├ [`6_PSA_TreeWriter/`](1_DataIO/modules/6_PSA_TreeWriter/PSA_TreeWriter.ipynb) | PSA のヒットの TTree の列と読み方 |
 | ├ [`7_CalcFADC/`](1_DataIO/modules/7_CalcFADC/CalcFADC.ipynb) | TPC の FADC 波形 → 電荷、1-hit スペクトル |
@@ -19,7 +19,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
 | └ [`12_RawTreeWriter_sm3/`](1_DataIO/modules/12_RawTreeWriter_sm3/RawTreeWriter_sm3.ipynb) | 同期した TPC の生データの TTree |
 | `4_MakeCalibration/` | 較正ファイルを作る(EricaNext_try のゲインマップ、ドリフト速度と同じ扱い。チェーンはファイルを読むだけ) |
-| ├ [`PSA_Position`](4_MakeCalibration/PSA_Position.ipynb) | フラッドマップの 64 点 → `calib/psa/position_haNN.csv` |
+| ├ [`PSA_Position`](4_MakeCalibration/PSA_Position.ipynb) | バタフライマップの 64 点 → `calib/psa/position_haNN.csv` |
 | ├ [`PSA_TempGain`](4_MakeCalibration/PSA_TempGain.ipynb) | 温度ごとの相対ゲイン → `calib/psa/temp_gain_haNN.csv` |
 | └ [`PSA_Energy`](4_MakeCalibration/PSA_Energy.ipynb) | ピクセルごとの hg_corr → keV(Cs-137 の 662 keV)→ `calib/psa/energy_haNN.csv` |
 

@@ -8,7 +8,7 @@
     # 2. find the 64 peaks of every board and ch in the sum of them, and write the calibration
     /usr/bin/python3 ../scripts/calib/make_psa_position.py cal_run*.root -o ../calib/psa
 
-For every board and ch, the x_hg-y_hg map (flood map) of the hits that pass the cuts is summed over the
+For every board and ch, the x_hg-y_hg map (butterfly map) of the hits that pass the cuts is summed over the
 input files, the 64 peaks are found, and pixel numbers (n, m) are given to them as grid_spect.py does
 (sorted by x into 8 columns of 8, each column sorted by y). PSA_Calibration reads the file and maps
 (x_hg, y_hg) -> (n, m) by the thin-plate spline through the 64 points; PSA_Event then converts the
