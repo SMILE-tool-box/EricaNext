@@ -136,7 +136,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
 4. **`ReadData` が複数のディレクトリを読めるようにする**(`PSA_ReadData.extra_data_dirs` と同じ形)。2 つの storage に分かれたランをシンボリックリンク無しで読めるようにする。
-5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。`0_Introduction` の 6 節は、まだ「解析は EricaNext の外」と書いてあるので直す。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
+5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
 6b. **TPC 側で分かっていて、まだ直していないこと**
    - `TPC_Calibration` には、SMILE_tool_box の 2 つの条件(同時計数が 100 を超える組 (i, j) だけを使う、各チャンネルの 32 ストリップの両端 4 本ずつを数えない)が無い。**今は入れない**と決めた(2026-11-06)。SMILE-3 のゲインマップを作るときに、要るかどうかをもう一度見る。
    - `Reconstruct` は `Ve` を使った幾何の α、到来方向をまだ計算していない(EricaNext_try にはある)。
