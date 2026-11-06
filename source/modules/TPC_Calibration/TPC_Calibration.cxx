@@ -33,8 +33,11 @@ ANLStatus TPC_Calibration::mod_initialize(){
   max_cathode = RawData->Get_Track_C()->GetXaxis()->GetBinUpEdge(Nbin+1);
   Nbin = RawData->Get_Track_C()->GetYaxis()->GetNbins();
   max_clock = RawData->Get_Track_A()->GetYaxis()->GetBinUpEdge(Nbin+1);
-  Na = Q_TPC->Get_Nadc_A();
-  Nc = Q_TPC->Get_Nadc_C();
+  // FADC channel = 4 board + ch = strip / 32 (0-47), the index of CalcFADC's Get_Qanode/Get_Qcathode, also
+  // when boards are missing (until 2026-11-06 the channel was strip / (1536 / (4 x boards present)), wrong
+  // and out of range when a board was missing, e.g. c01 of run_20260623T072649Z)
+  Na = 4 * 12;
+  Nc = 4 * 12;
   if(Coinci_TH){
     Coinci_A = new TH2C("Coinci_A", "Coincidence_A",
 			max_anode, -0.5, max_anode-0.5,
@@ -66,7 +69,11 @@ ANLStatus TPC_Calibration::mod_initialize(){
       int na, nc;
       cal_dat >> na >> nc;
       if(cal_dat.eof())  break;
-      cal_dat >> cal_a[na*Nc+nc] >> cal_b[na*Nc+nc];
+      double ka, kb;
+      cal_dat >> ka >> kb;
+      if(na < 0 || na >= Na || nc < 0 || nc >= Nc)  continue;
+      cal_a[na*Nc+nc] = ka;
+      cal_b[na*Nc+nc] = kb;
     }
   }
   
@@ -102,12 +109,12 @@ ANLStatus TPC_Calibration::mod_analyze(){
    for(int clk=min_d; clk<=max_d; clk++){
     for(int ai=min_a; ai<=max_a; ai++){
       char hit_a = RawData->Get_Track_A()->GetBinContent(ai+1, clk+1);
-      int a_adc = (ai) / (max_anode/Na);
+      int a_adc = ai / 32;   // FADC channel 4 board + ch
       int div_a = (ai) / 384;
       if(hit_a){
 	for(int cj=min_c; cj<=max_c; cj++){
 	  char hit_c = RawData->Get_Track_C()->GetBinContent(cj+1, clk+1);
-	  int c_adc = (cj) / (max_cathode/Nc);
+	  int c_adc = cj / 32;
     int div_c = (cj) / 384;
 
 	  if(hit_a & hit_c & (div_a == div_c)){
