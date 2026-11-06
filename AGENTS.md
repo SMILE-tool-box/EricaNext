@@ -79,7 +79,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 | `PSA_TreeWriter` | 1 ヒット 1 行の TTree `PSA_TreeWriter/psa` |
 | `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` を出し、`PSA_SingleHit` / `PSA_MultiHit` / `PSA_NoHits` を立てる。`Reconstruct` に渡す |
 
-`Reconstruct` は、チェーンに `PSA_Event` があればそれを使い、無ければ `HA_Calc`(SMILE-2+)を使います。
+`Reconstruct` は `PSA_Event` を使います(SMILE-2+ の HA は `Reconstruct_2p` + `HA_Calc_2p`)。
 `single_hit` には `evt_id`(トリガーカウンタ)のブランチを足しました。
 
 設定ファイル:
@@ -143,7 +143,13 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
    - TOT 補正の係数、skewness のオフセット、`clock_offset`・`pitch_z`(ドリフト速度)は SMILE-2+ の値のまま。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
-7. **SMILE-2+ のデータも同じ EricaNext で扱う**(決定済みの方針): EricaNext_try の SMILE-2+ 用モジュールを、名前に `_2p` を付けて取り込む(ReadData_2p、CalcFADC_2p、TPC_Calibration_2p、HA_CenterGravity_2p、HA_Calc_2p、TOT_Skewness_2p、Reconstruct_2p など)。SMILE-3 のモジュールの名前は変えない。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。モジュールの中の `get_module("ReadData")` なども `_2p` の名前に直す。2+ の設定ファイル(`smile2p_*.json`)で EricaNext_try と同じ結果になるかを確かめる。
+7. **SMILE-2+ のデータも同じ EricaNext で扱う**: 2026-11-06 に取り込んだ(README の「SMILE-2+ のデータ」)。
+   - EricaNext_try の `source/modules/` の 8 つ(ReadData、CalcFADC、TPC_Calibration、TOT_Skewness、HA_CenterGravity、HA_Calc、Reconstruct、RawTreeWriter)を `<名前>_2p/` にコピーし、クラス名・ファイル名・`get_module` の名前・補助クラス(`CP80256`、`TPC_Encoder`、`MDF`)・インクルードガードに `_2p` を付けた。印の名前も `TOT_Skewness_2p` など変わったものがある。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。
+   - SMILE-3 にあった古い `HA_Calc`、`HA_CenterGravity`(前の版の SMILE-2+ 用のコピー。どの SMILE-3 の設定ファイルも使っていなかった)は消した。SMILE-3 の `Reconstruct` は `PSA_Event` だけを使う。
+   - `SaveFile` は 1 つ(EricaNext_try の版。`compression` のパラメータが増えた)。`run_chain.py` に `--raw`、`--compression` を足した。
+   - 設定ファイル `smile2p_20190701_Per02/Per03`、`smile2p_sim_d10_recon`、`tpc_caldata_2017_Ba133` は EricaNext_try のものの名前を直しただけ。置き換え文字 `{data_top}`、`{tpc_caldata}`、`{sim_data}` は `$SMILE2P_DATA`(無ければ NAS)。
+   - 確かめたこと: Per02 の 3000 イベントの `tot_skewness`、`single_hit`、`--raw` の 2000 イベントの `raw`、`run_info` が EricaNext_try と全部一致。SMILE-3 の `smile3_reconstruct_psa`(run04 の例)はツリー 2 つ、ヒストグラム 213 個が前と一致。
+   - まだ: EricaNext_try のチュートリアル(`tutorials_caldata`、`tutorials_simulation`)とシミュレーションの設定(`config/simulation/`、`simulation_source/`)は持ってきていない。EricaNext_try の側を直したら、`_2p` のほうにも同じ直しが要る(二重の管理になる)。
 6. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
 
 ## 7. 経緯(コミット)

@@ -7,6 +7,8 @@
 
 Keys starting with "_" are comments and are dropped by load(); in strings
 "{data_root}" is replaced by data_root() and "{repo}" by the top of this repository.
+SMILE-2+ configurations (smile2p_*.json, tpc_caldata_*.json, modules *_2p from EricaNext_try):
+"{data_top}" is replaced by data_top_2p(), "{tpc_caldata}" by tpc_caldata_2p() and "{sim_data}" by sim_data_2p().
 """
 import json
 import os
@@ -33,6 +35,41 @@ def data_root():
     return root
 
 
+# The SMILE-2+ data of EricaNext_try (on the lab NAS). Layout:
+#   calibration_data/sm2+_cal_rawdata/<date>_<Period>/   raw data (uTPC_*.raw, HA*.raw) and drift_velocity.dat
+#   calibration_data/param/<date>/                        calibration files (Calibration*.dat, MDF, Cal_HA, HAs.pos, ...)
+#   TPC_caldata/<date>/<Period>_TPC/                      TPC-only calibration runs (Ba-133, 2017-12-19/20)
+#   simulation_data/parameters/smile2p_sim_data/          simulation data
+# To use a copy elsewhere, keep the same layout and set $SMILE2P_DATA to the directory that holds calibration_data/ etc.
+DATA_DIR_2P = "/mnt/nas_eureka/onoda/EricaNext_try_data/SMILE2+"
+
+
+def data_root_2p():
+    """Top of the SMILE-2+ data: the directory with calibration_data/, TPC_caldata/ and simulation_data/ inside.
+    $SMILE2P_DATA, else DATA_DIR_2P (the NAS). No other directory is searched."""
+    root = Path(os.environ.get("SMILE2P_DATA", DATA_DIR_2P)).expanduser()
+    if not any((root / d).is_dir() for d in ("calibration_data", "TPC_caldata", "simulation_data")):
+        src = "$SMILE2P_DATA" if "SMILE2P_DATA" in os.environ else "DATA_DIR_2P (the NAS)"
+        print(f"ericanext_config: WARNING: no calibration_data/, TPC_caldata/ or simulation_data/ in {root} (from {src}). "
+              "SMILE2P_DATA must be the directory that holds them (= SMILE2+ on the NAS).", file=sys.stderr)
+    return root
+
+
+def data_top_2p():
+    """{data_top}: directory that holds sm2+_cal_rawdata/ and param/."""
+    return data_root_2p() / "calibration_data"
+
+
+def tpc_caldata_2p():
+    """{tpc_caldata}: directory of the SMILE-2+ TPC-only calibration runs (<date>/<Period>_TPC/)."""
+    return data_root_2p() / "TPC_caldata"
+
+
+def sim_data_2p():
+    """{sim_data}: directory of the SMILE-2+ simulation data."""
+    return data_root_2p() / "simulation_data" / "parameters" / "smile2p_sim_data"
+
+
 def available():
     return sorted(p.stem for p in CONFIG_DIR.glob("*.json"))
 
@@ -57,4 +94,5 @@ def load(name):
         path = CONFIG_DIR / f"{name}.json"
     with open(path) as fp:
         raw = json.load(fp)
-    return _resolve(raw, {"{data_root}": data_root, "{repo}": lambda: REPO_DIR})
+    return _resolve(raw, {"{data_root}": data_root, "{repo}": lambda: REPO_DIR,
+                          "{data_top}": data_top_2p, "{tpc_caldata}": tpc_caldata_2p, "{sim_data}": sim_data_2p})

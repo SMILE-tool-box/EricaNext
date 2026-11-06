@@ -5,8 +5,6 @@
 // include headers of my modules
 #include "SaveFile.h"
 #include "ReadData.h"
-#include "HA_CenterGravity.h"
-#include "HA_Calc.h"
 #include "CalcFADC.h"
 #include "TPC_Calibration.h"
 #include "TOT_Skewness.h"
@@ -18,6 +16,15 @@
 #include "PSA_Calibration.h"
 #include "PSA_TreeWriter.h"
 #include "PSA_Event.h"
+// SMILE-2+ (from EricaNext_try)
+#include "ReadData_2p.h"
+#include "CalcFADC_2p.h"
+#include "TPC_Calibration_2p.h"
+#include "TOT_Skewness_2p.h"
+#include "HA_CenterGravity_2p.h"
+#include "HA_Calc_2p.h"
+#include "Reconstruct_2p.h"
+#include "RawTreeWriter_2p.h"
 
 %}
 
@@ -28,8 +35,6 @@
 
 class SaveFile         : public anlnext::BasicModule {};
 class ReadData         : public anlnext::BasicModule {};
-class HA_CenterGravity : public anlnext::BasicModule {};
-class HA_Calc          : public anlnext::BasicModule {};
 class CalcFADC         : public anlnext::BasicModule {};
 class TPC_Calibration  : public anlnext::BasicModule {};
 class TOT_Skewness     : public anlnext::BasicModule {};
@@ -41,3 +46,12 @@ class PSA_CenterGravity: public anlnext::BasicModule {};
 class PSA_Calibration  : public anlnext::BasicModule {};
 class PSA_TreeWriter   : public anlnext::BasicModule {};
 class PSA_Event        : public anlnext::BasicModule {};
+// SMILE-2+ (from EricaNext_try)
+class ReadData_2p      : public anlnext::BasicModule {};
+class CalcFADC_2p      : public anlnext::BasicModule {};
+class TPC_Calibration_2p: public anlnext::BasicModule {};
+class TOT_Skewness_2p  : public anlnext::BasicModule {};
+class HA_CenterGravity_2p: public anlnext::BasicModule {};
+class HA_Calc_2p       : public anlnext::BasicModule {};
+class Reconstruct_2p   : public anlnext::BasicModule {};
+class RawTreeWriter_2p : public anlnext::BasicModule {};

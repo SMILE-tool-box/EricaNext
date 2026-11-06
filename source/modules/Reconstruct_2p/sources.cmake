@@ -1,4 +1,4 @@
 set(ANL_MODULES
-  ${CUR_DIR}/HA_CenterGravity.cxx
+  ${CUR_DIR}/Reconstruct_2p.cxx
   ${ANL_MODULES}
 )

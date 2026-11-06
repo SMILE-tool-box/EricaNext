@@ -5,7 +5,7 @@
 using namespace anlnext;
 
 SaveFile::SaveFile() :
-  m_FileName("output.root"), m_RootFile(0)
+  m_FileName("output.root"), m_Compression(-1), m_RootFile(0)
 {
 }
 
@@ -13,12 +13,17 @@ ANLStatus SaveFile::mod_define()
 {
   define_parameter("filename", &mod_class::m_FileName);
   set_parameter_description("Output file name");
+  define_parameter("compression", &mod_class::m_Compression);
+  set_parameter_description("ROOT compression setting, 100*algorithm+level (e.g. 505 = zstd 5); -1 = ROOT default");
   return AS_OK;
 }
 
 ANLStatus SaveFile::mod_initialize()
 {
-  m_RootFile = new TFile(m_FileName.c_str(), "recreate");
+  if (m_Compression >= 0)
+    m_RootFile = new TFile(m_FileName.c_str(), "recreate", "", m_Compression);
+  else
+    m_RootFile = new TFile(m_FileName.c_str(), "recreate");
   if ( !m_RootFile ) {
     std::cout << "SaveFile: cannot create ROOT file" << std::endl;
     return AS_QUIT;

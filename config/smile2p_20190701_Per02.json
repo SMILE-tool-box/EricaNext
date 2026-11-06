@@ -1,0 +1,101 @@
+{
+  "_comment": [
+    "SMILE-2+ 20190701 Per02 ground-calibration run.",
+    "Values follow the SMILE_tool_box_v2.20 reference run",
+    "(sm2+_cal_rootdata/20190701_Per02/setting.mac and HabocStatus.scl).",
+    "{data_top} is replaced by <data>/calibration_data, <data> = $SMILE2P_DATA, else the NAS directory (config/ericanext_config.py DATA_DIR).",
+    "The data are <data_top>/sm2+_cal_rawdata/20190701_Per02 and <data_top>/param/20190528 (layout of the NAS).",
+    "Otherwise edit these paths (absolute paths are fine): ReadData_2p.data_dir, TPC_Calibration_2p.ParameterFile,",
+    "HA_Calc_2p.parameter_dir, HA_Calc_2p.Modified_Parameter_Data_Dir, TOT_Skewness_2p.drift_velocity_file. See README.md."
+  ],
+  "period": "Per02",
+  "reference": {
+    "setting_mac": "/home/onoda/hikaru3_analysis2/sm2+_cal_rootdata/20190701_Per02/setting.mac",
+    "root": "/home/onoda/hikaru3_analysis2/sm2+_cal_rootdata/20190701_Per02/haboc_tmp_0.root"
+  },
+  "chain": [
+    "ReadData_2p",
+    "CalcFADC_2p",
+    "TPC_Calibration_2p",
+    "HA_CenterGravity_2p",
+    "HA_Calc_2p",
+    "TOT_Skewness_2p",
+    "Reconstruct_2p"
+  ],
+  "parameters": {
+    "ReadData_2p": {
+      "data_dir": "{data_top}/sm2+_cal_rawdata/20190701_Per02",
+      "reverse_TPC": true,
+      "_doc": {
+        "data_dir": "生データ(*.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットと FADC のチャンネルの並びを反転して読む(SMILE_tool_box の Reverse_CR)"
+      }
+    },
+    "CalcFADC_2p": {
+      "_setting_mac": "[CalcFADC_2p] Base_min-Base_max = 0-30, Charge_threshold : 20",
+      "base_window": 30.0,
+      "threshold": 20.0,
+      "_units": {
+        "base_window": "samples (20 ns each)",
+        "threshold": "ADU (above the baseline)"
+      },
+      "_doc": {
+        "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]"
+      }
+    },
+    "TPC_Calibration_2p": {
+      "_setting_mac": "[TPC_Calibration_2p] TPC_Cal_Data_Dir, Cal_Modify : 1.4530463",
+      "_note": "haboc reads parameters through a TGNumberEntry (6 significant digits): the value actually used, recorded in HabocStatus.scl, is 1.45305",
+      "ParameterFile": "{data_top}/param/20190528/Calibration20190130.dat",
+      "Cal_Modify": 1.45305,
+      "_units": {
+        "Cal_Modify": "dimensionless (multiplies Ka and Kb)"
+      },
+      "_doc": {
+        "ParameterFile": "TPC のゲインマップ(アノード ch × カソード ch ごとの E = Ka Q + Kb、144 行)",
+        "Cal_Modify": "ゲインマップの Ka, Kb に掛ける係数 [無次元]"
+      }
+    },
+    "HA_CenterGravity_2p": {
+      "_setting_mac": "[HA_Center_Gravity] ADC_Threshold : 10",
+      "threshold": 10,
+      "overflow": 4000,
+      "_units": {
+        "threshold": "ADC ch",
+        "overflow": "ADC ch"
+      },
+      "_doc": {
+        "threshold": "PMT の 4 チャンネルそれぞれの閾値。4 つとも閾値以上のときだけ重心を計算する [ADC ch]",
+        "overflow": "これを超える ADC はオーバーフローとして扱う(重心に使わない)[ADC ch]"
+      }
+    },
+    "HA_Calc_2p": {
+      "_setting_mac": "[HA_Calc_s2] Flag_Modify_PMT_Gain : 1, SingleHit_Eth(keV) : 50, SingleHit_ADCthth(ADC) : 1000",
+      "parameter_dir": "{data_top}/param/20190528",
+      "Flag_Modify_PMT_Gain": true,
+      "Modified_Parameter_Data_Dir": "{data_top}/param/20190528",
+      "SingleHit_Eth": 50.0,
+      "SingleHit_ADCth": 1000.0,
+      "_units": {
+        "SingleHit_Eth": "keV",
+        "SingleHit_ADCth": "ADC ch"
+      },
+      "_doc": {
+        "parameter_dir": "HA のパラメータのディレクトリ(XMDF/YMDF_HA*.dat、Cal_HA*.dat、HAs.pos)",
+        "Flag_Modify_PMT_Gain": "true: Modified_Parameter_Data_Dir の Mean_Sigma_HA*_137Cs_662keV.dat で PMT のゲインを補正する",
+        "Modified_Parameter_Data_Dir": "PMT のゲインの補正のファイルのディレクトリ",
+        "SingleHit_Eth": "1 ヒットとして数える HA のピクセルのエネルギーの下限 [keV]",
+        "SingleHit_ADCth": "重心が無効なピクセルをヒットとして数える ADC の合計の下限 [ADC ch]"
+      }
+    },
+    "TOT_Skewness_2p": {
+      "_note": "[TOT_Skewness_Analysis] Drift_Velocity_file : Per02_ETCC/drift_velocity.dat",
+      "drift_velocity_file": "{data_top}/sm2+_cal_rawdata/20190701_Per02/drift_velocity.dat",
+      "_doc": {
+        "drift_velocity_file": "ドリフト速度のファイル(1 行目 offset [clock]、以降 時間 [hour] と速度 [mm/clock])"
+      }
+    },
+    "Reconstruct_2p": {}
+  }
+}

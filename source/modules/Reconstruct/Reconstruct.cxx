@@ -7,16 +7,15 @@ ANLStatus Reconstruct::mod_define(){
 }
 
 ANLStatus Reconstruct::mod_initialize(){
-  // the scintillator hits: PSA_Event (SMILE-3 PSA) when in the chain, else HA_Calc (SMILE-2+)
+  // the scintillator hits: PSA_Event (SMILE-3 PSA). SMILE-2+ data: Reconstruct_2p
   if(!(exist_module("SaveFile")) ||
-     !(exist_module("HA_Calc") || exist_module("PSA_Event")) ||
+     !(exist_module("PSA_Event")) ||
      !(exist_module("TPC_Calibration"))){
-    std::cerr << "Reconstruct: needs SaveFile, TPC_Calibration and PSA_Event (or HA_Calc)" << std::endl;
+    std::cerr << "Reconstruct: needs SaveFile, TPC_Calibration and PSA_Event" << std::endl;
     return AS_QUIT;
   }
   get_module("ReadData",         &RawData);
-  if(exist_module("PSA_Event"))  get_module("PSA_Event", &PSA_data);
-  else                           get_module("HA_Calc",   &HA2p_data);
+  get_module("PSA_Event",        &PSA_data);
   get_module("TPC_Calibration",  &TPC_FADC);
 
   define_evs("NotConformEnergy");
@@ -27,7 +26,7 @@ ANLStatus Reconstruct::mod_initialize(){
   saveModule->GetDirectory()->mkdir("Reconstruct");
   saveModule->GetDirectory()->cd("Reconstruct");
   
-  tree = new TTree("single_hit", "SM2p SingleHit");
+  tree = new TTree("single_hit", "SMILE-3 SingleHit");
   tree->Branch("evt_id", &evt_id, "evt_id/i");
   tree->Branch("Eg", &Eg, "Eg/D");
   tree->Branch("Ke", &Ke, "Ke/D");
@@ -43,15 +42,15 @@ ANLStatus Reconstruct::mod_initialize(){
 
 ANLStatus Reconstruct::mod_analyze(){
   // the scintillator single hit, and a TPC energy (TPC_Calibration; CalcFADC does not skip events)
-  const bool single = (PSA_data ? evs("PSA_SingleHit") : evs("HA2p_SingleHit")) && evs("TPC_Ee_Valid");
+  const bool single = evs("PSA_SingleHit") && evs("TPC_Ee_Valid");
   if(single){
     evt_id = RawData ? RawData->Get_EventID_coincidence() : 0;
-    Eg    = PSA_data ? PSA_data->DetEng()->at(0) : HA2p_data->DetEng()->at(0);
+    Eg    = PSA_data->DetEng()->at(0);
     Ke    = TPC_FADC->Get_Energy();
     E0    = Eg + Ke;
-    Pg[0] = PSA_data ? PSA_data->Det_X()->at(0) : HA2p_data->Det_X()->at(0);
-    Pg[1] = PSA_data ? PSA_data->Det_Y()->at(0) : HA2p_data->Det_Y()->at(0);
-    Pg[2] = PSA_data ? PSA_data->Det_Z()->at(0) : HA2p_data->Det_Z()->at(0);
+    Pg[0] = PSA_data->Det_X()->at(0);
+    Pg[1] = PSA_data->Det_Y()->at(0);
+    Pg[2] = PSA_data->Det_Z()->at(0);
     phi_kin = 1 - mc2*(1/Eg - 1/E0);
     psi_kin = (1 + mc2/E0) * TMath::Sqrt(Ke/(Ke+2*mc2));
     alpha_kin = (1 - mc2/Eg) * TMath::Sqrt(Ke/(Ke+2*mc2));

@@ -10,6 +10,9 @@
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
 | [`smile3_reconstruct_psa.json`](smile3_reconstruct_psa.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
+| [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p`(EricaNext_try と同じ) |
+| [`smile2p_sim_d10_recon.json`](smile2p_sim_d10_recon.json) | SMILE-2+ のシミュレーションのデータの再構成(同じチェーン) |
+| [`tpc_caldata_2017_Ba133.json`](tpc_caldata_2017_Ba133.json) | SMILE-2+ の TPC だけの Ba-133 の較正のラン: `ReadData_2p → CalcFADC_2p`(ゲインマップを作る) |
 
 スクリプトには、名前(拡張子なし)かファイルのパスを渡します。
 新しい設定は、近いファイルをコピーして書き換えるのが簡単です(このディレクトリの外に置いても構いません)。
@@ -32,6 +35,9 @@
   | --- | --- |
   | `{data_root}` | 生データの一番上(`storage_g0/` などがある所): 環境変数 `SMILE3_DATA`、無ければリポジトリの `mount_data/` |
   | `{repo}` | このリポジトリの一番上 |
+  | `{data_top}` | SMILE-2+: `<SMILE2P_DATA>/calibration_data`(`sm2+_cal_rawdata/`、`param/` がある所)。`SMILE2P_DATA` は環境変数、無ければ研究室の NAS(`ericanext_config.py` の `DATA_DIR_2P`) |
+  | `{tpc_caldata}` | SMILE-2+: `<SMILE2P_DATA>/TPC_caldata` |
+  | `{sim_data}` | SMILE-2+: `<SMILE2P_DATA>/simulation_data/parameters/smile2p_sim_data` |
 
 - 実際に使われる値(置き換え後、コメントを除いたもの)は、次で確かめられます。
 

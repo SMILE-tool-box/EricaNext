@@ -1,0 +1,94 @@
+{
+  "_comment": [
+    "Reconstruction of EricaNext simulated raw data (RawWriter2p, config/simulation/smile2p_flight_parma_thermal_neutron_d10_raw.json)",
+    "with the settings of the SMILE_tool_box reconstruction of the reference simulation",
+    "(hikaru3_analysis2/BGsim/thermal_neutron_g10/reconstruct_skew/d10/v1/HabocStatus.scl).",
+    "Set the raw directory with --set ReadData_2p.data_dir=<raw dir>.",
+    "{sim_data}/emulator_param: MDF for the emulator, Cal_HA*.dat of HAEmulator, HAs.pos, drift velocity of the simulation (README.txt there)."
+  ],
+  "chain": [
+    "ReadData_2p",
+    "CalcFADC_2p",
+    "TPC_Calibration_2p",
+    "HA_CenterGravity_2p",
+    "HA_Calc_2p",
+    "TOT_Skewness_2p",
+    "Reconstruct_2p"
+  ],
+  "parameters": {
+    "ReadData_2p": {
+      "data_dir": "rawdata",
+      "reverse_TPC": true,
+      "_doc": {
+        "data_dir": "生データ(*.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットと FADC のチャンネルの並びを反転して読む(SMILE_tool_box の Reverse_CR)"
+      }
+    },
+    "CalcFADC_2p": {
+      "base_window": 30.0,
+      "threshold": 20.0,
+      "_units": {
+        "base_window": "samples (20 ns each)",
+        "threshold": "ADU (above the baseline)"
+      },
+      "_doc": {
+        "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]"
+      }
+    },
+    "TPC_Calibration_2p": {
+      "_HabocStatus": "TPC_Cal_Data_Dir parameters/20190124/Calibration20190130.dat, Cal_Modify 1.27512",
+      "ParameterFile": "{data_top}/param/20190528/Calibration20190130.dat",
+      "Cal_Modify": 1.27512,
+      "_units": {
+        "Cal_Modify": "dimensionless (multiplies Ka and Kb)"
+      },
+      "_doc": {
+        "ParameterFile": "TPC のゲインマップ(アノード ch × カソード ch ごとの E = Ka Q + Kb、144 行)",
+        "Cal_Modify": "ゲインマップの Ka, Kb に掛ける係数 [無次元]"
+      }
+    },
+    "HA_CenterGravity_2p": {
+      "_HabocStatus": "ADC_Threshold 33",
+      "threshold": 33,
+      "overflow": 4000,
+      "_units": {
+        "threshold": "ADC ch",
+        "overflow": "ADC ch"
+      },
+      "_doc": {
+        "threshold": "PMT の 4 チャンネルそれぞれの閾値。4 つとも閾値以上のときだけ重心を計算する [ADC ch]",
+        "overflow": "これを超える ADC はオーバーフローとして扱う(重心に使わない)[ADC ch]"
+      }
+    },
+    "HA_Calc_2p": {
+      "_HabocStatus": "Emu_Mode 1, Parameter_Data_Dir parameters/emulator, Flag_Modify_PMT_Gain 0, SingleHit_Eth 50, SingleHit_ADCth 1000",
+      "parameter_dir": "{sim_data}/emulator_param",
+      "Flag_Modify_PMT_Gain": false,
+      "Modified_Parameter_Data_Dir": "{sim_data}/emulator_param",
+      "Emu_Mode": true,
+      "SingleHit_Eth": 50.0,
+      "SingleHit_ADCth": 1000.0,
+      "_units": {
+        "SingleHit_Eth": "keV",
+        "SingleHit_ADCth": "ADC ch"
+      },
+      "_doc": {
+        "parameter_dir": "HA のパラメータのディレクトリ(XMDF/YMDF_HA*.dat、Cal_HA*.dat、HAs.pos)",
+        "Flag_Modify_PMT_Gain": "true: Modified_Parameter_Data_Dir の Mean_Sigma_HA*_137Cs_662keV.dat で PMT のゲインを補正する",
+        "Modified_Parameter_Data_Dir": "PMT のゲインの補正のファイルのディレクトリ",
+        "Emu_Mode": "true: シミュレーション(エミュレータ)の raw 用。位置の計算の前に PMT / ピクセルの番号を付け直す",
+        "SingleHit_Eth": "1 ヒットとして数える HA のピクセルのエネルギーの下限 [keV]",
+        "SingleHit_ADCth": "重心が無効なピクセルをヒットとして数える ADC の合計の下限 [ADC ch]"
+      }
+    },
+    "TOT_Skewness_2p": {
+      "_note": "the drift-velocity file of the reference reconstruction (hikaru3_analysis2/par_for_sim_reconstruct): offset 85, 0.38 mm/clock; drift_velocity_sim.dat is the one derived from the simulated hit clocks (offset 93, 0.3770)",
+      "drift_velocity_file": "{sim_data}/emulator_param/drift_velocity.dat",
+      "_doc": {
+        "drift_velocity_file": "ドリフト速度のファイル(1 行目 offset [clock]、以降 時間 [hour] と速度 [mm/clock])"
+      }
+    },
+    "Reconstruct_2p": {}
+  }
+}

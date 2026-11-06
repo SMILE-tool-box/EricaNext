@@ -1,0 +1,70 @@
+{
+  "_comment": [
+    "TPC-only calibration runs with a Ba-133 source (2017-12-19/20), for the TPC gain map",
+    "(tutorials_caldata/4_MakeCalibration/GainMap.ipynb; method of Calamity_v5.0).",
+    "{tpc_caldata} is replaced by <data>/TPC_caldata, <data> = $SMILE2P_DATA, else the NAS directory (config/ericanext_config.py DATA_DIR).",
+    "The runs are <tpc_caldata>/20171219/Per08_TPC etc.",
+    "Each run is processed separately with --set ReadData_2p.data_dir={tpc_caldata}/<run>."
+  ],
+  "source": "Ba133",
+  "peaks_keV": [
+    30.85,
+    8.04
+  ],
+  "runs": [
+        "20171219/Per08_TPC",
+    "20171219/Per09_TPC",
+    "20171219/Per10_TPC",
+    "20171219/Per12_TPC",
+    "20171220/Per01_TPC",
+    "20171220/Per02_TPC",
+    "20171220/Per03_TPC",
+    "20171220/Per04_TPC",
+    "20171220/Per05_TPC",
+    "20171220/Per06_TPC",
+    "20171220/Per07_TPC"
+  ],
+  "chain": [
+    "ReadData_2p",
+    "CalcFADC_2p"
+  ],
+  "parameters": {
+    "ReadData_2p": {
+      "data_dir": "{tpc_caldata}/20171219/Per01_TPC",
+      "reverse_TPC": true,
+      "TPC_Only": true,
+      "_doc": {
+        "data_dir": "生データ(*.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットと FADC のチャンネルの並びを反転して読む(SMILE_tool_box の Reverse_CR)",
+        "TPC_Only": "true: TPC のファイルだけを読む(HA のファイルが無い測定)"
+      }
+    },
+    "CalcFADC_2p": {
+      "base_window": 30.0,
+      "threshold": 20.0,
+      "_units": {
+        "base_window": "samples (20 ns each)",
+        "threshold": "ADU (above the baseline)"
+      },
+      "_doc": {
+        "base_window": "ベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "threshold": "電荷として積分するサンプルの閾値(ベースラインからの高さ)[ADU]"
+      }
+    },
+    "RawTreeWriter_2p": {
+      "_save_threshold": "waveforms whose maximum is <= baseline + 10 ADU are not stored: any charge threshold >= 10 can be used afterwards",
+      "save_threshold": 10.0,
+      "save_ha": false,
+      "save_hits": false,
+      "_units": {
+        "save_threshold": "ADU (waveform maximum above the baseline)"
+      },
+      "_doc": {
+        "save_threshold": "波形の最大値がベースライン + この値以下のチャンネルは波形を保存しない(0: 全部保存)[ADU]",
+        "save_ha": "true: HA の ADC を保存する",
+        "save_hits": "true: TPC のヒット(ストリップ・クロック)とエンコーダーのヒットの記録を保存する"
+      }
+    }
+  },
+  "_runs": "each run irradiates one anode board x one cathode board (empty 0-byte files for the others), except 20171220/Per06 and Per07 (all boards). 20171219/Per01 (all boards) is not used (onoda, 2026-10-16; removed from the data directory)"
+}

@@ -27,6 +27,7 @@ public:
 
 private:
   std::string m_FileName;
+  int m_Compression;
   TFile* m_RootFile;
 };
 

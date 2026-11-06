@@ -1,6 +1,6 @@
-#include "MDF.h"
+#include "MDF_2p.h"
 
-void MDF::SetParameters(const char *fname, int Npmt){
+void MDF_2p::SetParameters(const char *fname, int Npmt){
   N_PMT = Npmt;
   ifstream para_file(fname);
   if(!para_file){
@@ -52,7 +52,61 @@ void MDF::SetParameters(const char *fname, int Npmt){
   }
 }
 
-double MDF::ConvertMDF(int pmt_id, double *rx){
+void MDF_2p::SetParametersFlat(const char *fname, int Npmt){
+  N_PMT = Npmt;
+  ifstream para_file(fname);
+  if(!para_file){
+    cerr << " ERROR : Can't find " << fname << endl;
+    exit(1);
+  }
+
+  gNVariables = new int [N_PMT];
+  gNCoefficients = new int [N_PMT];
+  gDMean = new double [N_PMT];
+  tMean = new double* [N_PMT];
+  tMax = new double* [N_PMT];
+  tMin = new double* [N_PMT];
+  tCof = new double* [N_PMT];
+  tRMS = new double* [N_PMT];
+  tPow = new int* [N_PMT];
+  val = new double* [N_PMT];
+
+  const int FLAT_LEN = 110;
+  for(int pmt_index=0; pmt_index<N_PMT; pmt_index++){
+    double v[FLAT_LEN];
+    for(int i=0; i<FLAT_LEN; i++)  para_file >> v[i];
+
+    int npar  = (int)v[0];
+    int nterm = (int)v[1];
+    gNVariables[pmt_index] = npar;
+    gNCoefficients[pmt_index] = nterm;
+    gDMean[pmt_index] = v[2];
+
+    val[pmt_index]  = new double [npar];
+    tMean[pmt_index] = new double [npar];
+    tMin[pmt_index]  = new double [npar];
+    tMax[pmt_index]  = new double [npar];
+    for(int j=0; j<npar; j++){
+      tMean[pmt_index][j] = v[3+j];
+      tMin[pmt_index][j]  = v[5+j];
+      tMax[pmt_index][j]  = v[7+j];
+    }
+
+    tCof[pmt_index] = new double [nterm];
+    tRMS[pmt_index] = new double [nterm];
+    for(int i=0; i<nterm; i++){
+      tCof[pmt_index][i] = v[10+i];
+      tRMS[pmt_index][i] = 0.;
+    }
+
+    tPow[pmt_index] = new int [npar*nterm];
+    for(int i=0; i<nterm; i++)
+      for(int j=0; j<npar; j++)
+	tPow[pmt_index][npar*i+j] = (int)v[60+npar*i+j];
+  }
+}
+
+double MDF_2p::ConvertMDF(int pmt_id, double *rx){
   for(int i=0; i<gNVariables[pmt_id]; i++)
     val[pmt_id][i] = rx[i];
 
@@ -92,14 +146,14 @@ double MDF::ConvertMDF(int pmt_id, double *rx){
   return rV;
 }
 
-MDF::MDF(){
+MDF_2p::MDF_2p(){
 }
 
-MDF::MDF(const char *dirname, int Npmt){
+MDF_2p::MDF_2p(const char *dirname, int Npmt){
   SetParameters(dirname, Npmt);
 }
 
-MDF::~MDF(){
+MDF_2p::~MDF_2p(){
   for(int i=0; i<N_PMT; i++){
     delete [] tMean[i];
     delete [] tMin[i];

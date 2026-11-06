@@ -1,35 +1,10 @@
-#include "HA_Calc.h"
+#include "HA_Calc_2p.h"
 
-bool HA_Calc::ReadCalPrm(){
-  if(exist_module("SaveFile")){
-    Spec_PMT = new TH2D* [N_PMT * (ha_id->size())];
-
-    for(unsigned i=0; i<ha_id->size(); i++){
-      for(int j=0; j<N_PMT; j++){
-	char histname[100];
-	sprintf(histname, "Spectrum_HA%02d_PMT%d", (*ha_id)[i], j);
-		
-	if(cal_flag){
-	  Spec_PMT[N_PMT*i+j]
-	    = new TH2D(histname, histname,
-		       4096, -0.5, 16383.5,  64, -0.5, 63.5);
-	  Spec_PMT[N_PMT*i+j]->SetXTitle("[ADU]");
-	  Spec_PMT[N_PMT*i+j]->SetYTitle("pixel id");
-	}
-	else{
-	  Spec_PMT[N_PMT*i+j]
-	    = new TH2D(histname, histname,
-		       2000, 0, 4000,  64, -0.5, 63.5);
-	  Spec_PMT[N_PMT*i+j]->SetXTitle("Energy [keV]");
-	  Spec_PMT[N_PMT*i+j]->SetYTitle("Pixel ID");	  
-	}
-      }
-    }
-  }
-
-  if(!cal_flag){
+bool HA_Calc_2p::ReadCalPrm(){
+  {
     cal_a = new double [64* N_PMT * (ha_id->size())];
     cal_b = new double [64* N_PMT * (ha_id->size())];
+    cal_c = new double [64* N_PMT * (ha_id->size())];
 
     pos_x = new double [(ha_id->size())];
     pos_y = new double [(ha_id->size())];
@@ -62,6 +37,32 @@ bool HA_Calc::ReadCalPrm(){
 	    int xx, yy;
 	    cal_data >> xx >> yy >> cal_b[64*(N_PMT*i+pmt)+8*xi+yj];
 	  }
+      }
+
+      // SMILE_tool_box HA_Calc_s2::Init(): cal_c = (662 - cal_b) / cal_a,
+      // i.e. the raw-ADC position of the 662 keV peak predicted by cal_a/b.
+      for(int pmt=0; pmt<6; pmt++)
+	for(int yj=0; yj<8; yj++)
+	  for(int xi=0; xi<8; xi++){
+	    unsigned idx = 64*(N_PMT*i+pmt)+8*xi+yj;
+	    cal_c[idx] = (662. - cal_b[idx]) / cal_a[idx];
+	  }
+
+      // SMILE_tool_box: when Flag_Modify_PMT_Gain is set, cal_c is instead
+      // read directly from the measured 137Cs 662 keV peak position
+      // (3rd column of each quad), overriding the cal_a/cal_b-derived value.
+      if(modify_pmt_gain){
+	std::stringstream ms;
+	ms << ModifiedPrmDir << "/Mean_Sigma_HA"
+	   << std::setw(2) << std::setfill('0') << (*ha_id)[i]
+	   << "_137Cs_662keV.dat";
+	ifstream ms_data(ms.str().c_str());
+	for(int pmt=0; pmt<6; pmt++)
+	  for(int yj=0; yj<8; yj++)
+	    for(int xi=0; xi<8; xi++){
+	      double tx, ty, sigma;
+	      ms_data >> tx >> ty >> cal_c[64*(N_PMT*i+pmt)+8*xi+yj] >> sigma;
+	    }
       }
 
       int h_id;

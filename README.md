@@ -9,7 +9,8 @@ EricaNext は、SMILE-3 プロジェクトの検出器生データ（detector ra
 ANLnext フレームワークをベースに構築されており、解析モジュールを組み合わせて
 データ処理フローを構成します。
 
-SMILE-2+ のデータでの使い方とチュートリアルは [EricaNext_try](https://github.com/SMILE-tool-box/EricaNext_try) にあります。
+SMILE-2+ のデータも、モジュールを `_2p` の付いたもの(EricaNext_try から取り込んだもの)に切り替えれば同じ EricaNext で扱えます(下の「SMILE-2+ のデータ」)。
+SMILE-2+ のチュートリアルは [EricaNext_try](https://github.com/SMILE-tool-box/EricaNext_try) にあります。
 このリポジトリの構成(`config/`、`run_script/`、`scripts/env/`)はそれに合わせています。
 
 SMILE-3 の検出器の構成と SMILE-2+ からの変更点(μ-PIC の 4 分割、ストリップ 0.4 mm、MPPC の PSA)は
@@ -140,12 +141,11 @@ flowchart TD
 - PSA の部分は `analysis_sm3_FM/PSA_analysis` の `psa_decode.py` → `pixel_id.py` と同じ計算です
   (同じ .dat で、ヒット・peak_id・ピクセルは全部一致、hg などは Python の float32 の丸めの範囲で一致)。
   較正ファイルは [`calib/psa/`](calib/psa/)(作り方は [`config/README.md`](config/README.md#psa-の較正ファイル-calibpsa))。
-- `Reconstruct` は、チェーンに `PSA_Event` があればそれ(`PSA_SingleHit` のイベント)、無ければ `HA_Calc`(SMILE-2+)を使います。
+- `Reconstruct` は `PSA_Event`(`PSA_SingleHit` のイベント)を使います。SMILE-2+ の HA(PMT)は `Reconstruct_2p` と `HA_Calc_2p` です。
 - まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
   この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
   `CalcFADC` と `TPC_Calibration` はイベントを飛ばさず(SMILE_tool_box と同じ)、`FADC_NoHit`・`FADC_1Hit`・`TPC_Ee_Valid` の印を付けるだけです。
   `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
-- `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のまま残しています。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
@@ -160,9 +160,31 @@ flowchart TD
 | `PSA_Calibration` | 位置の補正(64 点の薄板スプライン)、ピクセル (n, m)、エネルギー | `PSA_Calibration/Corrected_haNN_chC`, `PixelHG_haNN`, `Energy_haNN` |
 | `PSA_TreeWriter` | PSA のヒットを 1 ヒット 1 行で書く | `PSA_TreeWriter/psa`(TTree) |
 | `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` [mm]、使えるヒットの数(`PSA_SingleHit` / `MultiHit` / `NoHits`)。`Reconstruct` に渡す | `PSA_Event/NHits`, `SingleHitEnergy` |
-| `HA_CenterGravity`, `HA_Calc` | SMILE-2+(PMT の ADC)の HA 用。SMILE-3 では上の `PSA_*` を使う | |
-| `Reconstruct` | TPC と HA(`PSA_Event` か `HA_Calc`)を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
+| `Reconstruct` | TPC と PSA(`PSA_Event`)を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
 | `RawTreeWriter_sm3` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `RawTreeWriter_sm3/raw`, `RawTreeWriter_sm3/run_info`(TTree) |
+
+### SMILE-2+ のデータ(`*_2p` のモジュール)
+
+EricaNext_try の SMILE-2+ 用のモジュールを、名前に `_2p` を付けて取り込んでいます(中身は EricaNext_try と同じ。モジュールの間の参照も `_2p` の名前)。
+ANLNext はモジュールを名前で探すので、SMILE-3 と SMILE-2+ のモジュールは別の名前にしてあります。SMILE-3 のモジュールの名前は変えていません。
+
+| モジュール | SMILE-3 で対応するもの |
+| --- | --- |
+| `ReadData_2p` | `ReadData`(SMILE-2+ の `uTPC_*.raw`、`HA*.raw`) |
+| `CalcFADC_2p`, `TPC_Calibration_2p`, `TOT_Skewness_2p` | `CalcFADC`, `TPC_Calibration`, `TOT_Skewness` |
+| `HA_CenterGravity_2p`, `HA_Calc_2p` | `PSA_*`, `PSA_Event`(SMILE-2+ の HA は PMT の ADC) |
+| `Reconstruct_2p` | `Reconstruct` |
+| `RawTreeWriter_2p` | `RawTreeWriter_sm3` |
+
+設定ファイルは `config/smile2p_*.json` と `config/tpc_caldata_2017_Ba133.json` です。データは EricaNext_try と同じ場所(環境変数 `SMILE2P_DATA`、無ければ研究室の NAS)を読みます。
+
+```bash
+cd run_script
+python3 run_chain.py smile2p_20190701_Per02 -o per02_out.root
+python3 run_chain.py smile2p_20190701_Per02 -o raw.root --raw -n 10000 --compression 505
+```
+
+Per02 の最初の 3000 イベント(`TOT_Skewness_2p/tot_skewness`、`Reconstruct_2p/single_hit`)と `--raw` の 2000 イベントで、EricaNext_try の出力と全部の列が一致することを確かめています。
 
 - イベント ID には、ボードのトリガーカウンタを使います(`ReadData.event_id: true`)。
   すべてのボードで同じ ID になるまで、小さい ID のボードを読み進めてそろえます。

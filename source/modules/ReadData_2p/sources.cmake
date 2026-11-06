@@ -1,0 +1,9 @@
+set(ANL_MODULES
+  ${CUR_DIR}/ReadData_2p.cxx
+  ${CUR_DIR}/ScanFiles.cxx
+  ${CUR_DIR}/CP80256_2p.cxx
+  ${CUR_DIR}/RD_CP80256.cxx
+  ${CUR_DIR}/TPC_Encoder_2p.cxx
+  ${CUR_DIR}/RD_Encoder.cxx
+  ${ANL_MODULES}
+)

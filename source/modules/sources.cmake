@@ -1,8 +1,6 @@
 set(SUB_DIRS
   SaveFile
   ReadData
-  HA_CenterGravity
-  HA_Calc
   CalcFADC
   TPC_Calibration
   TOT_Skewness
@@ -14,6 +12,14 @@ set(SUB_DIRS
   PSA_Calibration
   PSA_TreeWriter
   PSA_Event
+  ReadData_2p
+  CalcFADC_2p
+  TPC_Calibration_2p
+  TOT_Skewness_2p
+  HA_CenterGravity_2p
+  HA_Calc_2p
+  Reconstruct_2p
+  RawTreeWriter_2p
 )
 
 foreach(dir ${SUB_DIRS})
