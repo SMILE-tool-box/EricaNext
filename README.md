@@ -75,7 +75,7 @@ flowchart LR
 | [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
-| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
+| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ) |
 
 ### モジュールのつながり
 
@@ -138,8 +138,8 @@ flowchart TD
   (同じ .dat で、ヒット・peak_id・ピクセルは全部一致、hg などは Python の float32 の丸めの範囲で一致)。
   較正ファイルは [`calib/psa/`](calib/psa/)(作り方は [`config/README.md`](config/README.md#psa-の較正ファイル-calibpsa))。
 - `Reconstruct` は `PSA_Event`(`PSA_SingleHit` のイベント)を使います。SMILE-2+ の HA(PMT)は `Reconstruct_2p` と `HA_Calc_2p` です。
-- まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
-  この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
+- ジオメトリ `calib/psa/geometry.csv` は、CAD の STEP ファイルと HA の配置図から `scripts/calib/make_psa_geometry.py` で作りました(ピクセルの向きはデータでの確認がまだ)。
+  エネルギー(`energy_haNN.csv`)とジオメトリが無いブロックのヒットは、`PSA_Event` が使いません。
   `CalcFADC` と `TPC_Calibration` はイベントを飛ばしません(SMILE_tool_box と同じ)。`TPC_Calibration` は TPC のエネルギーがあるイベントに `TPC_Ee_Valid` の印を付けます。
   `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
 

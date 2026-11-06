@@ -89,7 +89,7 @@ EricaNext_try のゲインマップやドリフト速度と同じく、**較正�
 | `position_ha<NN>.csv` | ch ごとにバタフライマップの 64 点(`x,y`)とピクセル番号(`n,m`)。(x_hg, y_hg) → (n, m) の薄板スプラインはこれで決まる | `scripts/calib/make_psa_position.py` | ピクセルを求めない(`pixel = -1`) |
 | `temp_gain_ha<NN>.csv` | ch ごとの温度と相対ゲインの表(`ch,temp,gain`)。`hg_corr = hg / gain(T)` | `scripts/calib/make_psa_temp_gain.py` | 直さない(`hg_corr = hg`、警告を出す) |
 | `energy_ha<NN>.csv` | ピクセルごとの `p0,p1`(`ch,n,m,p0,p1`)。`energy = p0 + p1 × hg_corr` [keV] | `scripts/calib/make_psa_energy.py`(線源のラン) | `energy = -1` |
-| `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明 | 検出器の配置から手で書く(ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
+| `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明 | `scripts/calib/make_psa_geometry.py`(CAD の STEP ファイルと HA の配置図から) | ヒットを使わない(`Reconstruct/single_hit` が空) |
 
 ### 作る順番
 
@@ -154,4 +154,20 @@ board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch
 
 ピクセル (n, m) の吸収点は `(x0, y0, z0) + pitch × ((n − 4.5) u + (m − 4.5) v)` です。`#` で始まる行はコメントです。
 n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、ブロックの中の MPPC の 4 隅(I0〜I3)の並びと、ch(TL〜BR)の位置に合わせて決めます。
+
+作り方(`scripts/calib/make_psa_geometry.py`):
+
+```bash
+/usr/bin/python3 scripts/calib/make_psa_geometry.py ../SM3_Inner_3atm.step -o calib/psa/geometry.csv
+```
+
+- 位置は CAD(`SM3_Inner_3atm.step` の `GSO_26mm`(底面)と `GSO_13mm`(側面)の結晶のブロック)から取ります。CAD のライブラリは使わず、STEP の組み立ての木を `scripts/calib/step_reader.py` で直接たどります。
+- CAD の座標(z は上向き、原点は底板)からの変換は X = y_CAD、Y = x_CAD、Z = 427.04 − z_CAD(427.04 mm は μ-PIC の基板の下の面)。CAD は東西・南北に対称なので、CAD の +y を東としました。
+  CAD での GEM は Z = 10.0 mm、天板の内側の面は Z = 317.0 mm です。
+- どのブロックがどの HA・ch か、ピクセルの向きは、HA のモジュールの配置図から(スクリプトの `HA_LAYOUT` の表):
+  - 底面 HA0〜5: 西半分が北から HA3、4、5、東半分が北から HA0、1、2。側面: 北面は西から HA8、7、6、西面は北から HA9、10、11、南面は西から HA12、13、14、東面は北から HA17、16、15。
+  - モジュールの中のブロックは ch `0 1 / 2 3 / 4 5`。ch0 → ch1 とピクセル n が増える向きを u、ch0 → ch2 → ch4 と m が増える向きを v とします。
+  - 底面は上から見て u = 北、v = 東。側面は検出器の内側から壁を見て u = 右、v = 下(Z の正の向き)。
+- 吸収点はブロックの深さの中心です。ピクセルの間隔は CAD のピクセルの溝から 5.96 mm。
+- **ピクセルの向き(u, v)は、MPPC の 4 隅の信号の配線(重心の式の符号)でも変わるので、データで確かめる必要があります**(まだ確かめていない)。
 
