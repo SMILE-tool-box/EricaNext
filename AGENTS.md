@@ -143,7 +143,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
      `TOT_Skewness` の `Ve` は方向のベクトルで、長さに意味は無い(符号 × (1/傾き_x, 1/傾き_y, 1)。求まらないと 0xffffffff)。SMILE_tool_box、EricaNext_try と同じで、わざと正規化していない。使う側(`Reconstruct`)で `.Unit()` する(SMILE_tool_box の `Reconstruct.cxx` の `e_unit_TRA = e_TRA.Unit()` と同じ)。
    - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
    - TOT 補正の係数、skewness のオフセットは SMILE-2+ の値のまま。
-   - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 10 mm(SMILE-3)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。
+   - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 10 mm(SMILE-3)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。ファイルを作るスクリプト `scripts/calib/make_tpc_drift_velocity.py` はある(SMILE-2+ の Per02 で EricaNext_try と同じ値を確認)。測定ができたら流して `calib/tpc/drift_velocity.dat` を置き、`smile3_tpc_only.json` の `drift_velocity_file` に書く。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
 7. **SMILE-2+ のデータも同じ EricaNext で扱う**: 2026-11-06 に取り込んだ(README の「SMILE-2+ のデータ」)。
    - EricaNext_try の `source/modules/` の 8 つ(ReadData、CalcFADC、TPC_Calibration、TOT_Skewness、HA_CenterGravity、HA_Calc、Reconstruct、RawTreeWriter)を `<名前>_2p/` にコピーし、クラス名・ファイル名・`get_module` の名前・補助クラス(`CP80256`、`TPC_Encoder`、`MDF`)・インクルードガードに `_2p` を付けた。印の名前も `TOT_Skewness_2p` など変わったものがある。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。

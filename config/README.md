@@ -114,6 +114,9 @@ TPC の 1-hit スペクトル(ゲインマップの材料。ゲインマップ�
 cd run_script
 python3 run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal のラン> --compression 505
 /usr/bin/python3 ../scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root   # qa/spec1hit_board.png も書く
+# ドリフト速度(ドリフト領域に一様に電子ができるランで。箱の形でないと書かない)
+/usr/bin/python3 ../scripts/calib/make_tpc_drift_velocity.py -o ../calib/tpc/drift_velocity.dat raw.root
+# 使うとき: --set TOT_Skewness.drift_velocity_file=../calib/tpc/drift_velocity.dat(または設定ファイルに書く)
 ```
 
 - スクリプトは `/usr/bin/python3`(numpy、scipy、PyROOT のある Python)で動かします。

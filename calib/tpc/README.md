@@ -14,4 +14,14 @@ SMILE-3 の TPC の寸法: μ-PIC から GEM 面まで 10 mm(`z_gem_mm`、SMILE-
 (SMILE-2+ は 305 mm)。2026-06-23 の TPC_cal はクロックの分布が箱の形にならない(天板側の端が見えない)ので、これには使えません。
 
 作り方は、EricaNext_try の `tutorials_caldata/4_MakeCalibration/GainMap.ipynb`、`DriftVelocity.ipynb` と同じ方法にする予定です。
-作るスクリプトは `scripts/calib/` に置きます。最初の手順の 1-hit スペクトルは `scripts/calib/make_tpc_spec1hit.py`(生データのツリー `smile3_raw` から)で作れます。
+ドリフト速度のファイルは `scripts/calib/make_tpc_drift_velocity.py` で作ります(生データのツリー `smile3_raw` から):
+
+```bash
+/usr/bin/python3 scripts/calib/make_tpc_drift_velocity.py -o calib/tpc/drift_velocity.dat raw.root   # qa/drift_velocity.png も書く
+```
+
+箱の形でない(天板側の端が見えない)などの確認に通らないときは、ファイルを書きません(`--force` で書く)。
+SMILE-2+ の Per02 の全イベントで試すと、`clock_offset` 85、速度 0.3844 mm/クロックで、EricaNext_try の `drift_velocity.dat`(85、0.383〜0.384)と合います
+(`--tree RawTreeWriter/raw --z-gem 27 --drift-length 332 --gem-range 0 200 --top-range 512 1023`)。
+
+ゲインマップを作るスクリプトはまだありません。最初の手順の 1-hit スペクトルは `scripts/calib/make_tpc_spec1hit.py`(生データのツリー `smile3_raw` から)で作れます。
