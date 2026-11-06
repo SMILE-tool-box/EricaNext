@@ -135,7 +135,13 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
 4. **`ReadData` が複数のディレクトリを読めるようにする**(`PSA_ReadData.extra_data_dirs` と同じ形)。2 つの storage に分かれたランをシンボリックリンク無しで読めるようにする。
-5. **チュートリアル**: PSA のモジュール(`tutorials/1_DataIO/modules/2〜6, 10`)と `4_MakeCalibration/PSA_*` はある。TPC のモジュール(ReadData、CalcFADC、TPC_Calibration、TOT_Skewness、Reconstruct、RawTreeWriter_sm3)はまだ。`0_Introduction` の 6 節は、まだ「解析は EricaNext の外」と書いてあるので直す。
+5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。`0_Introduction` の 6 節は、まだ「解析は EricaNext の外」と書いてあるので直す。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
+6b. **TPC 側で分かっていて、まだ直していないこと**
+   - `TOT_Skewness` の `Ve` は単位ベクトルではない((1/傾き_x, 1/傾き_y, 1) × 符号。傾きが 0 に近いと巨大、求まらないと 0xffffffff)。EricaNext_try と比べて直す。
+   - `TPC_Calibration` に SMILE_tool_box の「同時計数が 100 を超えるパネルだけ足す」条件が無い。
+   - `Reconstruct` は `Ve` を使った幾何の α、到来方向をまだ計算していない(EricaNext_try にはある)。
+   - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
+   - TOT 補正の係数、skewness のオフセット、`clock_offset`・`pitch_z`(ドリフト速度)は SMILE-2+ の値のまま。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
 7. **SMILE-2+ のデータも同じ EricaNext で扱う**(決定済みの方針): EricaNext_try の SMILE-2+ 用モジュールを、名前に `_2p` を付けて取り込む(ReadData_2p、CalcFADC_2p、TPC_Calibration_2p、HA_CenterGravity_2p、HA_Calc_2p、TOT_Skewness_2p、Reconstruct_2p など)。SMILE-3 のモジュールの名前は変えない。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。モジュールの中の `get_module("ReadData")` なども `_2p` の名前に直す。2+ の設定ファイル(`smile2p_*.json`)で EricaNext_try と同じ結果になるかを確かめる。
 6. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
@@ -148,4 +154,6 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `c85494a` | PSA_Event、Reconstruct が PSA を使う、`smile3_reconstruct_psa.json`、`geometry_template.csv`、`scripts/check/compare_psa_python.py`、この AGENTS.md |
 | `daede13` | `smile3_reconstruct_psa` で PSA_* を CalcFADC より前に(CalcFADC の AS_SKIP で PSA が止まらないように) |
 | `c132646` | 温度ゲインの表と hg_corr、`scripts/calib/`(位置・温度ゲイン・エネルギー)、PSA のモジュールのチュートリアル |
+| `7818fdd` | TPC の CalcFADC がイベントを飛ばさない(SMILE_tool_box と同じ。前はアノード 2 ch 以上の 29% を捨てていた)、TPC_Ee_Valid、NoCalData のエネルギーを和に |
+| `8ec5f4e` 前後 | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた)、TPC のモジュールのチュートリアル |
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
