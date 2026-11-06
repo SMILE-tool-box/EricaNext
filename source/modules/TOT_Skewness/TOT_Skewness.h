@@ -2,6 +2,7 @@
 #define TOT_skewness_h 1
 
 #include <anlnext/BasicModule.hh>
+#include <string>
 #include <vector>
 
 #include <TH1.h>
@@ -37,8 +38,10 @@ class TOT_Skewness : public BasicModule {
   // Parameters
   double Pitch_X;
   double Pitch_Y;
-  double Pitch_Z;
-  double TPC_Clock_Offset;
+  double Pitch_Z;            // drift velocity [mm/clock] when there is no drift_velocity_file
+  double TPC_Clock_Offset;   // clock of the electrons from the GEM plane, when there is no drift_velocity_file
+  double Z_GEM;              // z of the GEM plane (distance from the uPIC) [mm]
+  std::string DriftVelocityFile;
   bool   Flag_Pixel_Cut;
   bool   Flag_Save_Cloud;
 

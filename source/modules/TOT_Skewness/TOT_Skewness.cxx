@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cfloat>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include <TF1.h>
 #include <TGraph.h>
@@ -15,6 +18,8 @@ ANLStatus TOT_Skewness::mod_define() {
   define_parameter("pitch_y_mm_per_strip", &mod_class::Pitch_Y);
   define_parameter("pitch_z_mm_per_clock", &mod_class::Pitch_Z);
   define_parameter("clock_offset",         &mod_class::TPC_Clock_Offset);
+  define_parameter("z_gem_mm",             &mod_class::Z_GEM);
+  define_parameter("drift_velocity_file",  &mod_class::DriftVelocityFile);
   define_parameter("flag_pixel_cut",       &mod_class::Flag_Pixel_Cut);
   define_parameter("flag_save_cloud",      &mod_class::Flag_Save_Cloud);
   return AS_OK;
@@ -25,6 +30,41 @@ ANLStatus TOT_Skewness::mod_initialize() {
 
   if (!RawData->Get_Track_A() || !RawData->Get_Track_C())
     return AS_QUIT;
+
+  // z = v (clock - clock_offset) + z_gem. v and clock_offset come from the drift velocity calibration file
+  // (calib/tpc/, lines "clock_offset <clock>" and "velocity <mm/clock>", '#' = comment). Without the file,
+  // pitch_z_mm_per_clock and clock_offset of the config are used (SMILE-2+ typical values until SMILE-3 is measured).
+  if (!DriftVelocityFile.empty()) {
+    std::ifstream f(DriftVelocityFile);
+    if (!f) {
+      std::cerr << "TOT_Skewness: ERROR: no drift velocity file " << DriftVelocityFile << std::endl;
+      return AS_QUIT;
+    }
+    bool has_offset = false, has_v = false;
+    std::string line;
+    while (std::getline(f, line)) {
+      if (line.empty() || line[0] == '#')  continue;
+      std::istringstream ss(line);
+      std::string key;
+      double value;
+      if (!(ss >> key >> value))  continue;
+      if (key == "clock_offset")  { TPC_Clock_Offset = value; has_offset = true; }
+      else if (key == "velocity") { Pitch_Z = value;          has_v = true; }
+    }
+    if (!has_offset || !has_v) {
+      std::cerr << "TOT_Skewness: ERROR: " << DriftVelocityFile << " needs the lines \"clock_offset <clock>\" and"
+                << " \"velocity <mm/clock>\"" << std::endl;
+      return AS_QUIT;
+    }
+    std::cout << "TOT_Skewness: drift velocity " << Pitch_Z << " mm/clock, clock_offset " << TPC_Clock_Offset
+              << " from " << DriftVelocityFile << std::endl;
+  }
+  else {
+    std::cerr << "TOT_Skewness: WARNING: no drift velocity calibration file (drift_velocity_file). z uses"
+              << " pitch_z_mm_per_clock = " << Pitch_Z << " mm/clock and clock_offset = " << TPC_Clock_Offset
+              << " clock of the config (SMILE-2+ typical values). A SMILE-3 drift velocity calibration (calib/tpc/)"
+              << " is needed for a correct z." << std::endl;
+  }
 
   TPC_Pitch[0]  = Pitch_X;
   TPC_Pitch[1]  = Pitch_Y;
@@ -437,7 +477,7 @@ void TOT_Skewness::TPC_Track_Recon() {
 //----------------------------------------------------------------------
 double TOT_Skewness::Get_TPC_XYZ(int xyz, int val) {
   if (xyz == 2) {
-    return TPC_Pitch[2] * (double(val) - TPC_Clock_Offset) + 27.0;
+    return TPC_Pitch[2] * (double(val) - TPC_Clock_Offset) + Z_GEM;
   } else {
     if(xyz == 0 && val/384 == 0) {
       return TPC_Pitch[xyz] * (double(val%384) + 0.5); //x
@@ -478,15 +518,16 @@ int TOT_Skewness::PixelMask(short anode, short cathode) {
 TOT_Skewness::TOT_Skewness(){
   Pitch_X          = 0.8;
   Pitch_Y          = 0.8;
-  Pitch_Z          = 0.5;
-  TPC_Clock_Offset = 90.0;
+  Pitch_Z          = 0.383;   // SMILE-2+ 2019-07-01 Per02/Per03 drift_velocity.dat (mean 0.383 mm/clock)
+  TPC_Clock_Offset = 85.0;    // SMILE-2+ 2019-07-01 Per02/Per03 drift_velocity.dat
+  Z_GEM            = 10.0;    // SMILE-3: uPIC - GEM 10 mm (SMILE-2+: 27 mm)
   Flag_Pixel_Cut   = false;
   Flag_Save_Cloud  = false;
   TPC_STRIP_ALL    = 384;
   TPC_DEPTH        = 1024;
   TPC_Pitch[0]     = 0.8;
   TPC_Pitch[1]     = 0.8;
-  TPC_Pitch[2]     = 0.5;
+  TPC_Pitch[2]     = 0.383;
   Len              = 0.;
   skewness_x       = 0.;
   skewness_y       = 0.;

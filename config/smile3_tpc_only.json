@@ -77,23 +77,28 @@
     "TOT_Skewness": {
       "pitch_x_mm_per_strip": 0.4,
       "pitch_y_mm_per_strip": 0.4,
-      "pitch_z_mm_per_clock": 0.5,
-      "clock_offset": 90.0,
+      "pitch_z_mm_per_clock": 0.383,
+      "clock_offset": 85.0,
+      "z_gem_mm": 10.0,
+      "drift_velocity_file": "",
       "flag_pixel_cut": false,
       "flag_save_cloud": true,
       "_units": {
         "pitch_x_mm_per_strip": "mm/strip",
         "pitch_y_mm_per_strip": "mm/strip",
         "pitch_z_mm_per_clock": "mm/clock",
-        "clock_offset": "clock"
+        "clock_offset": "clock",
+        "z_gem_mm": "mm"
       },
       "_doc": {
         "pitch_x_mm_per_strip": "アノードのストリップの間隔(x)[mm/strip]",
         "pitch_y_mm_per_strip": "カソードのストリップの間隔(y)[mm/strip]",
-        "pitch_z_mm_per_clock": "1 クロックあたりのドリフト距離(z = pitch_z × (クロック − clock_offset) + 27 mm)[mm/clock]",
-        "clock_offset": "z の原点にあたるクロック [clock]",
+        "pitch_z_mm_per_clock": "ドリフト速度。drift_velocity_file が無いときだけ使う。z = pitch_z × (クロック − clock_offset) + z_gem_mm。今は SMILE-2+ の典型値(2019-07-01 Per02/Per03 の drift_velocity.dat の平均 0.383)で、SMILE-3 の測定はまだ [mm/clock]",
+        "clock_offset": "GEM 面で電離した電子が届くクロック。drift_velocity_file が無いときだけ使う。今は SMILE-2+ の典型値(Per02/Per03 の 85)[clock]",
         "flag_pixel_cut": "true: PixelMask で選んだピクセルを除く(今の PixelMask は除くピクセルが無く、h_cut_pixel に詰めるだけ)",
-        "flag_save_cloud": "true: 飛跡の点群(cloud_x, cloud_y, cloud_z)を tot_skewness ツリーに保存する(run_script/plot_track3d.py で描く)"
+        "flag_save_cloud": "true: 飛跡の点群(cloud_x, cloud_y, cloud_z)を tot_skewness ツリーに保存する(run_script/plot_track3d.py で描く)",
+        "z_gem_mm": "GEM 面の z(μ-PIC からの距離)。SMILE-3 は 10 mm(SMILE-2+ は 27 mm)。ドリフト長(μ-PIC から天板まで)は 317 mm [mm]",
+        "drift_velocity_file": "ドリフト速度の較正ファイル(calib/tpc/。\"clock_offset <クロック>\" と \"velocity <mm/クロック>\" の 2 行、# はコメント)。空なら pitch_z_mm_per_clock と clock_offset を使い、較正ファイルが要ると警告を出す。SMILE-3 の較正ファイルはまだ無い(ドリフト速度を測れる測定がまだ)"
       }
     }
   }
