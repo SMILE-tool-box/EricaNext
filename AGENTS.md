@@ -155,5 +155,6 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `daede13` | `smile3_reconstruct_psa` で PSA_* を CalcFADC より前に(CalcFADC の AS_SKIP で PSA が止まらないように) |
 | `c132646` | 温度ゲインの表と hg_corr、`scripts/calib/`(位置・温度ゲイン・エネルギー)、PSA のモジュールのチュートリアル |
 | `7818fdd` | TPC の CalcFADC がイベントを飛ばさない(SMILE_tool_box と同じ。前はアノード 2 ch 以上の 29% を捨てていた)、TPC_Ee_Valid、NoCalData のエネルギーを和に |
-| `8ec5f4e` 前後 | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた)、TPC のモジュールのチュートリアル |
+| `fa7e472` | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた) |
+| `c9a8343` | TPC のモジュールのチュートリアル(1_ReadData、7_CalcFADC、8_TPC_Calibration、9_TOT_Skewness、11_Reconstruct、12_RawTreeWriter_sm3) |
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
