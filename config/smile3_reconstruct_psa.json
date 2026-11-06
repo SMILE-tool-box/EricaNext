@@ -1,7 +1,7 @@
 {
   "_comment": [
     "SMILE-3 ETCC: ReadData -> PSA_* (scintillator) -> CalcFADC -> TPC_Calibration -> PSA_Event -> Reconstruct.",
-    "PSA_* come before CalcFADC: CalcFADC skips the events without FADC hits (FADC_NoHit), and the modules after it are not run for them. So PSA_TreeWriter/psa has all events; Reconstruct needs the TPC energy and runs only for events with FADC hits.",
+    "PSA_* come before CalcFADC (any module that returns AS_SKIP stops the later ones for that event; CalcFADC and TPC_Calibration do not skip since 2026-11-06, they set the evs FADC_NoHit, FADC_1Hit, TPC_Ee_Valid). Reconstruct writes events with PSA_SingleHit and TPC_Ee_Valid.",
     "PSA_ReadData follows the events of ReadData (sync_tpc). --data-dir changes ReadData.data_dir and PSA_ReadData.data_dir.",
     "ReadData reads one directory: put the files of both storages (tpc_enc_a*, tpc_enc_c*, ha*.dat) in one directory (symbolic links) when the run is split.",
     "Needs calib/psa/energy_haNN.csv and calib/psa/geometry.csv (not made yet); without them PSA_Event has no hits and single_hit is empty.",

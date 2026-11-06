@@ -143,7 +143,8 @@ flowchart TD
 - `Reconstruct` は、チェーンに `PSA_Event` があればそれ(`PSA_SingleHit` のイベント)、無ければ `HA_Calc`(SMILE-2+)を使います。
 - まだ: エネルギーの較正ファイル `energy_haNN.csv` と、ジオメトリ `calib/psa/geometry.csv`(値が決まっていない)。
   この 2 つが無いと `PSA_Event` はヒットを使わず、`Reconstruct/single_hit` は空です。
-  `CalcFADC` は FADC にヒットの無いイベントを `AS_SKIP` で飛ばし、その後ろのモジュールはそのイベントでは動きません。そのため `smile3_reconstruct_psa` では PSA_* を `CalcFADC` より前に置いています(PSA のツリーには全イベントが入り、`Reconstruct` は TPC にヒットのあるイベントだけ)。
+  `CalcFADC` と `TPC_Calibration` はイベントを飛ばさず(SMILE_tool_box と同じ)、`FADC_NoHit`・`FADC_1Hit`・`TPC_Ee_Valid` の印を付けるだけです。
+  `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
 - `HA_CenterGravity`、`HA_Calc` は SMILE-2+(PMT の ADC)用のまま残しています。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |

@@ -42,7 +42,8 @@ ANLStatus Reconstruct::mod_initialize(){
 }
 
 ANLStatus Reconstruct::mod_analyze(){
-  const bool single = PSA_data ? evs("PSA_SingleHit") : evs("HA2p_SingleHit");
+  // the scintillator single hit, and a TPC energy (TPC_Calibration; CalcFADC does not skip events)
+  const bool single = (PSA_data ? evs("PSA_SingleHit") : evs("HA2p_SingleHit")) && evs("TPC_Ee_Valid");
   if(single){
     evt_id = RawData ? RawData->Get_EventID_coincidence() : 0;
     Eg    = PSA_data ? PSA_data->DetEng()->at(0) : HA2p_data->DetEng()->at(0);

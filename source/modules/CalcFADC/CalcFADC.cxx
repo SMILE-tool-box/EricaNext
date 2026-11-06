@@ -91,7 +91,10 @@ ANLStatus CalcFADC::mod_initialize(){
     }
   }
 
-  define_evs("FADC_NoHit");
+  // SMILE_tool_box CalcFADC::Process() skips only when the anode or cathode data is missing (the
+  // evs of ReadData); "no charge" and "1 hit" are flags, and every event goes on to the next modules.
+  define_evs("FADC_NoHit");   // no anode channel or no cathode channel with charge
+  define_evs("FADC_1Hit");    // one anode and one cathode channel (same panel) with charge: Spec1Hit
 
   return AS_OK;
 }
@@ -131,6 +134,7 @@ ANLStatus CalcFADC::mod_analyze(){
     }
   }
 
+  if(hit_A==1 && hit_C==1)  set_evs("FADC_1Hit");
   if(hit_A==1 && hit_C==1 && Save_TH_plots){
     int phys_a = A_ID/4;
     int phys_c = C_ID/4;
@@ -174,10 +178,15 @@ ANLStatus CalcFADC::mod_analyze(){
     }
   }
 
-  if(A_ID<0 || C_ID<0){
-    set_evs("FADC_NoHit");
-    return AS_SKIP;
+  // flag only (until 2026-11-06 this returned AS_SKIP, and as C_ID is searched only when one anode
+  // channel has charge, events with two or more anode channels were dropped from the later modules)
+  bool any_c = false;
+  for(int i=0; i<(int)N_c && !any_c; i++){
+    int phys_c = (*RawData->Get_CathodeID())[i];
+    for(int ch=0; ch<4; ch++)  if(Q_cathode[4*phys_c+ch] > 0)  any_c = true;
   }
+  if(hit_A == 0 || !any_c)
+    set_evs("FADC_NoHit");
 
   return AS_OK;
 }

@@ -40,7 +40,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
   - `/usr/bin/python3`: numpy、scipy、h5py、numba、natsort、PyROOT が入っている。`psa_position_nm.py` や `scripts/check/*.py`、`analysis_sm3_FM/PSA_analysis` のスクリプトはこちらで動かす。
 - **push は SSH の URL を直接指定する**。`origin` は https で、このマシンには認証情報が無い。
   `git push git@github.com:SMILE-tool-box/EricaNext.git <ブランチ>`
-- **チェーンの中で `AS_SKIP` を返すと、そのイベントの後ろのモジュールは全部動かない**(ANLNext の仕様)。`CalcFADC` は FADC にヒットの無いイベントで `AS_SKIP` を返すので、TPC と関係なく全イベントで動かしたいモジュール(PSA_* など)は `CalcFADC` より前に置く。
+- **チェーンの中で `AS_SKIP` を返すと、そのイベントの後ろのモジュールは全部動かない**(ANLNext の仕様)。TPC の `CalcFADC` は 2026-11-06 まで「アノード 1 ch・カソードあり」以外のイベントを `FADC_NoHit` で `AS_SKIP` していた(6 月の TPC_cal で 62%、うち 29% はアノード 2 ch 以上の普通のイベント)。SMILE_tool_box(`~/SMILE_tool_box_v2.20/Erica/CalcFADC`)と EricaNext_try に合わせて、今は飛ばさずに印(`FADC_NoHit`、`FADC_1Hit`)を付けるだけ。`TPC_Calibration` は `TPC_Ee_Valid`(エネルギー ≠ 0)を立て、`Reconstruct` はそれを見る。SMILE_tool_box の TPC_Calibration にある「同時計数が 100 個を超えるパネルだけ足す」条件は、SMILE-3 版にはまだ無い。
 - `--data-dir` を指定しても `ericanext_config: WARNING: no storage_g*/ in .../mount_data` が出る。`mount_data/` が空なだけなので、気にしなくてよい(以前からの動き)。
 - `build/`、`install/`、`mount_data/`、`root_data/` は `.gitignore` に入っている。
 

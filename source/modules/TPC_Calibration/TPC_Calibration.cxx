@@ -54,6 +54,7 @@ ANLStatus TPC_Calibration::mod_initialize(){
     Spectrum = new TH1D("Spectrum", "TPC_Spec", 2000, 0, 400);
     Spectrum->SetXTitle("Energy [keV]");
   }
+  define_evs("TPC_Ee_Valid");
   
   HitPanel.resize(Na*Nc);
   cal_a.resize(Na*Nc);
@@ -144,10 +145,13 @@ ANLStatus TPC_Calibration::mod_analyze(){
       for(int j=0; j<Nc; j++)
 	Energy += (charge * cal_a[i*Nc+j] + cal_b[i*Nc+j])
 	  * ((double)(HitPanel.at(i*Nc+j))/total);
-    if(no_cal_data)  Energy = +charge;
+    if(no_cal_data)  Energy += charge;   // sum of the anode channels with coincidences
     }
   }
-  if(Spectrum_TH) Spectrum->Fill(Energy);
+  // SMILE_tool_box TPC_Calibration::Process(): evs "Ee" only when Ee != 0; this module never skips,
+  // Reconstruct checks TPC_Ee_Valid
+  if(Energy != 0)  set_evs("TPC_Ee_Valid");
+  if(Spectrum_TH && Energy != 0) Spectrum->Fill(Energy);
 
 
   return AS_OK;
