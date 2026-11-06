@@ -2,6 +2,7 @@
 
 ANLStatus ReadData::mod_define(){
   define_parameter("data_dir", &mod_class::DataDir);
+  define_parameter("extra_data_dirs", &mod_class::ExtraDataDirs);
   define_parameter("reverse_TPC", &mod_class::Reverse);
   define_parameter("TPC_Only", &mod_class::TPC_Only);
   define_parameter("event_id", &mod_class::UseNtime);

@@ -9,6 +9,9 @@ SMILE-2+ data (modules *_2p from EricaNext_try):
     python3 run_chain.py smile2p_20190701_Per02 -o raw.root --raw -n 10000 --compression 505
 
 --data-dir replaces ReadData.data_dir / PSA_ReadData.data_dir / ReadData_2p.data_dir (the run directory) of the config.
+--extra-data-dir adds another directory of the same run (SMILE-3 FM: the other storage node), e.g.
+    python3 run_chain.py smile3_reconstruct -o run04.root --data-dir <NAS>/20261102/calltt/20261102_run04 \
+        --extra-data-dir <NAS>/20261102/killua/20261102_run04
 --raw runs only the reader and the raw data tree writer (ReadData -> RawTreeWriter_sm3, ReadData_2p -> RawTreeWriter_2p).
 --set Module.param=value overrides a parameter of the config (repeatable), e.g.
     python3 run_chain.py smile3_tpc_only -o out.root --set CalcFADC.threshold=30.0
@@ -35,6 +38,9 @@ def main():
     ap.add_argument("-o", "--output", required=True, help="output ROOT file")
     ap.add_argument("-n", "--n-events", type=int, default=-1, help="number of events (-1 = all)")
     ap.add_argument("--data-dir", help="run directory (replaces ReadData.data_dir / PSA_ReadData.data_dir / ReadData_2p.data_dir of the config)")
+    ap.add_argument("--extra-data-dir", action="append", default=[], metavar="DIR",
+                    help="another directory of the same run (the other storage node), added to ReadData.extra_data_dirs "
+                         "and PSA_ReadData.extra_data_dirs; repeatable")
     ap.add_argument("--raw", action="store_true",
                     help="ReadData -> RawTreeWriter_sm3 (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
     ap.add_argument("--compression", type=int, default=-1,
@@ -50,6 +56,10 @@ def main():
         for m in readers:
             if m in cfg["chain"]:
                 params.setdefault(m, {})["data_dir"] = os.path.abspath(args.data_dir)
+    for d in args.extra_data_dir:
+        for m in ("ReadData", "PSA_ReadData"):
+            if m in cfg["chain"]:
+                params.setdefault(m, {}).setdefault("extra_data_dirs", []).append(os.path.abspath(d))
     for text in args.set:
         path, value = text.split("=", 1)
         module, key = path.split(".", 1)
@@ -67,6 +77,10 @@ def main():
         if data_dir and not os.path.isdir(data_dir):
             print(f"run_chain.py: no run directory {data_dir}", file=sys.stderr)
             sys.exit(1)
+        for d in (params.get(m, {}).get("extra_data_dirs") or []) if m in chain else []:
+            if not os.path.isdir(d):
+                print(f"run_chain.py: no directory {d} (extra_data_dirs of {m})", file=sys.stderr)
+                sys.exit(1)
 
     # write to <output>.part and rename it only when the chain succeeded, so that a failed run never leaves
     # a broken file that looks finished

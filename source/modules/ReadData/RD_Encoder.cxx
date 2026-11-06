@@ -5,13 +5,19 @@ void ReadData::Scan_Encoder(){
     char f_anode[100];
     //sprintf(f_anode, "uTPC_anode%d_00000.raw", i);
 	sprintf(f_anode, "tpc_enc_a%02d_00000.raw", i);
-    if(FileExists(f_anode))
+    std::string d_anode = FindDir(f_anode);
+    if(!d_anode.empty()){
       N_anode.push_back(i);
+      DirAnode.push_back(d_anode);
+    }
 
     char f_cathode[100];
     sprintf(f_cathode, "tpc_enc_c%02d_00000.raw", i);
-    if(FileExists(f_cathode))
+    std::string d_cathode = FindDir(f_cathode);
+    if(!d_cathode.empty()){
       N_cathode.push_back(i);
+      DirCathode.push_back(d_cathode);
+    }
   }
   if(N_anode.size()){
     define_evs("Anode_Data");
@@ -38,7 +44,7 @@ void ReadData::Scan_Encoder(){
 	    FADC_ev_A   = new TH2D* [4 * N_anode.size()];
 	  }
       for(unsigned i=0; i<N_anode.size(); i++){
-	Anode[i] = new TPC_Encoder(DataDir, 0, N_anode[i], Reverse, UseNtime);
+	Anode[i] = new TPC_Encoder(DirAnode[i], 0, N_anode[i], Reverse, UseNtime);
 	
 	if(FADC_TH){
 	char h_anode[100];
@@ -79,7 +85,7 @@ void ReadData::Scan_Encoder(){
 	  }
 	
       for(unsigned i=0; i<N_cathode.size(); i++){
-	Cathode[i] = new TPC_Encoder(DataDir, 1, N_cathode[i], Reverse, UseNtime);
+	Cathode[i] = new TPC_Encoder(DirCathode[i], 1, N_cathode[i], Reverse, UseNtime);
 	
 	if(FADC_TH){
 	char h_cathode[100];

@@ -21,6 +21,19 @@ ANLStatus ReadData::ScanFiles(){
   return AS_OK;
 }
 
+std::string ReadData::FindDir(const std::string& filename){
+  std::vector<std::string> dirs{DataDir};
+  dirs.insert(dirs.end(), ExtraDataDirs.begin(), ExtraDataDirs.end());
+  std::string found;
+  for(const auto& d : dirs){
+    if(!std::filesystem::exists(d + "/" + filename))  continue;
+    if(found.empty())  found = d;
+    else  std::cerr << "ReadData: WARNING: " << filename << " is in " << found << " and " << d
+                    << "; reading " << found << std::endl;
+  }
+  return found;
+}
+
 bool ReadData::FileExists(std::string filename){
   std::string fname = DataDir + "/" + filename;
   bool flag = std::filesystem::exists(fname);

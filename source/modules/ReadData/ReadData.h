@@ -73,6 +73,11 @@ public:
   
  private:
   std::string       DataDir;
+  // other directories with encoder files of the same run (the other storage node, e.g. killua for the
+  // cathode boards when data_dir is calltt). Each board is read from the first directory that has its
+  // first file (data_dir, then extra_data_dirs in order).
+  std::vector<std::string> ExtraDataDirs;
+  std::vector<std::string> DirAnode, DirCathode;   // directory of each board in N_anode / N_cathode
   bool              Reverse;
   bool              TPC_Only;
   bool              UseNtime;
@@ -90,6 +95,7 @@ public:
 
   ANLStatus         ScanFiles();
   bool              FileExists(std::string);
+  std::string       FindDir(const std::string&);   // first of data_dir, extra_data_dirs with the file; "" if none
   
   std::vector<int>  N_anode, N_cathode, N_HA2p;
   std::vector<unsigned> Event_ID;

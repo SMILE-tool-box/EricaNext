@@ -134,7 +134,8 @@ python3 run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal のラン> --com
       --set 'PSA_ReadData.extra_data_dirs=["../mount_data/storage_g0/<ラン>"]'
   ```
 - TPC と一緒に読むときは、`chain` の `PSA_ReadData` より前に `ReadData` を置きます(`PSA_ReadData.sync_tpc: true`)。
-  `ReadData` は `data_dir` を 1 つしか読まないので、アノードとカソードが別の storage にあるランは、両方のファイルを 1 つのディレクトリに(シンボリックリンクで)集めてから読みます。
+  アノードとカソードが別の storage にあるランは、片方を `data_dir`、もう片方を `ReadData.extra_data_dirs` に書きます(`run_chain.py --extra-data-dir` でも足せる。`PSA_ReadData.extra_data_dirs` にも入る)。
+  ボードごとに、`data_dir`、`extra_data_dirs` の順で最初にファイルのあるディレクトリから読みます。
 
 ### `geometry.csv`(PSA_Event)
 

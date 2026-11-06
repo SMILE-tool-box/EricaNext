@@ -14,6 +14,7 @@
   "parameters": {
     "ReadData": {
       "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "extra_data_dirs": [],
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
@@ -41,7 +42,8 @@
         "fadc_a_filter_max": "save_fadc_a_filter の上側の閾値(この値以上のサンプルがあれば選ぶ)[ADU]",
         "save_fadc_c_filter": "save_fadc_a_filter のカソード版(./png_FADC_C_filter)",
         "fadc_c_filter_min": "save_fadc_c_filter の下側の閾値 [ADU]",
-        "fadc_c_filter_max": "save_fadc_c_filter の上側の閾値 [ADU]"
+        "fadc_c_filter_max": "save_fadc_c_filter の上側の閾値 [ADU]",
+        "extra_data_dirs": "ほかにも TPC のエンコーダーのファイル(tpc_enc_*.raw)があるディレクトリ(同じランの別の storage。例 data_dir が calltt のとき killua/<ラン>)。ボードごとに、data_dir、extra_data_dirs の順で最初にファイルのあるディレクトリから読む(同じボードが 2 か所にあれば警告して最初の方)。run_chain.py の --extra-data-dir でも足せる"
       },
       "_units": {
         "fadc_a_filter_min": "ADU",

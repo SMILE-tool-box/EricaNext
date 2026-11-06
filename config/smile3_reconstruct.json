@@ -22,6 +22,7 @@
   "parameters": {
     "ReadData": {
       "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "extra_data_dirs": [],
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
@@ -33,7 +34,8 @@
         "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
         "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
         "Image_A_C": "true: 全イベントのヒットを積算した図 Image_A / Image_C(ストリップ × クロック)を保存する",
-        "FADC_TH": "true: FADC 波形のヒストグラムを作る(PNG を書くパラメータは config/smile3_tpc_only.json の ReadData を参照)"
+        "FADC_TH": "true: FADC 波形のヒストグラムを作る(PNG を書くパラメータは config/smile3_tpc_only.json の ReadData を参照)",
+        "extra_data_dirs": "ほかにも TPC のエンコーダーのファイル(tpc_enc_*.raw)があるディレクトリ(同じランの別の storage。例 data_dir が calltt のとき killua/<ラン>)。ボードごとに、data_dir、extra_data_dirs の順で最初にファイルのあるディレクトリから読む(同じボードが 2 か所にあれば警告して最初の方)。run_chain.py の --extra-data-dir でも足せる"
       }
     },
     "CalcFADC": {
