@@ -103,9 +103,9 @@ python3 run_chain.py smile3_psa -o cal_run01.root --data-dir <ラン> --set 'PSA
 /usr/bin/python3 ../scripts/calib/make_psa_position.py cal_run*.root -o ../calib/psa
 # 2. 温度ゲイン(温度の違うランを合わせて入れる)
 /usr/bin/python3 ../scripts/calib/make_psa_temp_gain.py cal_run*.root -o ../calib/psa
-# 3. 線源のランを、1 と 2 を置いた状態でチェーンに通してから、エネルギー
-python3 run_chain.py smile3_psa -o src_run01.root --data-dir <線源のラン> ...
-/usr/bin/python3 ../scripts/calib/make_psa_energy.py src_run*.root -o ../calib/psa --line 662
+# 3. 線源のランを、1 と 2 を置いた状態でチェーンに通してから、エネルギー(Cs-137 の 662 keV と Co-60 の 1173 / 1332 keV)
+python3 run_chain.py smile3_psa -o cs_run01.root --data-dir <Cs のラン> ...
+/usr/bin/python3 ../scripts/calib/make_psa_energy.py -o ../calib/psa --cs cs_run*.root --co co_run*.root
 ```
 
 TPC の 1-hit スペクトル(ゲインマップの材料。ゲインマップを作るスクリプトはまだ無い。置き場は [`calib/tpc/`](../calib/tpc/README.md)):
@@ -125,7 +125,7 @@ python3 run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal のラン> --com
   `--method localmax` は `peak_search.py` と同じ(同じヒストグラムで同じ 64 点になることを確かめた)ですが、縦に長い中央のスポットから何個もピークを拾い、端の列を取り逃します。
   補正後に 8 × 8 に入るヒットが `--min-frac`(既定 0.9)未満の ch は書きません(その ch はピクセルを求めない)。
 - **今のファイル**: `position_haNN.csv` は 2026-11-03 の UVSOR の Co のラン run12 から `grid` で作ったもの(ha04 だけは run12 に無いので、前の peak_search の仮のもの)。
-  `temp_gain_haNN.csv` と `energy_haNN.csv`(662 keV の 1 本、`p0 = 0`)は同じ日の Cs-137 のラン run01〜11 から作ったもの(ha04 は無い)。ランの記録は Notion(「SMILE-3 FM UVSOR 試験(2026-11-03)データ確認と HA_cal の解析」)。
+  `temp_gain_haNN.csv` は同じ日の Cs-137 のラン run01〜11 から、`energy_haNN.csv` は Cs-137 の 662 keV(run01〜11)と Co-60 の 1173 / 1332 keV(run12)の 3 点から作ったもの(ha04 は無い。ch の和の Co が使えない 11 ch は Cs だけで `p0 = 0`)。ランの記録は Notion(「SMILE-3 FM UVSOR 試験(2026-11-03)データ確認と HA_cal の解析」「UVSOR 試験 run12(Co)の HA_cal の解析」)。
 - 長いランで `.dat` が `part0`, `part1`, … のサブディレクトリに分かれているときは、`--set PSA_ReadData.recursive=true` を付けます。
 - ボードが 2 つの storage に分かれたラン(`storage_g0` と `storage_g1`)は、`--data-dir` に片方、`PSA_ReadData.extra_data_dirs` にもう片方を書きます。
 
