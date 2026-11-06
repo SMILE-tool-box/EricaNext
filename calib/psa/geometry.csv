@@ -1,5 +1,5 @@
-# made by scripts/calib/make_psa_geometry.py, 2026-11-06T23:04:30
-# input: /home/onoda/ANLNext/Erica_git_dev/SM3_Inner_3atm.step
+# made by scripts/calib/make_psa_geometry.py, 2026-11-06T23:06:37
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/calib/cad/SM3_Inner_3atm.step
 # PSA_Event geometry: one row per scintillator block (HA board, ch 0-5). Units: mm.
 # Coordinates: origin at the centre of the uPIC, X: W -> E, Y: N -> S, Z: downward (Z = 427.04 - z_CAD, X = y_CAD, Y = x_CAD).
 # (x0, y0, z0): centre of the 8x8 block (middle of the depth); u: increasing pixel n; v: increasing m.

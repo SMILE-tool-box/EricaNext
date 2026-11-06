@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """calib/psa/geometry.csv (PSA_Event) from the CAD STEP file of the SMILE-3 inner assembly.
 
-    /usr/bin/python3 scripts/calib/make_psa_geometry.py ../SM3_Inner_3atm.step -o calib/psa/geometry.csv
+    /usr/bin/python3 scripts/calib/make_psa_geometry.py calib/cad/SM3_Inner_3atm.step -o calib/psa/geometry.csv
 
 Positions come from the CAD (the GSO_26mm / GSO_13mm crystal blocks); which HA board and ch each block is, and the
 direction of the pixel numbers, come from the layout figure of the HA modules (table HA_LAYOUT below).

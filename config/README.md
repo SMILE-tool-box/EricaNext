@@ -158,7 +158,7 @@ n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、�
 作り方(`scripts/calib/make_psa_geometry.py`):
 
 ```bash
-/usr/bin/python3 scripts/calib/make_psa_geometry.py ../SM3_Inner_3atm.step -o calib/psa/geometry.csv
+/usr/bin/python3 scripts/calib/make_psa_geometry.py calib/cad/SM3_Inner_3atm.step -o calib/psa/geometry.csv
 ```
 
 - 位置は CAD(`SM3_Inner_3atm.step` の `GSO_26mm`(底面)と `GSO_13mm`(側面)の結晶のブロック)から取ります。CAD のライブラリは使わず、STEP の組み立ての木を `scripts/calib/step_reader.py` で直接たどります。
