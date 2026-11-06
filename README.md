@@ -27,13 +27,10 @@ SMILE-3 の検出器の構成と SMILE-2+ からの変更点(μ-PIC の 4 分割
 ```bash
 cd run_script
 
-# TPC だけ(ReadData → CalcFADC): 設定ファイル smile3_tpc_only(= config/smile3_tpc_only.json)
+# TPC だけ(ReadData → CalcFADC → TPC_Calibration → TOT_Skewness): 設定ファイル smile3_tpc_only(= config/smile3_tpc_only.json)
 python3 run_chain.py smile3_tpc_only -o out.root                    # 設定ファイルに書いたランの全イベント
 python3 run_chain.py smile3_tpc_only -o test.root -n 10000          # 先頭 1 万イベント
 python3 run_chain.py smile3_tpc_only -o out.root --data-dir ../mount_data/storage_g0/run_20260618T010203Z   # ランを変える
-
-# 電子の飛跡まで(ReadData → CalcFADC → TPC_Calibration → TOT_Skewness)
-python3 run_chain.py smile3_tot_skewness -o tot.root
 
 # シンチレータ(PSA)だけ: 波形の積分・位置・ピクセル(psa_decode.py + pixel_id.py と同じ)
 python3 run_chain.py smile3_psa -o psa.root --data-dir ../mount_data/storage_g1/run_20261029T071524Z
@@ -75,11 +72,10 @@ flowchart LR
 
 | 設定ファイル | つなぐモジュール |
 | --- | --- |
-| [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC` |
-| [`smile3_tot_skewness`](config/smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
+| [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
-| [`smile3_reconstruct_psa`](config/smile3_reconstruct_psa.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
+| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ。**較正ファイル `energy_haNN.csv`、`geometry.csv` がまだ無いので、今は single_hit が空**) |
 
 ### モジュールのつながり
 

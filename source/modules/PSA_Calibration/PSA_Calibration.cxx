@@ -57,8 +57,6 @@ ANLStatus PSA_Calibration::mod_define(){
   define_parameter("position_dir", &mod_class::position_dir_);
   define_parameter("energy_dir",   &mod_class::energy_dir_);
   define_parameter("temp_gain_dir", &mod_class::temp_gain_dir_);
-  define_parameter("temp_coef",    &mod_class::temp_coef_);
-  define_parameter("temp_ref",     &mod_class::temp_ref_);
   define_parameter("save_maps",    &mod_class::save_maps_);
   define_parameter("hg_max",       &mod_class::hg_max_);
   define_parameter("hg_bins",      &mod_class::hg_bins_);
@@ -172,7 +170,7 @@ bool PSA_Calibration::LoadTempGain(int i, const std::string& path){
 
 double PSA_Calibration::Gain(int i, int ch, double temp) const {
   if(temp_gain_[i].empty() || temp_gain_[i][ch].empty())
-    return 1. + temp_coef_ * (temp - temp_ref_);
+    return 1.;   // no temperature gain table: hg_corr = hg
   const auto& v = temp_gain_[i][ch];
   if(temp <= v.front().first)  return v.front().second;
   if(temp >= v.back().first)   return v.back().second;
@@ -214,6 +212,9 @@ ANLStatus PSA_Calibration::mod_initialize(){
     std::string tgf = board_file(temp_gain_dir_, "temp_gain", id);
     if(!temp_gain_dir_.empty() && std::ifstream(tgf))
       LoadTempGain(i, tgf);
+    else
+      std::cerr << "PSA_Calibration: " << PSA_Board::Name(id) << ": no " << tgf
+                << "; no temperature correction for this board (hg_corr = hg)" << std::endl;
     std::string en = board_file(energy_dir_, "energy", id);
     if(!energy_dir_.empty() && std::ifstream(en))
       has_energy_[i] = LoadEnergy(i, en);
@@ -292,8 +293,6 @@ PSA_Calibration::PSA_Calibration(){
   position_dir_ = "";
   energy_dir_ = "";
   temp_gain_dir_ = "";
-  temp_coef_ = 0.;
-  temp_ref_ = 25.;
   save_maps_ = true;
   hg_max_ = 400e3;
   hg_bins_ = 400;

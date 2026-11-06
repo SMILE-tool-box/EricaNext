@@ -31,8 +31,8 @@ using namespace anlnext;
 // the relative gain at the temperature T of the event (mean of the 6 sensors of the board):
 //   hg_corr = hg / gain(T)
 // gain(T) of every ch: temp_gain_haNN.csv in temp_gain_dir (columns ch,temp,gain; linear between the
-// rows, constant outside them; made by scripts/calib/make_psa_temp_gain.py). Without the file:
-// gain(T) = 1 + temp_coef (T - temp_ref) (temp_coef = 0: hg_corr = hg).
+// rows, constant outside them; made by scripts/calib/make_psa_temp_gain.py). The reference temperature
+// (gain = 1) is part of the table. Without the file: gain = 1 (hg_corr = hg).
 //
 // Energy (optional, energy_haNN.csv in energy_dir, columns ch,n,m,p0,p1):
 //   energy = p0 + p1 hg_corr   [keV]
@@ -71,7 +71,6 @@ class PSA_Calibration : public BasicModule {
 
   // parameters
   std::string position_dir_, energy_dir_, temp_gain_dir_;
-  double temp_coef_, temp_ref_;
   bool   save_maps_;
   double hg_max_;
   int    hg_bins_;

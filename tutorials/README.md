@@ -1,6 +1,6 @@
 # チュートリアル
 
-EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解説の番号は、設定ファイル `smile3_reconstruct_psa` のチェーンの順です。
+EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解説の番号は、設定ファイル `smile3_reconstruct` のチェーンの順です。
 
 | フォルダ | 中身 |
 | --- | --- |

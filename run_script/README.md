@@ -7,7 +7,6 @@
 | [`plot_track3d.py`](plot_track3d.py) | `TOT_Skewness/tot_skewness` の点群(`flag_save_cloud: true`)から 1 イベントの飛跡を 3 次元で描く |
 | [`psa_position_nm.py`](psa_position_nm.py) | `peak_search.py` の `position_haNN.csv` にピクセル番号 `n,m` を足して `calib/psa/` に書く(`PSA_Calibration` 用。numpy の入った `/usr/bin/python3` で実行) |
 | [`anl_run.py`](anl_run.py) | `run_chain.py` が使う、失敗を終了コードにするための関数(直接は実行しない) |
-| `test2.py`, `test3.py` | 前の実行スクリプト(チェーンとパラメータを中に書いたもの)。`config/smile3_tot_skewness.json`、`config/smile3_tpc_only.json` が同じ内容 |
 
 `run_chain.py` はこのリポジトリのビルド(`install/lib/python` の `EricaPy`)を自分で読み込むので、
 `PYTHONPATH` を設定しなくても動きます(先に `bash scripts/env/build_ericanext.sh` でビルドしておく)。
@@ -44,8 +43,8 @@ python3 run_chain.py smile3_tpc_only -o test.root -n 10000 --data-dir ../mount_d
 # ボードごとの 1-hit スペクトルも保存する
 python3 run_chain.py smile3_tpc_only -o board.root --set CalcFADC.save_board_plots=true
 
-# 電子の飛跡まで。点群を描く
-python3 run_chain.py smile3_tot_skewness -o tot.root
+# 飛跡の点群も保存して描く
+python3 run_chain.py smile3_tpc_only -o tot.root   # 点群(flag_save_cloud)は既定で保存する
 
 # 同期した生データのツリー(較正・診断用)
 python3 run_chain.py smile3_raw -o raw.root

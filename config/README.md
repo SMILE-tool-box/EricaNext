@@ -5,10 +5,9 @@
 
 | ファイル | チェーン |
 | --- | --- |
-| [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC`(FADC の電荷と 1-hit スペクトル) |
-| [`smile3_tot_skewness.json`](smile3_tot_skewness.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(ゲインマップ無し、電子の飛跡まで) |
+| [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで。1-hit スペクトルの図は `--set CalcFADC.save_TH_plots=true`) |
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー) |
-| [`smile3_reconstruct_psa.json`](smile3_reconstruct_psa.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
+| [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 | [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p`(EricaNext_try と同じ) |
 | [`smile2p_sim_d10_recon.json`](smile2p_sim_d10_recon.json) | SMILE-2+ のシミュレーションのデータの再構成(同じチェーン) |
@@ -88,7 +87,7 @@ EricaNext_try のゲインマップやドリフト速度と同じく、**較正�
 | --- | --- | --- | --- |
 | `psa_param.csv` | 全ボードの表。`HA` 列が `ha<NN>` の行の `TL_A`, `TL_B` 〜 `BR_A`, `BR_B` が温度センサーの較正 | `analysis_sm3_FM/PSA_analysis/param/psa_param_YYYYMMDD.csv` をコピー(`HA` 列のある版) | psa_decode.py の既定値(a = 3.9258, b = 1230.30) |
 | `position_ha<NN>.csv` | ch ごとにフラッドマップの 64 点(`x,y`)とピクセル番号(`n,m`)。(x_hg, y_hg) → (n, m) の薄板スプラインはこれで決まる | `scripts/calib/make_psa_position.py` | ピクセルを求めない(`pixel = -1`) |
-| `temp_gain_ha<NN>.csv` | ch ごとの温度と相対ゲインの表(`ch,temp,gain`)。`hg_corr = hg / gain(T)` | `scripts/calib/make_psa_temp_gain.py` | `PSA_Calibration.temp_coef` の式(既定 0 = 直さない) |
+| `temp_gain_ha<NN>.csv` | ch ごとの温度と相対ゲインの表(`ch,temp,gain`)。`hg_corr = hg / gain(T)` | `scripts/calib/make_psa_temp_gain.py` | 直さない(`hg_corr = hg`、警告を出す) |
 | `energy_ha<NN>.csv` | ピクセルごとの `p0,p1`(`ch,n,m,p0,p1`)。`energy = p0 + p1 × hg_corr` [keV] | `scripts/calib/make_psa_energy.py`(線源のラン) | `energy = -1` |
 | `geometry.csv` | `PSA_Event` が使う、ブロック(board, ch)ごとの位置と向き。下の説明 | 検出器の配置から手で書く(ひな形 `geometry_template.csv`) | ヒットを使わない(`Reconstruct/single_hit` が空) |
 

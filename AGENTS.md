@@ -17,8 +17,9 @@
 | ディレクトリ | 中身 |
 | --- | --- |
 | `source/modules/<モジュール>/` | ANLNext のモジュール。足したら `source/modules/sources.cmake` と `source/pyext/EricaPy.i` の両方に書く |
-| `config/` | チェーンの設定ファイル(`*.json`)と読み込み(`ericanext_config.py`) |
+| `config/` | チェーンの設定ファイル(`*.json`)と読み込み(`ericanext_config.py`)。SMILE-3 は `smile3_tpc_only`(TPC だけ、TOT_Skewness まで)、`smile3_psa`、`smile3_reconstruct`(TPC + PSA)、`smile3_raw` |
 | `calib/psa/` | PSA(シンチレータ)の較正ファイル |
+| `calib/tpc/` | TPC の較正ファイル(ゲインマップ、ドリフト速度)の置き場。まだ空(README だけ) |
 | `run_script/` | `run_chain.py`、`run_runs.sh`、補助スクリプト |
 | `scripts/env/` | ビルド(`build_ericanext.sh`) |
 | `scripts/check/` | 検証用のスクリプト(Python の解析との突き合わせ) |
@@ -85,7 +86,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 設定ファイル:
 
 - `smile3_psa.json`: PSA だけ。
-- `smile3_reconstruct_psa.json`: TPC + PSA → `Reconstruct`。
+- `smile3_reconstruct.json`: TPC + PSA → `Reconstruct`。
 
 ### 確かめたこと
 
@@ -94,7 +95,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 | 20261029_run06(ha03)、窓はピークの周りと固定の両方 | psa_decode + pixel_id と 15432 ヒットすべて一致。hg などは相対 1e-6 以内(Python 側の float32 の丸め) |
 | 20261102_run02 HA_cal(14 ボード、2 つの storage) | ha00、ha06 で一致。x, y の差は \|hg\| < 60 のノイズのようなヒットだけ(割り算の桁落ち)。ピクセルは全部一致 |
 | 20261102_run03 / run04 ETCC、TPC と一緒に読む | ヒットのある PSA のフレームは、全ボードで取りこぼし無くツリーに入る |
-| `smile3_reconstruct_psa` + ダミーの較正値(テスト専用、リポジトリには入れていない) | single_hit の 20 行すべてで、Eg、Pg が式どおり |
+| `smile3_reconstruct` + ダミーの較正値(テスト専用、リポジトリには入れていない) | single_hit の 20 行すべてで、Eg、Pg が式どおり |
 
 検証のやり方:
 
@@ -148,7 +149,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - SMILE-3 にあった古い `HA_Calc`、`HA_CenterGravity`(前の版の SMILE-2+ 用のコピー。どの SMILE-3 の設定ファイルも使っていなかった)は消した。SMILE-3 の `Reconstruct` は `PSA_Event` だけを使う。
    - `SaveFile` は 1 つ(EricaNext_try の版。`compression` のパラメータが増えた)。`run_chain.py` に `--raw`、`--compression` を足した。
    - 設定ファイル `smile2p_20190701_Per02/Per03`、`smile2p_sim_d10_recon`、`tpc_caldata_2017_Ba133` は EricaNext_try のものの名前を直しただけ。置き換え文字 `{data_top}`、`{tpc_caldata}`、`{sim_data}` は `$SMILE2P_DATA`(無ければ NAS)。
-   - 確かめたこと: Per02 の 3000 イベントの `tot_skewness`、`single_hit`、`--raw` の 2000 イベントの `raw`、`run_info` が EricaNext_try と全部一致。SMILE-3 の `smile3_reconstruct_psa`(run04 の例)はツリー 2 つ、ヒストグラム 213 個が前と一致。
+   - 確かめたこと: Per02 の 3000 イベントの `tot_skewness`、`single_hit`、`--raw` の 2000 イベントの `raw`、`run_info` が EricaNext_try と全部一致。SMILE-3 の `smile3_reconstruct`(run04 の例)はツリー 2 つ、ヒストグラム 213 個が前と一致。
    - まだ: EricaNext_try のチュートリアル(`tutorials_caldata`、`tutorials_simulation`)とシミュレーションの設定(`config/simulation/`、`simulation_source/`)は持ってきていない。EricaNext_try の側を直したら、`_2p` のほうにも同じ直しが要る(二重の管理になる)。
 6. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
 
@@ -157,8 +158,8 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | コミット | 中身 |
 | --- | --- |
 | `0ca45c8` | PSA_ReadData〜PSA_TreeWriter、`smile3_psa.json`、`calib/psa/`(psa_param、position) |
-| `c85494a` | PSA_Event、Reconstruct が PSA を使う、`smile3_reconstruct_psa.json`、`geometry_template.csv`、`scripts/check/compare_psa_python.py`、この AGENTS.md |
-| `daede13` | `smile3_reconstruct_psa` で PSA_* を CalcFADC より前に(CalcFADC の AS_SKIP で PSA が止まらないように) |
+| `c85494a` | PSA_Event、Reconstruct が PSA を使う、`smile3_reconstruct.json`、`geometry_template.csv`、`scripts/check/compare_psa_python.py`、この AGENTS.md |
+| `daede13` | `smile3_reconstruct` で PSA_* を CalcFADC より前に(CalcFADC の AS_SKIP で PSA が止まらないように) |
 | `c132646` | 温度ゲインの表と hg_corr、`scripts/calib/`(位置・温度ゲイン・エネルギー)、PSA のモジュールのチュートリアル |
 | `7818fdd` | TPC の CalcFADC がイベントを飛ばさない(SMILE_tool_box と同じ。前はアノード 2 ch 以上の 29% を捨てていた)、TPC_Ee_Valid、NoCalData のエネルギーを和に |
 | `fa7e472` | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた) |
