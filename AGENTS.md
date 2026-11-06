@@ -137,9 +137,9 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 4. **`ReadData` が複数のディレクトリを読めるようにする**(`PSA_ReadData.extra_data_dirs` と同じ形)。2 つの storage に分かれたランをシンボリックリンク無しで読めるようにする。
 5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。`0_Introduction` の 6 節は、まだ「解析は EricaNext の外」と書いてあるので直す。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
 6b. **TPC 側で分かっていて、まだ直していないこと**
-   - `TOT_Skewness` の `Ve` は単位ベクトルではない((1/傾き_x, 1/傾き_y, 1) × 符号。傾きが 0 に近いと巨大、求まらないと 0xffffffff)。EricaNext_try と比べて直す。
    - `TPC_Calibration` に SMILE_tool_box の「同時計数が 100 を超えるパネルだけ足す」条件が無い。
    - `Reconstruct` は `Ve` を使った幾何の α、到来方向をまだ計算していない(EricaNext_try にはある)。
+     `TOT_Skewness` の `Ve` は方向のベクトルで、長さに意味は無い(符号 × (1/傾き_x, 1/傾き_y, 1)。求まらないと 0xffffffff)。SMILE_tool_box、EricaNext_try と同じで、わざと正規化していない。使う側(`Reconstruct`)で `.Unit()` する(SMILE_tool_box の `Reconstruct.cxx` の `e_unit_TRA = e_TRA.Unit()` と同じ)。
    - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
    - TOT 補正の係数、skewness のオフセット、`clock_offset`・`pitch_z`(ドリフト速度)は SMILE-2+ の値のまま。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
