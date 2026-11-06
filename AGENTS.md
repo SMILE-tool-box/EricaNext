@@ -164,3 +164,4 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `fa7e472` | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた) |
 | `c9a8343` | TPC のモジュールのチュートリアル(1_ReadData、7_CalcFADC、8_TPC_Calibration、9_TOT_Skewness、11_Reconstruct、12_RawTreeWriter_sm3) |
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
+| `e1c2070` | EricaNext_try の SMILE-2+ のモジュールを `*_2p` で取り込み、`smile2p_*.json`、古い HA_Calc / HA_CenterGravity を削除、`run_chain.py --raw --compression` |
