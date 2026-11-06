@@ -119,7 +119,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `position_haNN.csv` | `make_psa_position.py --method grid`(既定。x の射影で 8 列、列ごとに y の射影の 2 階微分で 8 行。`--method localmax` は `peak_search.py` と同じで、同じヒストグラムで 64 点が一致することを確かめた) | run12(Co、トリガー時刻 peak_id 26〜29、hg ≥ 3 万、飽和なし)から作った 13 ボード(ha04 以外)。補正後に 8 × 8 に入る割合は 92〜99%。ha01 の ch4 はバタフライマップがにじんでいて 83.6% なので書いていない(`--min-frac 0.9`)。ha04 は run12 に無いので、前の仮のもの(peak_search の結果)のまま |
 | `temp_gain_haNN.csv` | `make_psa_temp_gain.py`(光電ピークの探し方とトリガー時刻の範囲は `temp_spectra.py` と同じ) | Cs の run01〜11 から作った 13 ボード(ha04 は Cs のランにほぼ無いので無い)。1 °C ごと。基準の温度(gain = 1)はボードごとにヒットの一番多い区間 |
 | `energy_haNN.csv` | `make_psa_energy.py`(`--line E` か `E:lo:hi`) | Cs の run01〜11 を位置と温度ゲインを置いた状態で流し直したもの(`tutorials/cache/psa_cal_*.root`)から、662 keV の光電ピーク 1 本で作った 13 ボード(`p0 = 0`。直線性はまだ確かめていない)。ha04 は Cs のデータが run01 だけで信用できないので置いていない。ha01 の ch4 はピクセルが無いので無い |
-| `geometry.csv` | `make_psa_geometry.py`(CAD の STEP `calib/cad/SM3_Inner_3atm.step`、リポジトリの外。HA の番号・ch・ピクセルの向きはスクリプトの `HA_LAYOUT`、HA のモジュールの配置図から) | 18 HA × 6 ch = 108 ブロック(2026-11-06)。ピクセルの向き(u, v)は配線でも変わるので、データでの確認がまだ |
+| `geometry.csv` | `make_psa_geometry.py`(CAD の STEP `calib/cad/SM3_Inner_3atm.step`。HA の番号・ch・ピクセルの向きはスクリプトの `HA_LAYOUT`、HA のモジュールの配置図から) | 18 HA × 6 ch = 108 ブロック(2026-11-06)。ピクセルの向き(u, v)は配線でも変わるので、データでの確認がまだ |
 
 - 作る順番: 位置、温度ゲイン → (それを置いて線源のランを流す) → エネルギー。エネルギーは `hg_corr` とピクセルを使う。
 - `<out>/qa/` に確認の図が出る(git には入れない)。使う前に必ず見る。
