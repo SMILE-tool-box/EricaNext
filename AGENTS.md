@@ -145,8 +145,10 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
 6b. **TPC 側で分かっていて、まだ直していないこと**
    - `TPC_Calibration` には、SMILE_tool_box の 2 つの条件(同時計数が 100 を超える組 (i, j) だけを使う、各チャンネルの 32 ストリップの両端 4 本ずつを数えない)が無い。**今は入れない**と決めた(2026-11-06)。SMILE-3 のゲインマップを作るときに、要るかどうかをもう一度見る。
-   - `Reconstruct` は `Ve` を使った幾何の α、到来方向をまだ計算していない(EricaNext_try にはある)。
-     `TOT_Skewness` の `Ve` は方向のベクトルで、長さに意味は無い(符号 × (1/傾き_x, 1/傾き_y, 1)。求まらないと 0xffffffff)。SMILE_tool_box、EricaNext_try と同じで、わざと正規化していない。使う側(`Reconstruct`)で `.Unit()` する(SMILE_tool_box の `Reconstruct.cxx` の `e_unit_TRA = e_TRA.Unit()` と同じ)。
+   - `Reconstruct` の幾何の α・入射方向(2026-11-08): SMILE_tool_box の `Erica/Reconstruct`(TRA、SingleHit)と SMLib `Compton_common`(`recon_vector`、`ARM`、`SPD`)と同じ式で入れた(EricaNext_try の `Reconstruct_2p` には無い)。
+     `smile3_reconstruct` に `TOT_Skewness` を足した(AS_SKIP するので `Reconstruct` の直前)。`TOT_Skewness` の `Ve` は長さに意味の無い方向なので、`Reconstruct` で単位ベクトルにする。
+     **残り**: TPC の位置(`TOT_Skewness` の `Get_TPC_XYZ`、SMILE-2+ のパネルの並びのまま μ-PIC の中心が原点)と、PSA の `geometry.csv`(X: 東、Y: 南、Z: 下)が同じ座標系かを確かめる。
+     TPC のゲインマップが無いので `Ke` は ADU で、角度の値にはまだ意味が無い。
    - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
    - TOT 補正の係数、skewness のオフセットは SMILE-2+ の値のまま。
    - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 10 mm(SMILE-3)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。ファイルを作るスクリプト `scripts/calib/make_tpc_drift_velocity.py` はある(SMILE-2+ の Per02 で EricaNext_try と同じ値を確認)。測定ができたら流して `calib/tpc/drift_velocity.dat` を置き、`smile3_tpc_only.json` の `drift_velocity_file` に書く。

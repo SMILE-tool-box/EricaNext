@@ -75,7 +75,7 @@ flowchart LR
 | [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
-| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → Reconstruct`(TPC + シンチレータ) |
+| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(TPC + シンチレータ) |
 
 ### モジュールのつながり
 
@@ -105,7 +105,7 @@ flowchart TD
     PSAT["PSA_TreeWriter/psa<br>シンチレータのヒットの TTree"]
   end
   PRM["パラメータファイル<br>ゲインマップ<br>ドリフト速度"]
-  PPRM["calib/psa/<br>温度センサー・位置(64 点)<br>エネルギー・ジオメトリ(未)"]
+  PPRM["calib/psa/<br>温度センサー・位置(64 点)<br>エネルギー・ジオメトリ"]
 
   RAW --> RD
   RAW --> PRD
@@ -142,6 +142,8 @@ flowchart TD
   エネルギー(`energy_haNN.csv`)とジオメトリが無いブロックのヒットは、`PSA_Event` が使いません。
   `CalcFADC` と `TPC_Calibration` はイベントを飛ばしません(SMILE_tool_box と同じ)。`TPC_Calibration` は TPC のエネルギーがあるイベントに `TPC_Ee_Valid` の印を付けます。
   `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
+  飛跡(`TOT_Ve_TRA`)があれば、幾何の α(`cos_alpha_geo`)と入射ガンマ線の方向(`Vi`)も書きます(SMILE_tool_box の Reconstruct と同じ式)。
+  `source_position` を書けば ARM と SPD も出します。TPC の位置とシンチレータのジオメトリが同じ座標系かは、まだ確かめていません。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
@@ -156,7 +158,7 @@ flowchart TD
 | `PSA_Calibration` | 位置の補正(64 点の薄板スプライン)、ピクセル (n, m)、エネルギー | `PSA_Calibration/Corrected_haNN_chC`, `PixelHG_haNN`, `Energy_haNN` |
 | `PSA_TreeWriter` | PSA のヒットを 1 ヒット 1 行で書く | `PSA_TreeWriter/psa`(TTree) |
 | `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` [mm]、使えるヒットの数(`PSA_SingleHit` / `MultiHit` / `NoHits`)。`Reconstruct` に渡す | `PSA_Event/NHits`, `SingleHitEnergy` |
-| `Reconstruct` | TPC と PSA(`PSA_Event`)を合わせたイベント再構成 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
+| `Reconstruct` | TPC と PSA(`PSA_Event`)を合わせたイベント再構成。運動学の角度、飛跡があれば幾何の α と入射ガンマ線の方向 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
 | `RawTreeWriter_sm3` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `RawTreeWriter_sm3/raw`, `RawTreeWriter_sm3/run_info`(TTree) |
 
 ### SMILE-2+ のデータ(`*_2p` のモジュール)

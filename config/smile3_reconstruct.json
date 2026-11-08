@@ -1,11 +1,11 @@
 {
   "_comment": [
-    "SMILE-3 ETCC: ReadData -> PSA_* (scintillator) -> CalcFADC -> TPC_Calibration -> PSA_Event -> Reconstruct.",
-    "PSA_* come before CalcFADC (any module that returns AS_SKIP stops the later ones for that event; CalcFADC and TPC_Calibration do not skip; TPC_Calibration sets the evs TPC_Ee_Valid). Reconstruct writes events with PSA_SingleHit and TPC_Ee_Valid.",
-    "PSA_ReadData follows the events of ReadData (sync_tpc). --data-dir changes ReadData.data_dir and PSA_ReadData.data_dir.",
-    "ReadData reads one directory: put the files of both storages (tpc_enc_a*, tpc_enc_c*, ha*.dat) in one directory (symbolic links) when the run is split.",
-    "Needs calib/psa/energy_haNN.csv and calib/psa/geometry.csv (not made yet); without them PSA_Event has no hits and single_hit is empty.",
-    "Ke is the charge [ADU] while TPC_Calibration.NoCalData is true."
+    "SMILE-3 ETCC: ReadData -> PSA_* (scintillator) -> CalcFADC -> TPC_Calibration -> PSA_Event -> TOT_Skewness -> Reconstruct.",
+    "PSA_* come before CalcFADC (any module that returns AS_SKIP stops the later ones for that event; CalcFADC and TPC_Calibration do not skip; TPC_Calibration sets the evs TPC_Ee_Valid). TOT_Skewness skips events without anode or cathode hits, so it is just before Reconstruct. Reconstruct writes events with PSA_SingleHit and TPC_Ee_Valid; the track branches (has_track = 1) need TOT_Ve_TRA.",
+    "PSA_ReadData follows the events of ReadData (sync_tpc). --data-dir changes ReadData.data_dir and PSA_ReadData.data_dir; --extra-data-dir adds the other storage of a split run.",
+    "Uses calib/psa/energy_haNN.csv and calib/psa/geometry.csv; hits of blocks without them are not used by PSA_Event.",
+    "Ke is the charge [ADU] while TPC_Calibration.NoCalData is true (no SMILE-3 TPC gain map yet): the angles are then not physical.",
+    "The TPC positions (TOT_Skewness, SMILE-2+ panel layout around the uPIC centre) and the PSA geometry (X: E, Y: S, Z: down) are not yet checked to be the same frame."
   ],
   "chain": [
     "ReadData",
@@ -17,6 +17,7 @@
     "CalcFADC",
     "TPC_Calibration",
     "PSA_Event",
+    "TOT_Skewness",
     "Reconstruct"
   ],
   "parameters": {
@@ -170,9 +171,41 @@
         "save_hists": "true: 使ったヒットの数(NHits)と 1 ヒットのイベントのエネルギー(SingleHitEnergy)を保存する"
       }
     },
-    "Reconstruct": {
+    "TOT_Skewness": {
+      "pitch_x_mm_per_strip": 0.4,
+      "pitch_y_mm_per_strip": 0.4,
+      "pitch_z_mm_per_clock": 0.383,
+      "clock_offset": 85.0,
+      "z_gem_mm": 10.0,
+      "drift_velocity_file": "",
+      "flag_pixel_cut": false,
+      "flag_save_cloud": false,
+      "_units": {
+        "pitch_x_mm_per_strip": "mm/strip",
+        "pitch_y_mm_per_strip": "mm/strip",
+        "pitch_z_mm_per_clock": "mm/clock",
+        "clock_offset": "clock",
+        "z_gem_mm": "mm"
+      },
       "_doc": {
-        "_": "パラメータ無し。PSA_SingleHit(使ったヒットが 1 つ)のイベントで Eg = PSA のエネルギー、Pg = 吸収点、Ke = TPC_Calibration のエネルギーから single_hit の TTree を作る"
+        "pitch_x_mm_per_strip": "アノードのストリップの間隔(x)[mm/strip]",
+        "pitch_y_mm_per_strip": "カソードのストリップの間隔(y)[mm/strip]",
+        "pitch_z_mm_per_clock": "ドリフト速度。drift_velocity_file が無いときだけ使う。z = pitch_z × (クロック − clock_offset) + z_gem_mm。今は SMILE-2+ の典型値(2019-07-01 Per02/Per03 の drift_velocity.dat の平均 0.383)で、SMILE-3 の測定はまだ [mm/clock]",
+        "clock_offset": "GEM 面で電離した電子が届くクロック。drift_velocity_file が無いときだけ使う。今は SMILE-2+ の典型値(Per02/Per03 の 85)[clock]",
+        "flag_pixel_cut": "true: PixelMask で選んだピクセルを除く(今の PixelMask は除くピクセルが無く、h_cut_pixel に詰めるだけ)",
+        "flag_save_cloud": "true: 飛跡の点群(cloud_x, cloud_y, cloud_z)を tot_skewness ツリーに保存する(run_script/plot_track3d.py で描く)",
+        "z_gem_mm": "GEM 面の z(μ-PIC からの距離)。SMILE-3 は 10 mm(SMILE-2+ は 27 mm)。ドリフト長(μ-PIC から天板まで)は 317 mm [mm]",
+        "drift_velocity_file": "ドリフト速度の較正ファイル(calib/tpc/。\"clock_offset <クロック>\" と \"velocity <mm/クロック>\" の 2 行、# はコメント)。空なら pitch_z_mm_per_clock と clock_offset を使い、較正ファイルが要ると警告を出す。SMILE-3 の較正ファイルはまだ無い(ドリフト速度を測れる測定がまだ)"
+      }
+    },
+    "Reconstruct": {
+      "source_position": [],
+      "_units": {
+        "source_position": "mm"
+      },
+      "_doc": {
+        "_": "PSA_SingleHit(使ったヒットが 1 つ)かつ TPC_Ee_Valid のイベントで、Eg = PSA のエネルギー、Pg = 吸収点、Ke = TPC_Calibration のエネルギーから single_hit の TTree を作る。TOT_Skewness があれば、飛跡(Pe、Ve)から幾何の α(cos_alpha_geo = Vg·Ve、Vg = Pg − Pe の単位ベクトル)と、入射ガンマ線の方向 Vi(線源から検出器へ向かう単位ベクトル)も出す(SMILE_tool_box の Reconstruct、SMLib Compton_common の recon_vector と同じ式)。飛跡が無いイベントは has_track = 0 で、それらの値は 0xffffffff",
+        "source_position": "線源の位置 [mm](検出器の座標系、3 つの値)。書くと ARM(cos_arm、arm [deg])と SPD(spd [deg])も出す。空なら出さない"
       }
     }
   }
