@@ -4,7 +4,7 @@
 使い方の説明は [`README.md`](README.md)、設定ファイルの書き方は [`config/README.md`](config/README.md)、スクリプトは [`run_script/README.md`](run_script/README.md) にあります。
 ここには、**それらに書いていない作業の約束・環境の落とし穴・これまでの経緯・残りの仕事**をまとめます。
 
-最終更新: 2026-11-07(ブランチ `feature-restructure`)
+最終更新: 2026-11-09(ブランチ `feature-restructure`)
 
 ---
 
@@ -142,8 +142,8 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - シミュレーター(Geant4)の配置と同じ元(この STEP と `HA_LAYOUT`)からそろえる。SMILE-2+ では `HAs.pos` が 2 つあって、底面の z がシミュレーションと実データで 11 mm 違っていた(EricaNext_try の `docs/simulation_port_log.md`)。シミュレーターの製作ログの TPC の Z(10.5〜308 mm)は、この CAD(GEM 10 mm、天板 317 mm)と違うので、古い形状のはず。
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
-5. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
-6b. **TPC 側で分かっていて、まだ直していないこと**
+4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
+5. **TPC 側で分かっていて、まだ直していないこと**
    - `TPC_Calibration` には、SMILE_tool_box の 2 つの条件(同時計数が 100 を超える組 (i, j) だけを使う、各チャンネルの 32 ストリップの両端 4 本ずつを数えない)が無い。**今は入れない**と決めた(2026-11-06)。SMILE-3 のゲインマップを作るときに、要るかどうかをもう一度見る。
    - `Reconstruct` の幾何の α・入射方向(2026-11-08): SMILE_tool_box の `Erica/Reconstruct`(TRA、SingleHit)と SMLib `Compton_common`(`recon_vector`、`ARM`、`SPD`)と同じ式で入れた(EricaNext_try の `Reconstruct_2p` には無い)。
      `smile3_reconstruct` に `TOT_Skewness` を足した(AS_SKIP するので `Reconstruct` の直前)。`TOT_Skewness` の `Ve` は長さに意味の無い方向なので、`Reconstruct` で単位ベクトルにする。
@@ -153,14 +153,14 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - TOT 補正の係数、skewness のオフセットは SMILE-2+ の値のまま。
    - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 10 mm(SMILE-3)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。ファイルを作るスクリプト `scripts/calib/make_tpc_drift_velocity.py` はある(SMILE-2+ の Per02 で EricaNext_try と同じ値を確認)。測定ができたら流して `calib/tpc/drift_velocity.dat` を置き、`smile3_tpc_only.json` の `drift_velocity_file` に書く。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
-7. **SMILE-2+ のデータも同じ EricaNext で扱う**: 2026-11-06 に取り込んだ(README の「SMILE-2+ のデータ」)。
+6. **SMILE-2+ のデータも同じ EricaNext で扱う**: 2026-11-06 に取り込んだ(README の「SMILE-2+ のデータ」)。
    - EricaNext_try の `source/modules/` の 8 つ(ReadData、CalcFADC、TPC_Calibration、TOT_Skewness、HA_CenterGravity、HA_Calc、Reconstruct、RawTreeWriter)を `<名前>_2p/` にコピーし、クラス名・ファイル名・`get_module` の名前・補助クラス(`CP80256`、`TPC_Encoder`、`MDF`)・インクルードガードに `_2p` を付けた。印の名前も `TOT_Skewness_2p` など変わったものがある。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。
    - SMILE-3 にあった古い `HA_Calc`、`HA_CenterGravity`(前の版の SMILE-2+ 用のコピー。どの SMILE-3 の設定ファイルも使っていなかった)は消した。SMILE-3 の `Reconstruct` は `PSA_Event` だけを使う。
    - `SaveFile` は 1 つ(EricaNext_try の版。`compression` のパラメータが増えた)。`run_chain.py` に `--raw`、`--compression` を足した。
    - 設定ファイル `smile2p_20190701_Per02/Per03`、`smile2p_sim_d10_recon`、`tpc_caldata_2017_Ba133` は EricaNext_try のものの名前を直しただけ。置き換え文字 `{data_top}`、`{tpc_caldata}`、`{sim_data}` は `$SMILE2P_DATA`(無ければ NAS)。
    - 確かめたこと: Per02 の 3000 イベントの `tot_skewness`、`single_hit`、`--raw` の 2000 イベントの `raw`、`run_info` が EricaNext_try と全部一致。SMILE-3 の `smile3_reconstruct`(run04 の例)はツリー 2 つ、ヒストグラム 213 個が前と一致。
    - まだ: EricaNext_try のチュートリアル(`tutorials_caldata`、`tutorials_simulation`)とシミュレーションの設定(`config/simulation/`、`simulation_source/`)は持ってきていない。EricaNext_try の側を直したら、`_2p` のほうにも同じ直しが要る(二重の管理になる)。
-6. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
+7. `psa_param.csv` には IP アドレスと基板のシリアル番号が入っている。リポジトリに入れたままでよいか、人に確かめる(今は入れて push 済み)。
 
 ## 7. 経緯(コミット)
 
@@ -176,3 +176,9 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
 | `e1c2070` | EricaNext_try の SMILE-2+ のモジュールを `*_2p` で取り込み、`smile2p_*.json`、古い HA_Calc / HA_CenterGravity を削除、`run_chain.py --raw --compression` |
 | `5343695` | 設定ファイルの名前(`smile3_tpc_only` = TPC だけ TOT_Skewness まで、`smile3_reconstruct`)、PSA_Calibration の `temp_coef`・`temp_ref` を削除、`calib/tpc/`、test2/test3/run_all を削除 |
+| `4a55616`, `7d7ab22` | TOT_Skewness に SMILE-3 の GEM の位置とドリフト速度のファイル(無ければ SMILE-2+ の典型値で警告)、`scripts/calib/make_tpc_drift_velocity.py` |
+| `78be476`, `b787120` | CAD の STEP ファイル(`calib/cad/SM3_Inner_3atm.step`)から `calib/psa/geometry.csv` を作る(`scripts/calib/make_psa_geometry.py`) |
+| `42bad19` | `ReadData` の `extra_data_dirs`、`run_chain.py --extra-data-dir`(2 つの storage に分かれたランを読む) |
+| `eb99de1` | PSA のエネルギーの較正を Cs-137 662 keV と Co-60 1173/1332 keV の 3 点でピクセルごとに |
+| `f946f24` | `Reconstruct` に幾何の α と入射方向(TOT_Skewness の飛跡から)、`smile3_reconstruct` に TOT_Skewness |
+| `a1cd979` | PSA_Event のチュートリアルを今の `geometry.csv` とエネルギーの較正で流し直した |
