@@ -4,7 +4,7 @@
 使い方の説明は [`README.md`](README.md)、設定ファイルの書き方は [`config/README.md`](config/README.md)、スクリプトは [`run_script/README.md`](run_script/README.md) にあります。
 ここには、**それらに書いていない作業の約束・環境の落とし穴・これまでの経緯・残りの仕事**をまとめます。
 
-最終更新: 2026-11-09(ブランチ `feature-restructure`)
+最終更新: 2026-11-13(ブランチ `feature-restructure`)
 
 ---
 
@@ -67,6 +67,13 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 - PSA の計算を変えたら、`scripts/check/compare_psa_python.py` で Python の解析と一致するか確かめる(5 節)。わざと変える場合は、何が違うかを README に書く。
 - 較正の値やジオメトリの値は**推測で作らない**。決まっていない値は、ファイルを置かずに警告で知らせる(今のモジュールはどれもそう動く)。
 - 作業はブランチ `feature-restructure` でしている。`main` に直接コミットしない。
+
+### ReadDataの図出力（2026-11-13）
+
+SMILE-3の `ReadData` から積算ヒストグラム・波形ヒストグラム・PNG出力とその選別パラメータを削除した。
+波形・ヒット・時刻は `RawTreeWriter_sm3` で保存し、積算・選別・描画は後段で行う。
+`Track_A/C` は再構成用のイベント内作業データとして保持するが、ROOTには書かない。
+SMILE-2+の `ReadData_2p` は今回の変更対象ではない。
 
 ## 5. PSA(シンチレータ)のモジュール — 2026-11-05 時点
 
@@ -142,7 +149,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - シミュレーター(Geant4)の配置と同じ元(この STEP と `HA_LAYOUT`)からそろえる。SMILE-2+ では `HAs.pos` が 2 つあって、底面の z がシミュレーションと実データで 11 mm 違っていた(EricaNext_try の `docs/simulation_port_log.md`)。シミュレーターの製作ログの TPC の Z(10.5〜308 mm)は、この CAD(GEM 10 mm、天板 317 mm)と違うので、古い形状のはず。
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
-4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いもの: 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)、TPC のゲインマップとドリフト速度の較正の本(SMILE-3 のデータでは未作成)。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
+4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いものは 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)。TPC のゲインマップとドリフト速度の較正の本は2026-11-13に追加済み（`tutorials/4_MakeCalibration/TPC_GainMap.ipynb`, `TPC_DriftVelocity.ipynb`）。RawTreeWriter_sm3のROOTを入力とし、前者は1-hitスペクトルと指定した2線のfit、後者は飛跡積算図と既存の速度算出スクリプトを使う。実測較正値はまだ確定していない。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
 5. **TPC 側で分かっていて、まだ直していないこと**
    - `TPC_Calibration` には、SMILE_tool_box の 2 つの条件(同時計数が 100 を超える組 (i, j) だけを使う、各チャンネルの 32 ストリップの両端 4 本ずつを数えない)が無い。**今は入れない**と決めた(2026-11-06)。SMILE-3 のゲインマップを作るときに、要るかどうかをもう一度見る。
    - `Reconstruct` の幾何の α・入射方向(2026-11-08): SMILE_tool_box の `Erica/Reconstruct`(TRA、SingleHit)と SMLib `Compton_common`(`recon_vector`、`ARM`、`SPD`)と同じ式で入れた(EricaNext_try の `Reconstruct_2p` には無い)。

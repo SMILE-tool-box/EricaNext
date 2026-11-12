@@ -18,38 +18,12 @@
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
-      "Image_A_C": false,
-      "FADC_TH": false,
-      "save_track_png": false,
-      "save_fadc_png": false,
-      "save_fadc_a_filter": false,
-      "fadc_a_filter_min": 50,
-      "fadc_a_filter_max": 800,
-      "save_fadc_c_filter": false,
-      "fadc_c_filter_min": 200,
-      "fadc_c_filter_max": 950,
       "_doc": {
         "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
         "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
         "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
         "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
-        "Image_A_C": "true: 全イベントのヒットを積算した図 Image_A / Image_C(ストリップ × クロック)を保存する",
-        "FADC_TH": "true: FADC 波形のヒストグラム(ボード・ch ごと、全イベントの積算 FADC_Anode<i>_Ch<ch> とイベントごと FADC_ev_*)を作る。save_fadc_png と save_fadc_*_filter にも必要",
-        "save_track_png": "true: イベントごとの飛跡(ストリップ × クロック)の PNG を ./png_A, ./png_C に書く",
-        "save_fadc_png": "true: イベントごとの FADC 波形の PNG を ./png_FADC_A, ./png_FADC_C に書く(FADC_TH: true が必要)",
-        "save_fadc_a_filter": "true: アノードの FADC 波形に fadc_a_filter_min 以下か fadc_a_filter_max 以上のサンプルがあるイベントだけ、PNG を ./png_FADC_A_filter に書き、N_time と鳴った ch 数のグラフを保存する(FADC_TH: true が必要)",
-        "fadc_a_filter_min": "save_fadc_a_filter の下側の閾値(この値以下のサンプルがあれば選ぶ)[ADU]",
-        "fadc_a_filter_max": "save_fadc_a_filter の上側の閾値(この値以上のサンプルがあれば選ぶ)[ADU]",
-        "save_fadc_c_filter": "save_fadc_a_filter のカソード版(./png_FADC_C_filter)",
-        "fadc_c_filter_min": "save_fadc_c_filter の下側の閾値 [ADU]",
-        "fadc_c_filter_max": "save_fadc_c_filter の上側の閾値 [ADU]",
         "extra_data_dirs": "ほかにも TPC のエンコーダーのファイル(tpc_enc_*.raw)があるディレクトリ(同じランの別の storage。例 data_dir が calltt のとき killua/<ラン>)。ボードごとに、data_dir、extra_data_dirs の順で最初にファイルのあるディレクトリから読む(同じボードが 2 か所にあれば警告して最初の方)。run_chain.py の --extra-data-dir でも足せる"
-      },
-      "_units": {
-        "fadc_a_filter_min": "ADU",
-        "fadc_a_filter_max": "ADU",
-        "fadc_c_filter_min": "ADU",
-        "fadc_c_filter_max": "ADU"
       }
     },
     "CalcFADC": {

@@ -6,13 +6,7 @@
 #include <filesystem>
 #include <vector>
 
-#include <TH1.h>
 #include <TH2.h>
-#include <TTree.h>
-#include <TCanvas.h>
-#include "TError.h"
-#include <TStyle.h>
-#include <TGraph.h>
 
 #include "SaveFile.h"
 #include "TPC_Encoder.h"
@@ -81,16 +75,6 @@ public:
   bool              Reverse;
   bool              TPC_Only;
   bool              UseNtime;
-  bool              SaveTrack;
-  bool              SaveFADC;
-  bool              SaveFADC_A_filter;
-  int               FADC_A_filter_min;
-  int               FADC_A_filter_max;
-  bool              SaveFADC_C_filter;
-  int               FADC_C_filter_min;
-  int               FADC_C_filter_max;
-  bool              Image_A_C;
-  bool              FADC_TH;
   unsigned          event_id_coincidence;
 
   ANLStatus         ScanFiles();
@@ -102,12 +86,8 @@ public:
   unsigned          event_id = 0;
   
   TPC_Encoder     **Anode, **Cathode;
-  TH2D             *Image_A, **FADC_Wave_A, **FADC_ev_A;
-  TH2D             *Image_C, **FADC_Wave_C, **FADC_ev_C;
+  // Per-event working histograms for reconstruction; never written to the output file.
   TH2C             *Track_A, *Track_C;
-  TCanvas          *c_track = nullptr;
-  TGraph           *FADC_C_filter_graph = nullptr;
-  TGraph           *FADC_A_filter_graph = nullptr;
   int               min_a, max_a, min_c, max_c;
   int               min_ad, max_ad, min_cd, max_cd;
   std::vector<Hit>  anode_hits_, cathode_hits_;

@@ -19,6 +19,8 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
 | └ [`12_RawTreeWriter_sm3/`](1_DataIO/modules/12_RawTreeWriter_sm3/RawTreeWriter_sm3.ipynb) | 同期した TPC の生データの TTree |
 | `4_MakeCalibration/` | 較正ファイルを作る(EricaNext_try のゲインマップ、ドリフト速度と同じ扱い。チェーンはファイルを読むだけ) |
+| ├ [`TPC_DriftVelocity`](4_MakeCalibration/TPC_DriftVelocity.ipynb) | RawTreeWriterのROOT → 飛跡積算図・クロック分布 → ドリフト速度 |
+| ├ [`TPC_GainMap`](4_MakeCalibration/TPC_GainMap.ipynb) | RawTreeWriterのROOT → 1-hitスペクトル・2本の線のfit → TPCゲインマップ |
 | ├ [`PSA_Position`](4_MakeCalibration/PSA_Position.ipynb) | バタフライマップの 64 点 → `calib/psa/position_haNN.csv` |
 | ├ [`PSA_TempGain`](4_MakeCalibration/PSA_TempGain.ipynb) | 温度ごとの相対ゲイン → `calib/psa/temp_gain_haNN.csv` |
 | └ [`PSA_Energy`](4_MakeCalibration/PSA_Energy.ipynb) | ピクセルごとの hg_corr → keV(Cs-137 の 662 keV)→ `calib/psa/energy_haNN.csv` |
@@ -44,3 +46,5 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 - チェーンの実行: `run_script/run_chain.py`(設定ファイル `config/*.json` を指定)をノートブックから `subprocess` で実行
 - 較正ファイルを作る: `scripts/calib/*.py` を `subprocess` で実行
 - 結果の読み込み・計算: ROOT の `RDataFrame` と numpy で各ノートブックに直接記述
+
+TPC較正の2冊は既存の `RawTreeWriter_sm3/raw` を入力にします。入力ROOTのパスは冒頭の `RAWS` で指定します。生データからROOTを用意するコマンドも各冊に記載しています。出力先は `tutorials/cache/tpc_drift` / `tpc_gain` です。ゲイン較正の線源・線のエネルギー・電荷のfit範囲は測定に合わせて指定してください。

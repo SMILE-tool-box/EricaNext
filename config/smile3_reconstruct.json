@@ -27,15 +27,11 @@
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
-      "Image_A_C": false,
-      "FADC_TH": false,
       "_doc": {
         "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
         "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
         "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
         "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
-        "Image_A_C": "true: 全イベントのヒットを積算した図 Image_A / Image_C(ストリップ × クロック)を保存する",
-        "FADC_TH": "true: FADC 波形のヒストグラムを作る(PNG を書くパラメータは config/smile3_tpc_only.json の ReadData を参照)",
         "extra_data_dirs": "ほかにも TPC のエンコーダーのファイル(tpc_enc_*.raw)があるディレクトリ(同じランの別の storage。例 data_dir が calltt のとき killua/<ラン>)。ボードごとに、data_dir、extra_data_dirs の順で最初にファイルのあるディレクトリから読む(同じボードが 2 か所にあれば警告して最初の方)。run_chain.py の --extra-data-dir でも足せる"
       }
     },

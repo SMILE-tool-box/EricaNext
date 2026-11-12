@@ -73,11 +73,17 @@ cp ../config/smile3_tpc_only.json ../config/my_test.json
 python3 run_chain.py my_test -o my_test.root -n 10000
 ```
 
-### PNG の出力
+### 飛跡・波形の描画
 
-`ReadData` の `save_track_png`、`save_fadc_png`、`save_fadc_a_filter`、`save_fadc_c_filter` は、
-**実行したディレクトリ** の `png_A/`、`png_C/`、`png_FADC_A/` などにイベントごとの PNG を書きます。
-`save_fadc_png` と `save_fadc_*_filter` には `FADC_TH: true` も必要です。
+`ReadData` はイベントの読み込みと同期を行います。飛跡・波形の積算、閾値による選別、PNG保存は、
+`smile3_raw` で保存した `RawTreeWriter_sm3/raw` を読み、後段で行います。
+旧 `Image_A_C`、`FADC_TH`、`save_track_png`、`save_fadc_png`、`save_fadc_*_filter` と関連する閾値設定は削除しました。
+既存の設定ファイルや `--set` に残っている場合は取り除いてください。
+
+飛跡の積算は [TPC_DriftVelocity](../tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb)、
+イベントごとの飛跡・波形は [ReadData](../tutorials/1_DataIO/modules/1_ReadData/ReadData.ipynb) を参照してください。
+rawツリーの `hit_a/c_strip`, `hit_a/c_clock`、`fadc_ch`, `fadc_wave`、`anode_time`, `cathode_time` で
+選別・描画・時刻に対する集計を行えます（時刻配列とboard IDの対応は `run_info`）。
 
 ---
 
