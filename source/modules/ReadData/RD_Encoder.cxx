@@ -18,18 +18,12 @@ void ReadData::Scan_Encoder(){
   }
   if(N_anode.size()){
     define_evs("Anode_Data");
-    Track_A = new TH2C("Track_A", "Track_A",
-                           128*12, -0.5, 128*12-0.5, 1024, -0.5, 1023.5);
-    Track_A->SetDirectory(nullptr);
     Anode = new TPC_Encoder* [N_anode.size()];
     for(unsigned i=0; i<N_anode.size(); i++)
       Anode[i] = new TPC_Encoder(DirAnode[i], 0, N_anode[i], Reverse, UseNtime);
   }
   if(N_cathode.size()){
     define_evs("Cathode_Data");
-    Track_C = new TH2C("Track_C", "Track_C",
-                           128*12, -0.5, 128*12-0.5, 1024, -0.5, 1023.5);
-    Track_C->SetDirectory(nullptr);
     Cathode = new TPC_Encoder* [N_cathode.size()];
     for(unsigned i=0; i<N_cathode.size(); i++)
       Cathode[i] = new TPC_Encoder(DirCathode[i], 1, N_cathode[i], Reverse, UseNtime);
@@ -37,7 +31,7 @@ void ReadData::Scan_Encoder(){
 }
 
 void ReadData::Read_Anode(){
-  Track_A->Reset("ICES");
+  if(Track_A) Track_A->Reset("ICES");
   anode_hits_.clear();
   anode_records_.clear();
   min_a = 128*12; max_a = -1;
@@ -52,7 +46,7 @@ void ReadData::Read_Anode(){
           if((Anode[i]->TrackData(j+ch+1) >> shift) & 0x1){
             int strip = N_anode[i]*128+32*ch+bit;
             anode_hits_.push_back({(short)strip, (short)clk});
-            Track_A->Fill(strip, clk);
+            if(Track_A) Track_A->Fill(strip, clk);
             if(min_a>strip) min_a = strip;
             if(max_a<strip) max_a = strip;
             if(min_ad>clk) min_ad = clk;
@@ -65,7 +59,7 @@ void ReadData::Read_Anode(){
 }
 
 void ReadData::Read_Cathode(){
-  Track_C->Reset("ICES");
+  if(Track_C) Track_C->Reset("ICES");
   cathode_hits_.clear();
   cathode_records_.clear();
   min_c = 128*12; max_c = -1;
@@ -80,7 +74,7 @@ void ReadData::Read_Cathode(){
           if((Cathode[i]->TrackData(j+ch+1) >> shift) & 0x1){
             int strip = N_cathode[i]*128+32*ch+bit;
             cathode_hits_.push_back({(short)strip, (short)clk});
-            Track_C->Fill(strip, clk);
+            if(Track_C) Track_C->Fill(strip, clk);
             if(min_c>strip) min_c = strip;
             if(max_c<strip) max_c = strip;
             if(min_cd>clk) min_cd = clk;
@@ -90,6 +84,26 @@ void ReadData::Read_Cathode(){
       }
     }
   }
+}
+
+const TH2C* ReadData::Get_Track_A() const {
+  if(!Track_A && !N_anode.empty()){
+    Track_A = new TH2C("Track_A", "Track_A",
+                           128*12, -0.5, 128*12-0.5, 1024, -0.5, 1023.5);
+    Track_A->SetDirectory(nullptr);
+    for(const auto& hit : anode_hits_) Track_A->Fill(hit.strip, hit.clock);
+  }
+  return Track_A;
+}
+
+const TH2C* ReadData::Get_Track_C() const {
+  if(!Track_C && !N_cathode.empty()){
+    Track_C = new TH2C("Track_C", "Track_C",
+                           128*12, -0.5, 128*12-0.5, 1024, -0.5, 1023.5);
+    Track_C->SetDirectory(nullptr);
+    for(const auto& hit : cathode_hits_) Track_C->Fill(hit.strip, hit.clock);
+  }
+  return Track_C;
 }
 
 void ReadData::Get_TPC_FADC(bool c_flag, int id, short *data) const {

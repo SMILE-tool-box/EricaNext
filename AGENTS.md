@@ -45,6 +45,8 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 - `--data-dir` を指定しても `ericanext_config: WARNING: no storage_g*/ in .../mount_data` が出る。`mount_data/` が空なだけなので、気にしなくてよい(以前からの動き)。
 - `build/`、`install/`、`mount_data/`、`root_data/` は `.gitignore` に入っている。
 
+環境の予備確認は `scripts/env/check_environment.py`。ビルド前は `--mode build`、ビルド後は `--mode all`。チェーン用と解析用のPythonを別々に指定できる。データ処理・依存のインストールは行わない。
+
 ## 3. データの場所
 
 | データ | 場所 |
@@ -72,7 +74,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 
 SMILE-3の `ReadData` から積算ヒストグラム・波形ヒストグラム・PNG出力とその選別パラメータを削除した。
 波形・ヒット・時刻は `RawTreeWriter_sm3` で保存し、積算・選別・描画は後段で行う。
-`Track_A/C` は再構成用のイベント内作業データとして保持するが、ROOTには書かない。
+`Track_A/C` は再構成モジュールが `Get_Track_A/C` を初めて呼んだときだけ生成する。ROOTには書かない。raw保存だけのチェーンでは生成・Reset・Fillを行わない。
 SMILE-2+の `ReadData_2p` は今回の変更対象ではない。
 
 ## 5. PSA(シンチレータ)のモジュール — 2026-11-05 時点

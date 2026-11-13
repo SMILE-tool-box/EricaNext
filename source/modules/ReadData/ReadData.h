@@ -36,8 +36,9 @@ public:
   int       Get_FADC_clk()  const {return 512;};
   const std::vector<int>*  Get_AnodeID()    const {return &N_anode;};
   const std::vector<int>*  Get_CathodeID()  const {return &N_cathode;};
-  const TH2C*              Get_Track_A()    const {return Track_A;};
-  const TH2C*              Get_Track_C()    const {return Track_C;};
+  // Allocate per-event histograms only when a reconstruction consumer requests them.
+  const TH2C*              Get_Track_A() const;
+  const TH2C*              Get_Track_C() const;
 
   struct Hit { short strip; short clock; };
   const std::vector<Hit>& Get_Anode_Hits()   const { return anode_hits_; }
@@ -87,7 +88,7 @@ public:
   
   TPC_Encoder     **Anode, **Cathode;
   // Per-event working histograms for reconstruction; never written to the output file.
-  TH2C             *Track_A, *Track_C;
+  mutable TH2C     *Track_A, *Track_C;
   int               min_a, max_a, min_c, max_c;
   int               min_ad, max_ad, min_cd, max_cd;
   std::vector<Hit>  anode_hits_, cathode_hits_;

@@ -220,6 +220,38 @@ cd EricaNext
 EricaNext_try を入れてあれば、その ANLNext(`~/opt/anlnext-g4`)を使えます。その場合は先に `source ~/opt/setup_ericanext.sh` します
 (この ANLNext は `import anlnext` だけでも Geant4 のライブラリを使うため)。
 
+### 環境を確認する
+
+使用するPythonとROOT・ANLNextの環境を有効にした後、まず確認します。
+`~/opt/setup_ericanext.sh` は開発者環境の例で、このリポジトリには含まれません。
+各自のROOT・ANLNextの設定スクリプトを使ってください。
+
+```bash
+# ビルド前：ツール、Python開発ヘッダー、ANLNextのimportを確認
+python3 scripts/env/check_environment.py --mode build
+
+# ビルド後：EricaPyと、較正・ノートブック用の依存関係も確認
+python3 scripts/env/check_environment.py --mode all
+```
+
+`OK` / `NG` と対処の案内を表示し、NGがあれば終了コード1になります。
+データを読まず、パッケージのインストールやビルドは行いません。
+Boostの検出・リンクや依存関係全体の整合は、実際のCMakeビルドで確認します。
+
+Pythonが複数ある場合は、用途ごとに明示できます（パスは各自のものに置き換えます）。
+
+```bash
+python3 scripts/env/check_environment.py --mode all \
+  --python /path/to/chain/python \
+  --analysis-python /path/to/analysis/python
+```
+
+`--python` はANLNext・EricaPyのビルドとチェーン実行に使うPython、
+`--analysis-python` はPyROOT・numpy・scipy・matplotlib・Jupyterを使うPythonです。
+後者を省略すると前者と同じPythonを確認します。
+チェーンだけなら `--mode run`、解析用Pythonだけなら `--mode notebook` で確認できます。
+カーネル表示名「EricaNext」は登録済みであることを前提にしません。
+
 ### 2. EricaNext をビルドする
 
 ```bash
