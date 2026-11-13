@@ -7,10 +7,19 @@
 Method (EricaNext_try tutorials_caldata/4_MakeCalibration/DriftVelocity, drift_speed_s2p_v3.C):
   1. clock distribution of all strip hits (hit_a_clock / hit_c_clock of RawTreeWriter_sm3/raw), anode and
      cathode separately. Electrons made uniformly between the GEM plane and the top plate give a box.
-  2. derivative |h[b+1] - h[b]|: the two edges of the box become two peaks.
-  3. clock_offset: the clock of the largest derivative in --gem-range (GEM side edge).
-  4. top side edge: Gaussian fit of the derivative peak in --top-range (initial values: maximum, weighted mean
-     and RMS of the derivative there; fit range mean +- 1.5 RMS).
+     --rebin N sums N clocks into one bin first (for runs with few hits, where the derivative is noisy).
+  2. derivative |h[b+1] - h[b]| (first derivative): the two edges of the box become two peaks.
+     The steps from the first bin and into the last bin (the ends of the encoder range, which often collect
+     hits) are set to 0, so that they are never taken as an edge.
+  3. clock_offset (GEM side edge): Gaussian fit of the derivative peak in --gem-range, fit range the clock
+     of the largest derivative +- --gem-window (default 40; the GEM side peak is only a few times above the
+     plateau fluctuation, so a wide range picks up the noise).
+     top side edge: Gaussian fit of the derivative peak in --top-range (initial values: maximum, weighted
+     mean and RMS of the derivative there; fit range mean +- 1.5 RMS).
+     Until 2026-11-13 clock_offset was the clock of the largest derivative (no fit; as
+     EricaNext_try), which jumps by the noise when the GEM side edge is not sharp.
+     Default ranges: --gem-range 20 300, --top-range 800 1000 (SMILE-3 2026-11-11 run70: edges at about 100
+     and 890 clock). Look at the clock distribution and set them for the run.
   5. velocity = (drift_length - z_gem) / (top edge - clock_offset).
   clock_offset and velocity are the means of anode and cathode.
 SMILE-3: z_gem = 10 mm (uPIC - GEM), drift length = 317 mm (uPIC - top plate), so 307 mm between the edges.
@@ -47,51 +56,75 @@ def derivative(y):
     """|h[b+1] - h[b]|, stored at b (as EricaNext_try differential())"""
     d = np.zeros_like(y)
     d[:-1] = np.abs(np.diff(y))
+    d[0] = 0.0    # step from the first bin (end of the encoder range)
+    d[-2] = 0.0   # step into the last bin (end of the encoder range)
     return d
 
 
-def analyze(h, gem_range, top_range, length):
+def fit_edge(clk, d, rng, half_window=None):
+    """Gaussian fit of the derivative peak in rng. Returns None if the range has no derivative.
+    half_window None: initial values maximum, weighted mean and RMS of the derivative in rng, fit range
+    mean +- 1.5 RMS (a peak far above the rest of the range). half_window W [clock]: initial values maximum,
+    its clock and W / 2, fit range that clock +- W (a peak only a few times above the noise)."""
+    sel = (clk >= rng[0]) & (clk <= rng[1])
+    w = d[sel]
+    if w.sum() <= 0:
+        return None
+    bw = clk[1] - clk[0]
+    if half_window is None:
+        mean = float((clk[sel] * w).sum() / w.sum())
+        rms = float(np.sqrt(max((clk[sel] ** 2 * w).sum() / w.sum() - mean ** 2, 1e-6)))
+        lo, hi = max(mean - 1.5 * rms, rng[0]), min(mean + 1.5 * rms, rng[1])
+    else:
+        hw = max(half_window, 2 * bw)
+        mean, rms = float(clk[sel][np.argmax(w)]), hw / 2
+        lo, hi = max(mean - hw, rng[0]), min(mean + hw, rng[1])
+    hd = ROOT.TH1D("hd", "", len(clk), clk[0] - bw / 2, clk[-1] + bw / 2); hd.SetDirectory(0)
+    for i, v in enumerate(d):
+        hd.SetBinContent(i + 1, v)
+    f = ROOT.TF1("fg", "gaus", lo, hi)
+    f.SetParameters(float(w.max()), mean, rms)
+    st = int(hd.Fit(f, "QN0", "", lo, hi))
+    return {"pos": f.GetParameter(1), "err": f.GetParError(1), "sigma": abs(f.GetParameter(2)),
+            "height": f.GetParameter(0), "fit_range": (lo, hi), "status": st}
+
+
+def analyze(h, gem_range, top_range, length, gem_window=40.0):
     n = h.GetNbinsX()
     clk = np.array([h.GetBinCenter(i) for i in range(1, n + 1)])
     y = np.array([h.GetBinContent(i) for i in range(1, n + 1)])
     d = derivative(y)
     r = {"clk": clk, "y": y, "d": d, "problems": []}
 
-    g = (clk >= gem_range[0]) & (clk <= gem_range[1])
-    r["offset"] = float(clk[g][np.argmax(d[g])])
-
-    t = (clk >= top_range[0]) & (clk <= top_range[1])
-    w = d[t]
-    if w.sum() <= 0:
-        r["problems"].append("no hits in the top range")
+    fits = {}
+    for name, rng, hw in (("GEM", gem_range, gem_window), ("top", top_range, None)):
+        fits[name] = fit_edge(clk, d, rng, hw)
+        if fits[name] is None:
+            r["problems"].append(f"no hits in the {name} range")
+    if None in fits.values():
         return r
-    mean = float((clk[t] * w).sum() / w.sum())
-    rms = float(np.sqrt(max((clk[t] ** 2 * w).sum() / w.sum() - mean ** 2, 1e-6)))
-    lo, hi = max(mean - 1.5 * rms, top_range[0]), min(mean + 1.5 * rms, top_range[1])
-    hd = ROOT.TH1D("hd", "", n, clk[0] - 0.5, clk[-1] + 0.5); hd.SetDirectory(0)
-    for i, v in enumerate(d):
-        hd.SetBinContent(i + 1, v)
-    f = ROOT.TF1("fg", "gaus", lo, hi)
-    f.SetParameters(float(w.max()), mean, rms)
-    st = int(hd.Fit(f, "QN0", "", lo, hi))
-    edge, err, sigma, height = f.GetParameter(1), f.GetParError(1), abs(f.GetParameter(2)), f.GetParameter(0)
-    r.update(edge=edge, edge_err=err, sigma=sigma, height=height, fit_range=(lo, hi))
+    g, t = fits["GEM"], fits["top"]
+    r.update(offset=g["pos"], offset_err=g["err"], gem_sigma=g["sigma"], gem_height=g["height"],
+             gem_fit_range=g["fit_range"],
+             edge=t["pos"], edge_err=t["err"], sigma=t["sigma"], height=t["height"], fit_range=t["fit_range"])
+    edge = t["pos"]
     r["velocity"] = length / (edge - r["offset"]) if edge > r["offset"] else float("nan")
 
-    # checks: the fit converged inside the range, the edge is sharp, and the box is there
+    # checks: the fits converged inside the ranges, the edges are sharp, and the box is there
     plateau = (clk > r["offset"] + 20) & (clk < edge - 20)
     noise = float(np.median(d[plateau])) if plateau.sum() > 10 else float("nan")
     r["plateau_noise"] = noise
-    if st != 0:
-        r["problems"].append(f"top edge fit status {st}")
-    if not (top_range[0] < edge < top_range[1]):
-        r["problems"].append(f"top edge {edge:.1f} outside --top-range")
-    if not (err < 5):
-        r["problems"].append(f"top edge error {err:.1f} clock (>= 5)")
-    if not (sigma < 30):
-        r["problems"].append(f"top edge width {sigma:.1f} clock (>= 30): not a sharp edge")
-    if not (height > 5 * noise):
-        r["problems"].append(f"top edge peak {height:.0f} not above 5 x the plateau fluctuation {noise:.0f}")
+    for name, rng, e in (("GEM", gem_range, g), ("top", top_range, t)):
+        if e["status"] != 0:
+            r["problems"].append(f"{name} edge fit status {e['status']}")
+        if not (rng[0] < e["pos"] < rng[1]):
+            r["problems"].append(f"{name} edge {e['pos']:.1f} outside --{name.lower()}-range")
+        if not (e["err"] < 5):
+            r["problems"].append(f"{name} edge error {e['err']:.1f} clock (>= 5)")
+        if not (e["sigma"] < 30):
+            r["problems"].append(f"{name} edge width {e['sigma']:.1f} clock (>= 30): not a sharp edge")
+        if not (e["height"] > 5 * noise):
+            r["problems"].append(f"{name} edge peak {e['height']:.0f} not above 5 x the plateau fluctuation {noise:.0f}")
     if plateau.sum() > 10:
         ym = y[plateau]
         ratio = ym[: len(ym) // 4].mean() / max(ym[-len(ym) // 4:].mean(), 1)
@@ -102,22 +135,26 @@ def analyze(h, gem_range, top_range, length):
 
 
 def qa_figure(path, res):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(2, 2, figsize=(13, 7), sharex=True)
+    # matplotlib.figure.Figure draws to the file without pyplot, so the backend is not changed
+    # (matplotlib.use("Agg") here stopped plt.show() in a notebook that imports this function)
+    from matplotlib.figure import Figure
+    fig = Figure(figsize=(13, 7))
+    ax = fig.subplots(2, 2, sharex=True)
     for col, (side, r) in enumerate(res.items()):
         ax[0, col].step(r["clk"], r["y"], where="mid", lw=0.8)
         ax[0, col].set_title(f"{side}: clock distribution of the hits"); ax[0, col].set_ylabel("hits")
         ax[1, col].step(r["clk"], np.maximum(r["d"], 0.5), where="mid", lw=0.8)
         ax[1, col].set_yscale("log"); ax[1, col].set_ylabel("|h[b+1] - h[b]|"); ax[1, col].set_xlabel("clock")
         for a in ax[:, col]:
-            a.axvline(r["offset"], color="r", ls="--", lw=0.8, label=f"clock_offset {r['offset']:.0f}")
+            if "offset" in r:
+                a.axvline(r["offset"], color="r", ls="--", lw=0.8, label=f"clock_offset {r['offset']:.1f}")
             if "edge" in r and r["clk"][0] <= r["edge"] <= r["clk"][-1]:
                 a.axvline(r["edge"], color="g", ls="--", lw=0.8, label=f"top edge {r['edge']:.1f}")
-        if "fit_range" in r:
-            x = np.linspace(*r["fit_range"], 200)
-            ax[1, col].plot(x, r["height"] * np.exp(-0.5 * ((x - r["edge"]) / r["sigma"]) ** 2), "g-", lw=1)
+        for fr, hgt, pos, sg, c in (("gem_fit_range", "gem_height", "offset", "gem_sigma", "r"),
+                                    ("fit_range", "height", "edge", "sigma", "g")):
+            if fr in r:
+                x = np.linspace(*r[fr], 200)
+                ax[1, col].plot(x, r[hgt] * np.exp(-0.5 * ((x - r[pos]) / r[sg]) ** 2), c + "-", lw=1)
         ax[1, col].set_ylim(bottom=0.5); ax[1, col].set_xlim(r["clk"][0], r["clk"][-1])
         ax[0, col].legend(fontsize=8)
         txt = f"v = {r.get('velocity', float('nan')):.4f} mm/clock"
@@ -136,23 +173,31 @@ def main():
     ap.add_argument("-o", "--output", required=True, help="output file (e.g. calib/tpc/drift_velocity.dat)")
     ap.add_argument("--z-gem", type=float, default=10.0, help="uPIC - GEM [mm] (SMILE-3 10)")
     ap.add_argument("--drift-length", type=float, default=317.0, help="uPIC - top plate [mm] (SMILE-3 317)")
-    ap.add_argument("--gem-range", type=float, nargs=2, default=(0, 300), help="clocks to look for the GEM side edge")
-    ap.add_argument("--top-range", type=float, nargs=2, default=(400, 1023), help="clocks to look for the top side edge")
+    ap.add_argument("--gem-range", type=float, nargs=2, default=(20, 300), help="clocks to look for the GEM side edge")
+    ap.add_argument("--top-range", type=float, nargs=2, default=(800, 1000), help="clocks to look for the top side edge")
     ap.add_argument("--nclk", type=int, default=1024, help="clocks of the encoder")
+    ap.add_argument("--gem-window", type=float, default=40.0, help="half width of the GEM side fit range [clock]")
+    ap.add_argument("--rebin", type=int, default=1, help="clocks summed into one bin (must divide --nclk)")
     ap.add_argument("--tree", default="RawTreeWriter_sm3/raw", help="raw data tree (SMILE-2+: RawTreeWriter_2p/raw)")
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--force", action="store_true", help="write the file even if a check fails")
     ap.add_argument("--no-qa", action="store_true")
     args = ap.parse_args()
 
+    if args.rebin < 1 or args.nclk % args.rebin:
+        sys.exit(f"--rebin {args.rebin} must be >= 1 and divide --nclk {args.nclk}")
     if os.path.exists(args.output) and not args.overwrite:
         sys.exit(f"{args.output} exists (--overwrite to replace it)")
     length = args.drift_length - args.z_gem
     res = {}
     for side, col in (("anode", "hit_a_clock"), ("cathode", "hit_c_clock")):
-        r = analyze(clock_hist(args.inputs, col, args.nclk, args.tree), args.gem_range, args.top_range, length)
+        h = clock_hist(args.inputs, col, args.nclk, args.tree)
+        if args.rebin > 1:
+            h.Rebin(args.rebin)
+        r = analyze(h, args.gem_range, args.top_range, length, args.gem_window)
         res[side] = r
-        print(f"{side}: {int(r['y'].sum())} hits, clock_offset {r['offset']:.0f}, top edge "
+        print(f"{side}: {int(r['y'].sum())} hits, clock_offset {r.get('offset', float('nan')):.2f} +- "
+              f"{r.get('offset_err', float('nan')):.2f}, top edge "
               f"{r.get('edge', float('nan')):.2f} +- {r.get('edge_err', float('nan')):.2f} (sigma {r.get('sigma', float('nan')):.1f}), "
               f"velocity {r.get('velocity', float('nan')):.5f} mm/clock")
         for p in r["problems"]:
@@ -167,18 +212,21 @@ def main():
     if bad and not args.force:
         sys.exit("checks failed: the file is not written (--force to write it anyway). "
                  "The run needs electrons uniformly in the drift volume.")
+    if any("offset" not in r or "edge" not in r for r in res.values()):
+        sys.exit("an edge was not found: the file is not written")
     offset = np.mean([r["offset"] for r in res.values()])
     v = np.mean([r["velocity"] for r in res.values()])
     with open(args.output, "w") as f:
         f.write(f"# made by scripts/calib/make_tpc_drift_velocity.py, {datetime.datetime.now().isoformat(timespec='seconds')}\n")
         for p in args.inputs:
             f.write(f"# input: {os.path.abspath(p)}\n")
+        f.write(f"# gem range {args.gem_range[0]:g}-{args.gem_range[1]:g} (fit +- {args.gem_window:g}), top range {args.top_range[0]:g}-{args.top_range[1]:g} clock, rebin {args.rebin}\n")
         f.write(f"# z_gem {args.z_gem} mm, drift length {args.drift_length} mm: {length} mm between the edges\n")
         for side, r in res.items():
-            f.write(f"# {side}: clock_offset {r['offset']:.0f}, top edge {r['edge']:.2f} +- {r['edge_err']:.2f}, "
+            f.write(f"# {side}: clock_offset {r['offset']:.2f} +- {r['offset_err']:.2f}, top edge {r['edge']:.2f} +- {r['edge_err']:.2f}, "
                     f"velocity {r['velocity']:.5f}{' (NG: ' + '; '.join(r['problems']) + ')' if r['problems'] else ''}\n")
-        f.write(f"clock_offset {offset:g}\nvelocity {v:.5f}\n")
-    print(f"wrote {args.output}: clock_offset {offset:g}, velocity {v:.5f} mm/clock")
+        f.write(f"clock_offset {offset:.2f}\nvelocity {v:.5f}\n")
+    print(f"wrote {args.output}: clock_offset {offset:.2f}, velocity {v:.5f} mm/clock")
 
 
 if __name__ == "__main__":
