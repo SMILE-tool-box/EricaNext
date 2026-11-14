@@ -4,7 +4,7 @@
 使い方の説明は [`README.md`](README.md)、設定ファイルの書き方は [`config/README.md`](config/README.md)、スクリプトは [`run_script/README.md`](run_script/README.md) にあります。
 ここには、**それらに書いていない作業の約束・環境の落とし穴・これまでの経緯・残りの仕事**をまとめます。
 
-最終更新: 2026-11-13(ブランチ `feature-restructure`)
+最終更新: 2026-11-14(ブランチ `feature-restructure`)
 
 ---
 
@@ -191,3 +191,5 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `eb99de1` | PSA のエネルギーの較正を Cs-137 662 keV と Co-60 1173/1332 keV の 3 点でピクセルごとに |
 | `f946f24` | `Reconstruct` に幾何の α と入射方向(TOT_Skewness の飛跡から)、`smile3_reconstruct` に TOT_Skewness |
 | `a1cd979` | PSA_Event のチュートリアルを今の `geometry.csv` とエネルギーの較正で流し直した |
+
+FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb`。全96chをTH2Dとして1つのROOTに保存し、波形数・入力条件はmetadata_jsonに記録。`-n` は複数入力を通じたイベント数上限、-1は全件。rawのカソードは反転済みなので再反転しない。
