@@ -193,3 +193,5 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `a1cd979` | PSA_Event のチュートリアルを今の `geometry.csv` とエネルギーの較正で流し直した |
 
 FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb`。全96chをTH2Dとして1つのROOTに保存し、波形数・入力条件はmetadata_jsonに記録。`-n` は複数入力を通じたイベント数上限、-1は全件。rawのカソードは反転済みなので再反転しない。
+
+TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。

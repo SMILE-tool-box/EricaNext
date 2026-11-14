@@ -9,10 +9,10 @@ CalcFADC does (baseline = mean of the first base_window samples, added sample by
 sum of (wave - baseline) over the samples more than threshold above it). Cathode waveforms in the tree are
 already inverted (1023 - ADC).
 
-1 hit (SMILE_tool_box SPEC_1Hit): exactly one anode channel with charge and exactly one cathode channel with
-charge in the same panel (the panel of a board = board / 3; FADC channel = 4 board + ch = strip / 32).
-Board 1 hit: exactly one anode board and one cathode board of that panel with charge; the 4 channels of each
-board are summed.
+1 hit: exactly one anode channel and exactly one cathode channel with charge across all panels,
+and both must belong to the same panel (board / 3; FADC channel = 4 board + ch = strip / 32).
+Board 1 hit: exactly one anode board and one cathode board across all panels, both in the same panel;
+the 4 channels of each board are summed. Other-panel cathode signals reject the event in both selections.
 
 Output (ROOT file):
   Baseline_Anode, Baseline_Cathode      TH2D baseline x channel (channels with charge)
@@ -23,6 +23,7 @@ Output (ROOT file):
 and <output dir>/qa/<output name>_board.png (board 1-hit spectra per panel). Look at it before using the file.
 """
 import argparse
+import json
 import os
 import sys
 
@@ -78,8 +79,8 @@ struct Spec1Hit {
     for(int ch=0; ch<48; ch++)  if(q[0][ch] > 0){ na++; a = ch; }
     if(na == 1){
       int panel = (a / 4) / 3, nc = 0, c = -1;
-      for(int ch=0; ch<48; ch++)  if((ch / 4) / 3 == panel && q[1][ch] > 0){ nc++; c = ch; }
-      if(nc == 1){
+      for(int ch=0; ch<48; ch++)  if(q[1][ch] > 0){ nc++; c = ch; }
+      if(nc == 1 && c / 12 == panel){
         n_1hit++;
         get(Form("Anode_1Hit_A%02d_C%02d", a, c))->Fill(q[0][a]);
         get(Form("Cathode_1Hit_A%02d_C%02d", a, c))->Fill(q[1][c]);
@@ -94,12 +95,12 @@ struct Spec1Hit {
     }
     if(nba == 1){
       int nbc = 0, bc = -1;
-      for(int b=3*(ba/3); b<3*(ba/3)+3; b++){
+      for(int b=0; b<12; b++){
         bool hit = false;
         for(int ch=0; ch<4; ch++)  hit |= q[1][4*b+ch] > 0;
         if(hit){ nbc++; bc = b; }
       }
-      if(nbc == 1){
+      if(nbc == 1 && bc / 3 == ba / 3){
         n_board++;
         double sa = 0, sc = 0;
         for(int ch=0; ch<4; ch++){ sa += q[0][4*ba+ch]; sc += q[1][4*bc+ch]; }
@@ -161,6 +162,13 @@ def main():
 
     out = ROOT.TFile(args.output, "recreate")
     spec.write()
+    metadata = {"inputs": [os.path.abspath(p) for p in args.inputs],
+                "selection": "one anode channel and one cathode channel globally; same panel",
+                "board_selection": "one anode board and one cathode board globally; same panel",
+                "base_window_samples": args.base_window, "threshold_ADU": args.threshold,
+                "events": int(spec.n_events), "channel_1hit_events": int(spec.n_1hit),
+                "board_1hit_events": int(spec.n_board)}
+    ROOT.TObjString(json.dumps(metadata)).Write("selection_metadata_json")
     out.Close()
     print(f"wrote {args.output}: {spec.n_events} events, channel 1 hit {spec.n_1hit}, board 1 hit {spec.n_board}")
 
@@ -190,7 +198,7 @@ def write_qa(path):
         ax = axs.flat[ba // 3]
         ax.step(x, y, where="mid", lw=0.8, label=f"{name[17:]} ({int(y.sum())})")
     for p, ax in enumerate(axs.flat):
-        ax.set_title(f"uPIC{p}: board 1 hit, anode charge"); ax.set_yscale("log"); ax.set_xlim(0, 4000)
+        ax.set_title(f"uPIC{p}: global board 1 hit, anode charge"); ax.set_yscale("log"); ax.set_xlim(0, 4000)
         ax.set_xlabel("anode charge [ADU x sample]"); ax.set_ylabel(f"events / {5 * QA_REBIN} ADU x sample")
         if ax.get_legend_handles_labels()[0]:
             ax.legend(fontsize=7, ncol=3)
