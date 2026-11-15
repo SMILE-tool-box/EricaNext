@@ -197,3 +197,5 @@ FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutor
 TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
 
 2026-11-15: SMILE-3 TPCのraw writerを `RawTreeWriter_sm3` から `TPC_RawTreeWriter` に改名。クラス・設定キー・ROOTディレクトリを新名に統一し、ブランチ内容は変更しない。旧名の設定は新名に書き換える。後段解析とチュートリアルは `scripts/analysis/tpc_raw_io.py` で新旧ROOTを判別し、既存ROOTの再変換は不要。新旧両ツリーを含む曖昧な入力はエラー。
+
+2026-11-15: TPC_GainMap.ipynbの2点較正でピーク中心の標準誤差をKa/Kbへ一次伝播し、標準誤差・共分散・相関係数をgain_map.jsonのcalibration_uncertaintyに保存。2ピーク独立・線エネルギー固定の統計誤差であり、系統誤差を含まない。datは4列のまま。
