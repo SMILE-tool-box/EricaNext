@@ -12,13 +12,15 @@ already inverted (1023 - ADC).
 1 hit: exactly one anode channel and exactly one cathode channel with charge across all panels,
 and both must belong to the same panel (board / 3; FADC channel = 4 board + ch = strip / 32).
 Board 1 hit: exactly one anode board and one cathode board across all panels, both in the same panel;
-the 4 channels of each board are summed. Other-panel cathode signals reject the event in both selections.
+the 4 channels of each board are summed. 2-channel 1 hit: the same with groups of 2 adjacent channels
+(FADC ch 2k and 2k+1, k = 0-23). Other-panel cathode signals reject the event in all selections.
 
 Output (ROOT file):
   Baseline_Anode, Baseline_Cathode      TH2D baseline x channel (channels with charge)
   Charge_Anode, Charge_Cathode          TH2D charge x channel (channels with charge)
   Anode_1Hit_A<aa>_C<cc>, Cathode_1Hit_A<aa>_C<cc>        TH1D per channel pair (aa, cc = 0-47)
   Anode_1Hit_board_A<i>_C<j>, Cathode_1Hit_board_A<i>_C<j>  TH1D per board pair (i, j = 0-11)
+  Anode_1Hit_2ch_A<i>_C<j>, Cathode_1Hit_2ch_A<i>_C<j>      TH1D per 2-channel group pair (i, j = 0-23)
   Spectra: 2000 bins, 0-1e4 [ADU x sample] (as the former CalcFADC histograms).
 and <output dir>/qa/<output name>_board.png (board 1-hit spectra per panel). Look at it before using the file.
 """
@@ -47,7 +49,7 @@ struct Spec1Hit {
   int base_window; double threshold; int nclk;
   TH2D *base[2], *charge[2];
   std::map<std::string, TH1D*> h;
-  long n_events = 0, n_1hit = 0, n_board = 0;
+  long n_events = 0, n_1hit = 0, n_board = 0, n_2ch = 0;
 
   Spec1Hit(int bw, double thr, int n) : base_window(bw), threshold(thr), nclk(n) {
     TH1::AddDirectory(kFALSE);   // the histograms belong to no file (the input files are closed)
@@ -89,28 +91,25 @@ struct Spec1Hit {
         get(Form("Cathode_1Hit_A%02d_C%02d", a, c))->Fill(q[1][c]);
       }
     }
-    // board 1 hit
-    int nba = 0, ba = -1;
-    for(int b=0; b<12; b++){
-      bool hit = false;
-      for(int ch=0; ch<4; ch++)  hit |= q[0][4*b+ch] > 0;
-      if(hit){ nba++; ba = b; }
-    }
-    if(nba == 1){
-      int nbc = 0, bc = -1;
-      for(int b=0; b<12; b++){
+    group_1hit(q, 4, "board", n_board);   // board = 4 channels
+    group_1hit(q, 2, "2ch", n_2ch);       // 2 adjacent channels (2k, 2k+1)
+  }
+  // Exactly one anode group and one cathode group with charge across all panels, both in the same panel;
+  // the charges of the g channels of each group are summed.
+  void group_1hit(double q[2][48], int g, const char* tag, long& count){
+    int ng = 48 / g, per_panel = 12 / g, n[2] = {0, 0}, id[2] = {-1, -1};
+    for(int s=0; s<2; s++)
+      for(int b=0; b<ng; b++){
         bool hit = false;
-        for(int ch=0; ch<4; ch++)  hit |= q[1][4*b+ch] > 0;
-        if(hit){ nbc++; bc = b; }
+        for(int ch=0; ch<g; ch++)  hit |= q[s][g*b+ch] > 0;
+        if(hit){ n[s]++; id[s] = b; }
       }
-      if(nbc == 1 && bc / 3 == ba / 3){
-        n_board++;
-        double sa = 0, sc = 0;
-        for(int ch=0; ch<4; ch++){ sa += q[0][4*ba+ch]; sc += q[1][4*bc+ch]; }
-        get(Form("Anode_1Hit_board_A%d_C%d", ba, bc))->Fill(sa);
-        get(Form("Cathode_1Hit_board_A%d_C%d", ba, bc))->Fill(sc);
-      }
-    }
+    if(n[0] != 1 || n[1] != 1 || id[0] / per_panel != id[1] / per_panel)  return;
+    count++;
+    double sum[2] = {0, 0};
+    for(int s=0; s<2; s++)  for(int ch=0; ch<g; ch++)  sum[s] += q[s][g*id[s]+ch];
+    get(Form("Anode_1Hit_%s_A%d_C%d", tag, id[0], id[1]))->Fill(sum[0]);
+    get(Form("Cathode_1Hit_%s_A%d_C%d", tag, id[0], id[1]))->Fill(sum[1]);
   }
   void run(TTree* t){
     TTreeReader r(t);
@@ -169,12 +168,14 @@ def main():
     metadata = {"inputs": [os.path.abspath(p) for p in args.inputs],
                 "selection": "one anode channel and one cathode channel globally; same panel",
                 "board_selection": "one anode board and one cathode board globally; same panel",
+                "pair2_selection": "one anode 2-channel group (2k, 2k+1) and one cathode group globally; same panel",
                 "base_window_samples": args.base_window, "threshold_ADU": args.threshold,
                 "events": int(spec.n_events), "channel_1hit_events": int(spec.n_1hit),
-                "board_1hit_events": int(spec.n_board)}
+                "board_1hit_events": int(spec.n_board), "pair2_1hit_events": int(spec.n_2ch)}
     ROOT.TObjString(json.dumps(metadata)).Write("selection_metadata_json")
     out.Close()
-    print(f"wrote {args.output}: {spec.n_events} events, channel 1 hit {spec.n_1hit}, board 1 hit {spec.n_board}")
+    print(f"wrote {args.output}: {spec.n_events} events, channel 1 hit {spec.n_1hit}, board 1 hit {spec.n_board}, "
+          f"2ch 1 hit {spec.n_2ch}")
 
     if not args.no_qa:
         write_qa(args.output)

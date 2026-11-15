@@ -20,6 +20,7 @@
 | `config/` | チェーンの設定ファイル(`*.json`)と読み込み(`ericanext_config.py`)。SMILE-3 は `smile3_tpc_only`(TPC だけ、TOT_Skewness まで)、`smile3_psa`、`smile3_reconstruct`(TPC + PSA)、`smile3_raw` |
 | `calib/psa/` | PSA(シンチレータ)の較正ファイル |
 | `calib/tpc/` | TPC の較正ファイル(ゲインマップ、ドリフト速度)の置き場。まだ空(README だけ) |
+| `calib/detector_coordinates/` | SMILE-3 の内部の CAD(STEP)と、CAD・EricaNext の座標系の図(`scripts/calib/plot_detector_coordinates.py` で作る)。2026-11-15 に `calib/cad/` から名前を変えた |
 | `run_script/` | `run_chain.py`、`run_runs.sh`、補助スクリプト |
 | `scripts/env/` | ビルド(`build_ericanext.sh`) |
 | `scripts/check/` | 検証用のスクリプト(Python の解析との突き合わせ) |
@@ -129,7 +130,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `position_haNN.csv` | `make_psa_position.py --method grid`(既定。x の射影で 8 列、列ごとに y の射影の 2 階微分で 8 行。`--method localmax` は `peak_search.py` と同じで、同じヒストグラムで 64 点が一致することを確かめた) | run12(Co、トリガー時刻 peak_id 26〜29、hg ≥ 3 万、飽和なし)から作った 13 ボード(ha04 以外)。補正後に 8 × 8 に入る割合は 92〜99%。ha01 の ch4 はバタフライマップがにじんでいて 83.6% なので書いていない(`--min-frac 0.9`)。ha04 は run12 に無いので、前の仮のもの(peak_search の結果)のまま |
 | `temp_gain_haNN.csv` | `make_psa_temp_gain.py`(光電ピークの探し方とトリガー時刻の範囲は `temp_spectra.py` と同じ) | Cs の run01〜11 から作った 13 ボード(ha04 は Cs のランにほぼ無いので無い)。1 °C ごと。基準の温度(gain = 1)はボードごとにヒットの一番多い区間 |
 | `energy_haNN.csv` | `make_psa_energy.py`(`--cs` と `--co`。fit は `analysis_sm3_FM` の `energy_calib.py` と同じで、ピクセルごと) | 位置と温度ゲインを置いた状態で流し直した Cs の run01〜11 と Co の run12(`tutorials/cache/psa_cal_*.root`)から、Cs 662 keV と Co 1173 / 1332 keV の 3 点の直線(`p0` は 0 に固定しない)で作った 13 ボード(2026-11-07)。温度が温度ゲインの表の範囲の中のヒットだけを使う(Co は 47〜50 °C で表の端を越えるボードがある)。Co の 2 本は分かれず 1 つの山になるので、1332 keV の中心を 1173 keV の 1.06〜1.16 倍に制限して fit する。ch の和の Co が確認に通らない 11 ch(ha00 ch3、ha01 ch0/1/3/5、ha05 ch0、ha06 ch5、ha09 ch4、ha15 ch0、ha16 ch1/5)は Cs だけ(`p0 = 0`)。Co が使えないピクセルは、ch の和の `p0` とピクセルの Cs の位置から `p1`(`src` 列)。ha04 は無い。ha01 の ch4 はピクセルが無いので無い |
-| `geometry.csv` | `make_psa_geometry.py`(CAD の STEP `calib/cad/SM3_Inner_3atm.step`。HA の番号・ch・ピクセルの向きはスクリプトの `HA_LAYOUT`、HA のモジュールの配置図から) | 18 HA × 6 ch = 108 ブロック(2026-11-06)。ピクセルの向き(u, v)は配線でも変わるので、データでの確認がまだ |
+| `geometry.csv` | `make_psa_geometry.py`(CAD の STEP `calib/detector_coordinates/SM3_Inner_3atm.step`。HA の番号・ch・ピクセルの向きはスクリプトの `HA_LAYOUT`、HA のモジュールの配置図から) | 18 HA × 6 ch = 108 ブロック(2026-11-06)。ピクセルの向き(u, v)は配線でも変わるので、データでの確認がまだ |
 
 - 作る順番: 位置、温度ゲイン → (それを置いて線源のランを流す) → エネルギー。エネルギーは `hg_corr` とピクセルを使う。
 - エネルギーの確認(2026-11-07、温度ゲインの表の範囲の中のヒットを ch ごとに足してエネルギーに直し、線を fit): Cs は全 ch で 657〜663 keV。3 点で作った ch は Co が 1165〜1174 / 1331〜1341 keV。
@@ -186,7 +187,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `e1c2070` | EricaNext_try の SMILE-2+ のモジュールを `*_2p` で取り込み、`smile2p_*.json`、古い HA_Calc / HA_CenterGravity を削除、`run_chain.py --raw --compression` |
 | `5343695` | 設定ファイルの名前(`smile3_tpc_only` = TPC だけ TOT_Skewness まで、`smile3_reconstruct`)、PSA_Calibration の `temp_coef`・`temp_ref` を削除、`calib/tpc/`、test2/test3/run_all を削除 |
 | `4a55616`, `7d7ab22` | TOT_Skewness に SMILE-3 の GEM の位置とドリフト速度のファイル(無ければ SMILE-2+ の典型値で警告)、`scripts/calib/make_tpc_drift_velocity.py` |
-| `78be476`, `b787120` | CAD の STEP ファイル(`calib/cad/SM3_Inner_3atm.step`)から `calib/psa/geometry.csv` を作る(`scripts/calib/make_psa_geometry.py`) |
+| `78be476`, `b787120` | CAD の STEP ファイル(`calib/cad/SM3_Inner_3atm.step`、今は `calib/detector_coordinates/`)から `calib/psa/geometry.csv` を作る(`scripts/calib/make_psa_geometry.py`) |
 | `42bad19` | `ReadData` の `extra_data_dirs`、`run_chain.py --extra-data-dir`(2 つの storage に分かれたランを読む) |
 | `eb99de1` | PSA のエネルギーの較正を Cs-137 662 keV と Co-60 1173/1332 keV の 3 点でピクセルごとに |
 | `f946f24` | `Reconstruct` に幾何の α と入射方向(TOT_Skewness の飛跡から)、`smile3_reconstruct` に TOT_Skewness |
@@ -194,7 +195,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 
 FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb`。全96chをTH2Dとして1つのROOTに保存し、波形数・入力条件はmetadata_jsonに記録。`-n` は複数入力を通じたイベント数上限、-1は全件。rawのカソードは反転済みなので再反転しない。
 
-TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
+TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。2026-11-15から、隣り合う2 ASIC（FADC ch 2kと2k+1）の和の1-hit（`Anode_1Hit_2ch_A<i>_C<j>`、i, j = 0〜23）も同じ条件で作る（metadataの `pair2_selection`）。これが無い古いspec1hit.rootは、ゲインマップのノートブックが作り直す。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
 
 2026-11-15: SMILE-3 TPCのraw writerを `RawTreeWriter_sm3` から `TPC_RawTreeWriter` に改名。クラス・設定キー・ROOTディレクトリを新名に統一し、ブランチ内容は変更しない。旧名の設定は新名に書き換える。後段解析とチュートリアルは `scripts/analysis/tpc_raw_io.py` で新旧ROOTを判別し、既存ROOTの再変換は不要。新旧両ツリーを含む曖昧な入力はエラー。
 
