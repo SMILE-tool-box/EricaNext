@@ -207,3 +207,5 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 検証: scripts/check/check_raw_replay.py（20261102_run04先頭200イベント）で直接処理とROOT経由の218オブジェクトが全値一致、TPC/PSA raw4ツリーも往復一致。PSA単独100イベントも18オブジェクト一致。ROOT入力の失敗はAS_CRITICAL_ERROR_TO_FINALIZEで返す（ANLNextは通常のAS_ERRORを非致命的として処理継続するため）。専用手順tutorials/1_DataIO/RawROOT_Pipeline.ipynb、既存モジュール12冊とPSA較正3冊を二段階へ更新。
 
 2026-11-15: SMILE-3の保存モジュールをRawTreeWriterに統合。チェーン内のReadData/PSA_ReadDataを検出してTPCのみ・PSAのみ・両方を保存する。旧TPC_RawTreeWriter/PSA_RawTreeWriterクラスは廃止し、configのchain・TPC用パラメータはRawTreeWriterへ移動。ROOTの保存パスTPC_RawTreeWriter/*、PSA_RawTreeWriter/*は互換性のため維持。両readerがある場合はPSA sync_tpcとイベントID・連番の一致を検証。SMILE-2+のRawTreeWriter_2pは変更しない。
+
+2026-11-15: 不要な互換入口mkdir.shを削除。ビルドはbash scripts/env/build_ericanext.shに統一。

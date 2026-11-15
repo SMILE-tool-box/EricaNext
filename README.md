@@ -23,7 +23,7 @@ TPCの較正・診断は、次の二段階を基本にします。生データ�
 raw ROOT → 飛跡・FADCの積算、1-hitスペクトル、ドリフト速度・ゲインマップ
 ```
 
-ビルドは `bash scripts/env/build_ericanext.sh` で行います。`mkdir.sh` の実行は不要です。
+ビルドは `bash scripts/env/build_ericanext.sh` で行います。
 以下はリポジトリ直下で実行します。入力・出力のパスは自分の環境に書き換えてください。
 
 ```bash
