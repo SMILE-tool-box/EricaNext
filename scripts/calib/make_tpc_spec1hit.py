@@ -13,7 +13,8 @@ already inverted (1023 - ADC).
 and both must belong to the same panel (board / 3; FADC channel = 4 board + ch = strip / 32).
 Board 1 hit: exactly one anode board and one cathode board across all panels, both in the same panel;
 the 4 channels of each board are summed. 2-channel 1 hit: the same with groups of 2 adjacent channels
-(FADC ch 2k and 2k+1, k = 0-23). Other-panel cathode signals reject the event in all selections.
+(FADC ch 2k and 2k+1, k = 0-23). μ-PIC 1 hit: the same with whole panels (12 channels): all anode and cathode
+charge in one panel. Other-panel cathode signals reject the event in all selections.
 
 Output (ROOT file):
   Baseline_Anode, Baseline_Cathode      TH2D baseline x channel (channels with charge)
@@ -21,6 +22,7 @@ Output (ROOT file):
   Anode_1Hit_A<aa>_C<cc>, Cathode_1Hit_A<aa>_C<cc>        TH1D per channel pair (aa, cc = 0-47)
   Anode_1Hit_board_A<i>_C<j>, Cathode_1Hit_board_A<i>_C<j>  TH1D per board pair (i, j = 0-11)
   Anode_1Hit_2ch_A<i>_C<j>, Cathode_1Hit_2ch_A<i>_C<j>      TH1D per 2-channel group pair (i, j = 0-23)
+  Anode_1Hit_upic_A<p>_C<p>, Cathode_1Hit_upic_A<p>_C<p>    TH1D per μ-PIC (p = 0-3; sum of its 12 channels)
   Spectra: 2000 bins, 0-1e4 [ADU x sample] (as the former CalcFADC histograms).
 and <output dir>/qa/<output name>_board.png (board 1-hit spectra per panel). Look at it before using the file.
 """
@@ -49,7 +51,7 @@ struct Spec1Hit {
   int base_window; double threshold; int nclk;
   TH2D *base[2], *charge[2];
   std::map<std::string, TH1D*> h;
-  long n_events = 0, n_1hit = 0, n_board = 0, n_2ch = 0;
+  long n_events = 0, n_1hit = 0, n_board = 0, n_2ch = 0, n_upic = 0;
 
   Spec1Hit(int bw, double thr, int n) : base_window(bw), threshold(thr), nclk(n) {
     TH1::AddDirectory(kFALSE);   // the histograms belong to no file (the input files are closed)
@@ -93,6 +95,7 @@ struct Spec1Hit {
     }
     group_1hit(q, 4, "board", n_board);   // board = 4 channels
     group_1hit(q, 2, "2ch", n_2ch);       // 2 adjacent channels (2k, 2k+1)
+    group_1hit(q, 12, "upic", n_upic);    // whole μ-PIC (12 channels)
   }
   // Exactly one anode group and one cathode group with charge across all panels, both in the same panel;
   // the charges of the g channels of each group are summed.
@@ -169,13 +172,15 @@ def main():
                 "selection": "one anode channel and one cathode channel globally; same panel",
                 "board_selection": "one anode board and one cathode board globally; same panel",
                 "pair2_selection": "one anode 2-channel group (2k, 2k+1) and one cathode group globally; same panel",
+                "upic_selection": "all anode and cathode charge in one panel (12-channel groups)",
                 "base_window_samples": args.base_window, "threshold_ADU": args.threshold,
                 "events": int(spec.n_events), "channel_1hit_events": int(spec.n_1hit),
-                "board_1hit_events": int(spec.n_board), "pair2_1hit_events": int(spec.n_2ch)}
+                "board_1hit_events": int(spec.n_board), "pair2_1hit_events": int(spec.n_2ch),
+                "upic_1hit_events": int(spec.n_upic)}
     ROOT.TObjString(json.dumps(metadata)).Write("selection_metadata_json")
     out.Close()
     print(f"wrote {args.output}: {spec.n_events} events, channel 1 hit {spec.n_1hit}, board 1 hit {spec.n_board}, "
-          f"2ch 1 hit {spec.n_2ch}")
+          f"2ch 1 hit {spec.n_2ch}, μ-PIC 1 hit {spec.n_upic}")
 
     if not args.no_qa:
         write_qa(args.output)

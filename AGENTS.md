@@ -195,7 +195,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 
 FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb`。全96chをTH2Dとして1つのROOTに保存し、波形数・入力条件はmetadata_jsonに記録。`-n` は複数入力を通じたイベント数上限、-1は全件。rawのカソードは反転済みなので再反転しない。
 
-TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。2026-11-15から、隣り合う2 ASIC（FADC ch 2kと2k+1）の和の1-hit（`Anode_1Hit_2ch_A<i>_C<j>`、i, j = 0〜23）も同じ条件で作る（metadataの `pair2_selection`）。これが無い古いspec1hit.rootは、ゲインマップのノートブックが作り直す。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
+TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。2026-11-15から、隣り合う2 ASIC（FADC ch 2kと2k+1）の和の1-hit（`Anode_1Hit_2ch_A<i>_C<j>`、i, j = 0〜23）も同じ条件で作る（metadataの `pair2_selection`）。これが無い古いspec1hit.rootは、ゲインマップのノートブックが作り直す。同日から μPIC 単位(そのμPICだけに電荷、12 chの和、`Anode_1Hit_upic_A<p>_C<p>`、metadata の `upic_selection`)も作る。ゲインマップのノートブックは、各ch組に ch組 → 2 ch組 → ボード → μPIC の順で最初に OK だった段の係数を入れる(`gain_map.json` の `calibration_level`)。OK の既定(`OK_CRITERIA = 'converged'`)は、フィットの収束・中心が範囲の端に張り付かない・ピークの高さ ≥ 2 × 誤差。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
 
 2026-11-15: SMILE-3 TPCのraw writerを `RawTreeWriter_sm3` から `TPC_RawTreeWriter` に改名。クラス・設定キー・ROOTディレクトリを新名に統一し、ブランチ内容は変更しない。旧名の設定は新名に書き換える。後段解析とチュートリアルは `scripts/analysis/tpc_raw_io.py` で新旧ROOTを判別し、既存ROOTの再変換は不要。新旧両ツリーを含む曖昧な入力はエラー。
 
