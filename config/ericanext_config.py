@@ -7,7 +7,7 @@
 
 Keys starting with "_" are comments and are dropped by load(); in strings
 "{data_root}" is replaced by data_root() and "{repo}" by the top of this repository.
-SMILE-2+ configurations (smile2p_*.json, tpc_caldata_*.json, modules *_2p from EricaNext_try):
+SMILE-2+ configurations (config/smile2p/, modules *_2p):
 "{data_top}" is replaced by data_top_2p(), "{tpc_caldata}" by tpc_caldata_2p() and "{sim_data}" by sim_data_2p().
 """
 import json
