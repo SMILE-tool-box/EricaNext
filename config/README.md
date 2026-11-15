@@ -62,15 +62,13 @@
   ],
   "parameters": {
     "ReadData": {
-      "data_dir": "{data_root}/storage_g0/<run>",
-      "extra_data_dirs": [
-        "{data_root}/storage_g1/<run>"
-      ],
+      "data_dir": "",
+      "extra_data_dirs": [],
       "TPC_Only": true,
       "event_id": true,
       "_doc": {
-        "data_dir": "同じrunの入力rawフォルダ",
-        "extra_data_dirs": "同じrunの追加rawフォルダ",
+        "data_dir": "同じrunの入力rawフォルダ。空にしておき、run_chain.py の --data-dir で指定する",
+        "extra_data_dirs": "同じrunの追加rawフォルダ(run_chain.py の --extra-data-dir でも足せる)",
         "TPC_Only": "true: TPCの生データを読む",
         "event_id": "true: トリガーカウンタでボード間のイベントをそろえる"
       }

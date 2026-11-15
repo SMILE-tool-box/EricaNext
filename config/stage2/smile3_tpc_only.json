@@ -2,8 +2,7 @@
   "_comment": [
     "SMILE-3 TPC only: ReadData -> CalcFADC -> TPC_Calibration (no gain map) -> TOT_Skewness (electron track).",
     "TPC_Calibration runs with NoCalData: the energy is the charge [ADU].",
-    "{data_root} is replaced by $SMILE3_DATA, else mount_data/ of this repository (config/ericanext_config.py DATA_DIR).",
-    "Change the run with --data-dir <run directory> (run_chain.py) or edit ReadData.data_dir."
+    "Give the run with --data-dir <run directory> (run_chain.py) or --root-input <raw ROOT>; data_dir is empty."
   ],
   "chain": [
     "ReadData",
@@ -13,13 +12,13 @@
   ],
   "parameters": {
     "ReadData": {
-      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "data_dir": "",
       "extra_data_dirs": [],
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
       "_doc": {
-        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ。空にしておき、run_chain.py の --data-dir で指定する",
         "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
         "TPC_Only": "true: TPC だけを読む",
         "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",

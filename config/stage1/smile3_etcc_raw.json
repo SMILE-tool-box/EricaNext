@@ -9,13 +9,13 @@
   ],
   "parameters": {
     "ReadData": {
-      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "data_dir": "",
       "extra_data_dirs": [],
       "reverse_TPC": false,
       "TPC_Only": true,
       "event_id": true,
       "_doc": {
-        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ。空にしておき、run_chain.py の --data-dir で指定する",
         "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
         "TPC_Only": "true: TPC だけを読む",
         "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
@@ -25,13 +25,13 @@
       "root_file": ""
     },
     "PSA_ReadData": {
-      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "data_dir": "",
       "extra_data_dirs": [],
       "recursive": false,
       "sync_tpc": true,
       "save_hit_pattern": false,
       "_doc": {
-        "data_dir": "1 ラン分の生データ(ha<ボード>_<番号>.dat)のディレクトリ。.dat が無い番号は .dat.tmp を読む。TPC と同じランのディレクトリ(--data-dir で ReadData.data_dir と一緒に変わる)",
+        "data_dir": "1 ラン分の生データ(ha<ボード>_<番号>.dat)のディレクトリ。.dat が無い番号は .dat.tmp を読む。TPC と同じランのディレクトリ(--data-dir で ReadData.data_dir と一緒に変わる)。空にしておき、run_chain.py の --data-dir で指定する",
         "extra_data_dirs": "ほかにも HA のファイルがあるディレクトリ(同じランの別の storage ノード、例 storage_g0/<ラン>)。同じボードのファイルが複数のディレクトリにあれば、番号でまとめて読む(同じ番号が 2 つあれば警告して 1 つだけ)",
         "recursive": "true: data_dir と extra_data_dirs のサブディレクトリも探す(長いランで part0, part1, … に分かれたもの。UVSOR の 20261103_run12 など)",
         "sync_tpc": "true: チェーンに ReadData があれば、そのイベント(トリガーカウンタ、ReadData.event_id = true)に合わせて読む。ReadData が無いときは HA のボード同士をトリガーカウンタでそろえる",

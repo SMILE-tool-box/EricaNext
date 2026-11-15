@@ -10,6 +10,7 @@ SMILE-2+ data (modules *_2p from EricaNext_try):
     python3 run_chain.py smile2p_20190701_Per02 -o raw.root --raw -n 10000 --compression 505
 
 --data-dir replaces ReadData.data_dir / PSA_ReadData.data_dir / ReadData_2p.data_dir (the run directory) of the config.
+The SMILE-3 configs leave data_dir empty, so reading SMILE-3 raw data needs --data-dir (or --root-input for a raw ROOT).
 --extra-data-dir adds another directory of the same run (SMILE-3 FM: the other storage node), e.g.
     python3 run_chain.py smile3_reconstruct -o run04.root --data-dir <NAS>/20261102/calltt/20261102_run04 \
         --extra-data-dir <NAS>/20261102/killua/20261102_run04
@@ -90,6 +91,9 @@ def main():
                 ap.error("input ROOT and output must differ")
             continue
         data_dir = params.get(m, {}).get("data_dir") if m in chain else None
+        if not data_dir and m != "ReadData_2p":
+            ap.error(f"no run to read: give --data-dir <run directory> (or --root-input <raw ROOT>); "
+                     f"{m}.data_dir of the config is empty")
         if data_dir and not os.path.isdir(data_dir):
             print(f"run_chain.py: no run directory {data_dir}", file=sys.stderr)
             sys.exit(1)

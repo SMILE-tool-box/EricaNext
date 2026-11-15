@@ -14,7 +14,7 @@
 
 `run_chain.py` はこのリポジトリのビルド(`install/lib/python` の `EricaPy`)を自分で読み込むので、
 `PYTHONPATH` を設定しなくても動きます(先に `bash scripts/env/build_ericanext.sh` でビルドしておく)。
-データの場所は設定ファイルの `{data_root}` で決まります(リポジトリ直下の README の「データの置き場所」)。
+生データを読むときは、ランのディレクトリを `--data-dir` で必ず指定します(SMILE-3 の設定ファイルの `data_dir` は空。リポジトリ直下の README の「データの置き場所」)。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ```bash
 cd EricaNext/run_script
-python3 run_chain.py <設定名> -o <出力ファイル> [-n <イベント数>] [--data-dir <ラン>] [--set モジュール.パラメータ=値 ...]
+python3 run_chain.py <設定名> -o <出力ファイル> (--data-dir <ラン> | --root-input <raw ROOT>) [-n <イベント数>] [--set モジュール.パラメータ=値 ...]
 ```
 
 | 引数 | 意味 |
@@ -33,7 +33,7 @@ python3 run_chain.py <設定名> -o <出力ファイル> [-n <イベント数>] 
 | `-o`, `--output` | 出力する ROOT ファイル(必須) |
 | `-n`, `--n-events` | 処理するイベント数。省略すると全イベント(`-1`) |
 | `--root-input <ROOT>` | SMILE-3のRawTreeWriter ROOTを後段解析の入力にする。生データ用オプションや `--raw` と併用不可。1ファイル/run。出力先の親ディレクトリは自動作成する |
-| `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)を置き換える |
+| `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)に入る。SMILE-3 の設定ファイルでは空なので、生データを読むときは必須 |
 | `--extra-data-dir <ディレクトリ>` | 同じランの別のディレクトリ(FM では 2 つの storage の片方)。`ReadData.extra_data_dirs` と `PSA_ReadData.extra_data_dirs` に足す(何回でも) |
 | `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0` |
 

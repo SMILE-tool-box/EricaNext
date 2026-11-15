@@ -345,25 +345,20 @@ make -j8 && make install
 
 ## データの置き場所
 
-設定ファイルの `ReadData.data_dir` は `{data_root}/storage_g0/run_<日時>` のように書き、`{data_root}` は読み込むときに次に置き換わります
-(`config/ericanext_config.py`)。
+読むランは、実行するときに `run_chain.py` の `--data-dir` で指定します。
+SMILE-3 の設定ファイルの `ReadData.data_dir`・`PSA_ReadData.data_dir` は空にしてあり、`--data-dir` も `--root-input` も無いと、`run_chain.py` はエラーで止まります
+(付け忘れて別のランを処理しないため)。
 
-| 優先 | 場所 |
-| --- | --- |
-| 1 | 環境変数 `SMILE3_DATA` |
-| 2 | このリポジトリの `mount_data/`(`ericanext_config.py` の `DATA_DIR`) |
-
-中の並び:
+1 ランのディレクトリの中身:
 
 ```
-<data_root>/
-  storage_g0/
-    run_20260628T232149Z/        1 ラン: tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw
-    ...
+<ラン>/
+  tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw   TPC
+  ha<ボード>_<番号>.dat                                         PSA
 ```
 
-ほかの場所を探すことはしません。`<data_root>` に `storage_g*/` が無いときは、どのディレクトリを見たかを警告します。
-1 つのランだけなら、`--data-dir` にランのディレクトリを直接渡しても構いません。
+FM のデータのように同じランが 2 つの storage に分かれているときは、片方を `--data-dir`、もう片方を `--extra-data-dir` で渡します。
+設定ファイルに `{data_root}` と書くと、環境変数 `SMILE3_DATA`(無ければリポジトリの `mount_data/`)に置き換わります(`config/ericanext_config.py`)。
 
 ## リポジトリの構成
 
@@ -376,7 +371,3 @@ make -j8 && make install
 | [`calib/`](calib/) | 較正ファイル: [`psa/`](calib/psa/README.md)(PSA)、[`tpc/`](calib/tpc/README.md)(TPC)、[`detector_coordinates/`](calib/detector_coordinates/README.md)(CAD と検出器の座標系) |
 | [`scripts/calib/`](scripts/calib/) | 較正ファイルを作るスクリプト |
 | [`scripts/env/`](scripts/env/) | ビルドのスクリプト |
-| `mount_data/`, `root_data/` | データと出力の置き場所(git では管理しない) |
-
-保存モジュールはSMILE-3共通の `RawTreeWriter` です。`smile3_tpc_raw`、`smile3_psa_raw`、`smile3_etcc_raw` は、読み込む検出器が異なる設定名です。
-ROOT内のディレクトリ名 `TPC_RawTreeWriter/`・`PSA_RawTreeWriter/` は既存ファイル・後段解析との互換性のため維持しています。
