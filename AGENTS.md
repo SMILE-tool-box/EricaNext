@@ -216,3 +216,5 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-15レビュー反映: SMILE-3設定をconfig/stage1（raw保存）・stage2（ROOT解析）へ移動。ec.config_pathで短名・明示パスを解決。RawTreeWriterのsave_hits/save_fadc/save_threshold/base_window設定を廃止、全ヒット・全チャンネル波形を保存。TPC run_info schema_version=2。旧save_thresholdメタデータのROOTは読み込み互換性を維持。READMEは段階別表・横向き図・役割名のパスに統一。
 
 2026-11-15: SMILE-2+用JSON設定4件をconfig/smile2p/へ集約。短い設定名での実行はec.config_pathの再帰探索により継続可能。
+
+2026-11-15: SMILE-2+用C++モジュール8件をsource/modules/smile2p/配下へ移動。modules/sources.cmakeの登録パスを更新。クラス名・Python公開名・設定名・処理内容は変更しない。
