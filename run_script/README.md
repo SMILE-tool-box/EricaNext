@@ -1,7 +1,7 @@
 # run_script: チェーンの実行と図のスクリプト
 
 | スクリプト | 何をするか |
-| TPCの較正・診断は、まず `smile3_raw` でROOTを作り、後段の `scripts/calib/`・`scripts/analysis/` にそのROOTを入力する二段階を基本にします。
+| TPCの較正・診断は、まず `smile3_tpc_raw` でROOTを作り、後段の `scripts/calib/`・`scripts/analysis/` にそのROOTを入力する二段階を基本にします。
 コマンド例は[リポジトリのREADME](../README.md#使い方まずここ)を参照してください。
 `smile3_tpc_only`・`smile3_reconstruct` は `--root-input <ROOT>` で第2段階として実行できます。ETCCの第1段階は `smile3_etcc_raw` です。
 
@@ -47,14 +47,14 @@ python3 run_chain.py smile3_tpc_only -o out.root
 python3 run_chain.py smile3_tpc_only -o test.root -n 10000 --data-dir ../mount_data/storage_g0/run_20260618T010203Z
 
 # ボードごとの 1-hit スペクトル: 生データのツリーを書いて、後段の解析で作る
-python3 run_chain.py smile3_raw -o raw.root --data-dir ../mount_data/storage_g0/run_20260618T010203Z --compression 505
+python3 run_chain.py smile3_tpc_raw -o raw.root --data-dir ../mount_data/storage_g0/run_20260618T010203Z --compression 505
 /usr/bin/python3 ../scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root
 
 # 飛跡の点群も保存して描く
 python3 run_chain.py smile3_tpc_only -o tot.root   # 点群(flag_save_cloud)は既定で保存する
 
 # 同期した生データのツリー(較正・診断用)
-python3 run_chain.py smile3_raw -o raw.root
+python3 run_chain.py smile3_tpc_raw -o raw.root
 
 # シンチレータ(PSA)だけ。ボードが storage_g0 と g1 に分かれたランは extra_data_dirs にもう片方
 python3 run_chain.py smile3_psa -o psa.root --data-dir ../mount_data/storage_g1/run_20261029T071524Z \
@@ -81,7 +81,7 @@ python3 run_chain.py my_test -o my_test.root -n 10000
 ### 飛跡・波形の描画
 
 `ReadData` はイベントの読み込みと同期を行います。飛跡・波形の積算、閾値による選別、PNG保存は、
-`smile3_raw` で保存した `TPC_RawTreeWriter/raw` を読み、後段で行います。
+`smile3_tpc_raw` で保存した `TPC_RawTreeWriter/raw` を読み、後段で行います。
 旧 `Image_A_C`、`FADC_TH`、`save_track_png`、`save_fadc_png`、`save_fadc_*_filter` と関連する閾値設定は削除しました。
 既存の設定ファイルや `--set` に残っている場合は取り除いてください。
 

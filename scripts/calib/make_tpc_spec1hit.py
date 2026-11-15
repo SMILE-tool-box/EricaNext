@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TPC 1-hit spectra from the raw data tree (post-analysis; the first step of a TPC gain map).
 
-    python3 run_script/run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal run>
+    python3 run_script/run_chain.py smile3_tpc_raw -o raw.root --data-dir <TPC_cal run>
     /usr/bin/python3 scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root [raw2.root ...]
 
 The charge of every FADC channel is computed from TPC_RawTreeWriter/raw (fadc_ch, fadc_wave) exactly as
@@ -127,7 +127,7 @@ struct Spec1Hit {
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (TPC_RawTreeWriter/raw)")
+    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_tpc_raw (TPC_RawTreeWriter/raw)")
     ap.add_argument("-o", "--output", required=True, help="output ROOT file")
     ap.add_argument("--base-window", type=int, default=30, help="baseline samples (CalcFADC.base_window)")
     ap.add_argument("--threshold", type=float, default=20.0, help="charge threshold [ADU] (CalcFADC.threshold)")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TPC drift velocity calibration file (calib/tpc/drift_velocity.dat) from the raw data tree.
 
-    python3 run_script/run_chain.py smile3_raw -o raw.root --data-dir <run> --compression 505
+    python3 run_script/run_chain.py smile3_tpc_raw -o raw.root --data-dir <run> --compression 505
     /usr/bin/python3 scripts/calib/make_tpc_drift_velocity.py -o calib/tpc/drift_velocity.dat raw.root [raw2.root ...]
 
 Method (EricaNext_try tutorials_caldata/4_MakeCalibration/DriftVelocity, drift_speed_s2p_v3.C):
@@ -172,7 +172,7 @@ def qa_figure(path, res):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (TPC_RawTreeWriter/raw)")
+    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_tpc_raw (TPC_RawTreeWriter/raw)")
     ap.add_argument("-o", "--output", required=True, help="output file (e.g. calib/tpc/drift_velocity.dat)")
     ap.add_argument("--z-gem", type=float, default=10.0, help="uPIC - GEM [mm] (SMILE-3 10)")
     ap.add_argument("--drift-length", type=float, default=317.0, help="uPIC - top plate [mm] (SMILE-3 317)")

@@ -28,7 +28,7 @@
 
 ## TPC解析の基本手順
 
-1. `smile3_raw`（`ReadData → RawTreeWriter`）で生データを一度ROOTに変換します。コマンド例は[リポジトリのREADME](../README.md#使い方まずここ)を参照してください。
+1. `smile3_tpc_raw`（`ReadData → RawTreeWriter`）で生データを一度ROOTに変換します。コマンド例は[リポジトリのREADME](../README.md#使い方まずここ)を参照してください。
 2. 較正・診断のノートブックには、作成済みROOTを `RAWS` に指定します。波形積算・スペクトル・ゲイン・ドリフト速度の計算時に、生データの変換は繰り返しません。
 
 汎用の入力として残す場合は `save_hits: true`、`save_fadc: true`、`save_threshold: 0.0` を使います。

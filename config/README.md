@@ -6,7 +6,7 @@
 | ファイル | チェーン |
 | --- | --- |
 | [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
-| [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter`(同期した生データのツリー) |
+| [`smile3_tpc_raw.json`](smile3_tpc_raw.json) | `ReadData → RawTreeWriter`(同期した生データのツリー) |
 | [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る。`TOT_Skewness` は AS_SKIP するので `Reconstruct` の直前) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 | [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p` |
@@ -112,7 +112,7 @@ TPC の 1-hit スペクトル(ゲインマップの材料。ゲインマップ�
 
 ```bash
 cd run_script
-python3 run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal のラン> --compression 505
+python3 run_chain.py smile3_tpc_raw -o raw.root --data-dir <TPC_cal のラン> --compression 505
 /usr/bin/python3 ../scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root   # qa/spec1hit_board.png も書く
 # ドリフト速度(ドリフト領域に一様に電子ができるランで。箱の形でないと書かない)
 /usr/bin/python3 ../scripts/calib/make_tpc_drift_velocity.py -o ../calib/tpc/drift_velocity.dat raw.root
@@ -177,7 +177,7 @@ n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、�
 
 | 用途 | 第1段階（生データ → ROOT） | 第2段階（ROOT → 解析） |
 | --- | --- | --- |
-| TPC | `smile3_raw` | `smile3_tpc_only --root-input <ROOT>`、較正・診断スクリプト |
+| TPC | `smile3_tpc_raw` | `smile3_tpc_only --root-input <ROOT>`、較正・診断スクリプト |
 | PSA | `smile3_psa_raw` | `smile3_psa --root-input <ROOT>` |
 | ETCC | `smile3_etcc_raw` | `smile3_reconstruct --root-input <ROOT>` |
 

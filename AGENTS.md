@@ -209,3 +209,5 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-15: SMILE-3の保存モジュールをRawTreeWriterに統合。チェーン内のReadData/PSA_ReadDataを検出してTPCのみ・PSAのみ・両方を保存する。旧TPC_RawTreeWriter/PSA_RawTreeWriterクラスは廃止し、configのchain・TPC用パラメータはRawTreeWriterへ移動。ROOTの保存パスTPC_RawTreeWriter/*、PSA_RawTreeWriter/*は互換性のため維持。両readerがある場合はPSA sync_tpcとイベントID・連番の一致を検証。SMILE-2+のRawTreeWriter_2pは変更しない。
 
 2026-11-15: 不要な互換入口mkdir.shを削除。ビルドはbash scripts/env/build_ericanext.shに統一。
+
+2026-11-15: TPC専用raw保存の設定名をsmile3_rawからsmile3_tpc_rawに変更。PSA専用はsmile3_psa_raw、TPC＋PSAはsmile3_etcc_raw。旧設定名は使用しない。

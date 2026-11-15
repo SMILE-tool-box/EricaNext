@@ -16,30 +16,35 @@ SMILE-3 の検出器の構成(μ-PIC の 4 分割、ストリップ 0.4 mm、MPP
 
 ## 使い方(まずここ)
 
-TPCの較正・診断は、次の二段階を基本にします。生データのデコードとイベント同期を一度行い、保存したROOTを後段で繰り返し使います。
+ETCC（TPC＋PSA）の解析は、次の二段階を基本にします。
+生データのデコードとイベント同期を一度行い、保存したROOTを積分・較正・飛跡解析・イベント再構成で繰り返し使います。
 
 ```text
-生データ → ReadData → RawTreeWriter → raw ROOT
-raw ROOT → 飛跡・FADCの積算、1-hitスペクトル、ドリフト速度・ゲインマップ
+TPC・PSAの生データ → ReadData・PSA_ReadData → RawTreeWriter → raw ROOT
+raw ROOT → 波形の積分・検出器の較正 → TPCの飛跡解析・PSAの吸収点計算 → ETCCイベント再構成
 ```
 
 ビルドは `bash scripts/env/build_ericanext.sh` で行います。
 以下はリポジトリ直下で実行します。入力・出力のパスは自分の環境に書き換えてください。
 
 ```bash
-# 第1段階: 同じランの2つのstorageを読み、波形とヒットを保存する
-mkdir -p /path/to/analysis/raw /path/to/analysis/diagnostics
-python3 run_script/run_chain.py smile3_raw \
-    --data-dir /path/to/storage_g0/20261113_run13 \
-    --extra-data-dir /path/to/storage_g1/20261113_run13 \
-    -o /path/to/analysis/raw/run13.root
+# 第1段階: 同じrunのTPC・PSAを読み、同期したヒット・波形・時刻を保存する
+python3 run_script/run_chain.py smile3_etcc_raw \
+    --data-dir /path/to/storage_g0/20261102_run04 \
+    --extra-data-dir /path/to/storage_g1/20261102_run04 \
+    -o /path/to/analysis/raw/run04.root
 
-# 第2段階: 保存済みROOTから作る。生データを読み直さない
-python3 scripts/calib/make_tpc_spec1hit.py \
-    /path/to/analysis/raw/run13.root -o /path/to/analysis/diagnostics/spec1hit.root
-python3 scripts/analysis/make_tpc_fadc_hist.py \
-    /path/to/analysis/raw/run13.root -o /path/to/analysis/diagnostics/fadc_accum.root
+# 第2段階: 保存済みROOTから積分・較正・飛跡解析・ETCCイベント再構成を行う
+python3 run_script/run_chain.py smile3_reconstruct \
+    --root-input /path/to/analysis/raw/run04.root \
+    -o /path/to/analysis/reconstructed/run04.root
 ```
+
+出力先の親ディレクトリは自動作成します。
+第1段階では共通の `RawTreeWriter` がTPC・PSAの生情報を同じROOTへ、同じイベント順で書きます。
+第2段階は設定ファイルに指定した較正を適用します。測定に対応するTPC・PSAの較正ファイルを用意してください。
+較正値や解析条件を変える場合は、第2段階を再実行します。
+まず第1段階に `-n 10000` を付けて小さいROOTで確認し、全件処理では外します。
 
 同じrunのファイルが `calltt` と `killua` など複数フォルダに分かれている場合は、
 片方を `--data-dir`、残りを `--extra-data-dir` に指定します。
@@ -55,55 +60,43 @@ python3 run_script/run_chain.py smile3_etcc_raw \
     -o /path/to/analysis/raw/run04.root
 ```
 
-TPCだけなら設定名を `smile3_raw`、PSAだけなら `smile3_psa_raw` に変えます。
 3フォルダ以上に分かれている場合は、`--extra-data-dir <フォルダ>` を必要な回数繰り返します。
 これらは**同じrunの分割先**を指定するオプションです。異なるrunはrunごとにROOTを作ってください。
 フォルダの指定は第1段階だけで、第2段階は作成済みROOTを `--root-input` に指定します。
 
-`smile3_raw` は既定で `save_hits: true`、`save_fadc: true`、`save_threshold: 0.0` です。
-飛跡積算にはヒット、ゲイン較正・FADC積算には波形が必要です。保存時に省略・閾値選別した情報は後段で復元できません。
-まず `-n 10000` を付けて小さいROOTで確認し、全件処理では外します。
+TPCだけ・PSAだけの測定も同じ二段階で処理できます。
 
-飛跡積算とドリフト速度は [`TPC_DriftVelocity.ipynb`](tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb)、
-ゲインマップは [`TPC_GainMap.ipynb`](tutorials/4_MakeCalibration/TPC_GainMap.ipynb)、
-全chの波形積算は [`TPC_FADC_Accumulation.ipynb`](tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb) を使います。
-各冊の `RAWS` に第1段階のROOT、`OUT` にリポジトリ外の出力先を指定します。
-複数runは `RAWS` に列挙します。同じ測定条件のデータをまとめ、fit範囲などを変えるだけなら第1段階を再実行する必要はありません。
-
-PSAだけの測定も `smile3_psa_raw` → `smile3_psa --root-input <ROOT>` の二段階です。
-
-TPC再構成も保存済みROOTを入力にします。
-
-```bash
-python3 run_script/run_chain.py smile3_tpc_only \
-    --root-input /path/to/analysis/raw/run13.root \
-    -o /path/to/analysis/reconstructed/run13.root
-```
-
-TPC＋PSAのETCC再構成では、第1段階を `smile3_etcc_raw` にします。
-共通の `RawTreeWriter` が同じROOTへ、同じイベント順で生情報を書きます。
-
-```bash
-# 第1段階: TPC＋PSAを同期して保存（較正・積分・再構成は行わない）
-python3 run_script/run_chain.py smile3_etcc_raw \
-    --data-dir /path/to/storage_g0/20261102_run04 \
-    --extra-data-dir /path/to/storage_g1/20261102_run04 \
-    -o /path/to/analysis/raw/run04.root
-
-# 第2段階: ROOTから積分・較正・飛跡解析・イベント再構成
-python3 run_script/run_chain.py smile3_reconstruct \
-    --root-input /path/to/analysis/raw/run04.root \
-    -o /path/to/analysis/reconstructed/run04.root
-```
+| 対象 | 第1段階：生データ → ROOT | 第2段階：ROOT → 解析 |
+| --- | --- | --- |
+| ETCC（TPC＋PSA） | `smile3_etcc_raw` | `smile3_reconstruct --root-input <ROOT>` |
+| TPCのみ | `smile3_tpc_raw` | `smile3_tpc_only --root-input <ROOT>` |
+| PSAのみ | `smile3_psa_raw` | `smile3_psa --root-input <ROOT>` |
 
 `--root-input` は1回の実行につき1ファイルです。複数runはrunごとに第1・第2段階を実行します。
-積算・較正ノートブックの `RAWS` では複数ROOTをまとめて扱えます。
-TPC＋PSAの再構成にはTPC・PSA両方の生情報を含むROOTが必要です。
+ETCC再構成にはTPC・PSA両方の生情報を含むROOTが必要です。
 従来の `PSA_TreeWriter/psa` は処理済みヒットのツリーなので、生波形の入力としては使いません。
-既存TPC ROOTも必要なヒットと全波形があれば利用できます（旧名 `RawTreeWriter_sm3` にも対応）。
-生データの直接処理は比較・検証用として引き続き利用できます。
 
-第1段階を実行するスクリプトは [`run_script/run_chain.py`](run_script/run_chain.py) です。
+較正・診断にも第1段階のROOTを使います。例えばTPCの1-hitスペクトルとFADC積算は次で作れます。
+
+```bash
+python3 scripts/calib/make_tpc_spec1hit.py \
+    /path/to/analysis/raw/run04.root -o /path/to/analysis/diagnostics/spec1hit.root
+python3 scripts/analysis/make_tpc_fadc_hist.py \
+    /path/to/analysis/raw/run04.root -o /path/to/analysis/diagnostics/fadc_accum.root
+```
+
+飛跡積算とドリフト速度は [`TPC_DriftVelocity.ipynb`](tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb)、
+TPCゲインマップは [`TPC_GainMap.ipynb`](tutorials/4_MakeCalibration/TPC_GainMap.ipynb)、
+全chの波形積算は [`TPC_FADC_Accumulation.ipynb`](tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb) を使います。
+PSAの位置・温度ゲイン・エネルギー較正は [`tutorials/4_MakeCalibration`](tutorials/README.md) を参照してください。
+TPCの積算・較正ノートブックでは `RAWS` に第1段階のROOT、`OUT` に出力先を指定します。
+同じ測定条件の複数runは `RAWS` に列挙してまとめられます。
+
+TPC保存の既定値は `save_hits: true`、`save_fadc: true`、`save_threshold: 0.0` です。
+再構成・飛跡積算にはヒット、波形積分・ゲイン較正には全波形が必要です。保存時に省略・閾値選別した情報は後段で復元できません。
+既存TPC ROOTも必要なヒットと全波形があれば利用できます（旧名 `RawTreeWriter_sm3` にも対応）。
+
+第1・第2段階を実行するスクリプトは [`run_script/run_chain.py`](run_script/run_chain.py) です。
 最初の引数に [`config/<名前>.json`](config/) の設定名を渡します。
 
 - 設定ファイルは名前(拡張子なし)で書くと `config/` から探します。`.json` のパスを直接書いても構いません。
@@ -143,7 +136,7 @@ flowchart LR
 | --- | --- |
 | [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
 | [`smile3_etcc_raw`](config/smile3_etcc_raw.json) | `ReadData → PSA_ReadData → RawTreeWriter`（TPC＋PSAの第1段階） |
-| [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter`(TPCの同期済み生情報。後段の較正・診断・再構成の入力) |
+| [`smile3_tpc_raw`](config/smile3_tpc_raw.json) | `ReadData → RawTreeWriter`(TPCの同期済み生情報。後段の較正・診断・再構成の入力) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
 | [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(TPC + シンチレータ) |
 
@@ -357,5 +350,5 @@ make -j8 && make install
 | [`scripts/env/`](scripts/env/) | ビルドのスクリプト |
 | `mount_data/`, `root_data/` | データと出力の置き場所(git では管理しない) |
 
-保存モジュールはSMILE-3共通の `RawTreeWriter` です。`smile3_raw`、`smile3_psa_raw`、`smile3_etcc_raw` は、読み込む検出器が異なる設定名です。
+保存モジュールはSMILE-3共通の `RawTreeWriter` です。`smile3_tpc_raw`、`smile3_psa_raw`、`smile3_etcc_raw` は、読み込む検出器が異なる設定名です。
 ROOT内のディレクトリ名 `TPC_RawTreeWriter/`・`PSA_RawTreeWriter/` は既存ファイル・後段解析との互換性のため維持しています。
