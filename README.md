@@ -220,20 +220,17 @@ flowchart TD
   TOT --> TOTT
 ```
 
-- 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みです。
-- 実際の実行順は設定ファイルの `chain` の順です。TPC と PSA を一緒に読むときは `ReadData` を `PSA_ReadData` より前に置きます
-  (`PSA_ReadData.sync_tpc: true` で `ReadData` のトリガーカウンタに合わせて読む)。
-- ゲインマップは `TPC_Calibration.NoCalData: false` のときだけ読みます。
-- PSA の部分は `analysis_sm3_FM/PSA_analysis` の `psa_decode.py` → `pixel_id.py` と同じ計算です
-  (同じ .dat で、ヒット・peak_id・ピクセルは全部一致、hg などは Python の float32 の丸めの範囲で一致)。
-  PSAの較正ファイルの内容・作り方は [`calib/psa/README.md`](calib/psa/README.md) を参照してください。
-- `Reconstruct` は `PSA_Event`(`PSA_SingleHit` のイベント)を使います。
-- ジオメトリ `calib/psa/geometry.csv` は、CAD の STEP ファイルと HA の配置図から `scripts/calib/make_psa_geometry.py` で作りました(ピクセルの向きはデータでの確認がまだ)。
-  エネルギー(`energy_haNN.csv`)とジオメトリが無いブロックのヒットは、`PSA_Event` が使いません。
-  `CalcFADC` と `TPC_Calibration` はイベントを飛ばしません。`TPC_Calibration` は TPC のエネルギーがあるイベントに `TPC_Ee_Valid` の印を付けます。
-  `Reconstruct` は、シンチレータの 1 ヒット(`PSA_SingleHit`)と TPC のエネルギー(`TPC_Ee_Valid`)の両方があるイベントだけを書きます。
-  飛跡(`TOT_Ve_TRA`)があれば、幾何の α(`cos_alpha_geo`)と入射ガンマ線の方向(`Vi`)も書きます。
-  `source_position` を書けば ARM と SPD も出します。TPC の位置とシンチレータのジオメトリが同じ座標系かは、まだ確かめていません。
+実線はデータの受け渡し、点線は較正ファイルの読み込みです。
+
+| 項目 | 動作・条件 |
+| --- | --- |
+| 実行順 | 設定ファイルの `chain` 順。TPC＋PSAでは `ReadData` → `PSA_ReadData` とする |
+| イベント同期 | `PSA_ReadData.sync_tpc: true` でTPCのトリガーカウンタに合わせる |
+| TPCゲイン較正 | `TPC_Calibration.NoCalData: false` でゲインマップを使う |
+| 再構成の対象 | PSAが1ヒット、かつTPCエネルギーが有効なイベント |
+| 追加の出力 | 飛跡があれば幾何のα・入射方向、`source_position` 指定時はARM・SPD |
+
+較正ファイルとジオメトリの詳細・未確認事項は [PSA較正](calib/psa/README.md) を参照してください。
 
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
