@@ -23,3 +23,14 @@ def raw_tree_path(path, tree=None):
 def run_info_path(path, tree=None):
     """rawツリーと同じモジュールディレクトリのrun_infoパス。"""
     return raw_tree_path(path,tree).rsplit('/',1)[0]+'/run_info'
+
+
+def storage_threshold(info):
+    """New full-data schema has no save options; retain legacy ROOT support."""
+    if info.GetBranch('schema_version'):
+        if int(info.schema_version) != 2:
+            raise ValueError('未対応のTPC raw schema_versionです')
+        return 0.0
+    if not info.GetBranch('save_threshold'):
+        raise ValueError('TPC rawの保存方式が不明です')
+    return float(info.save_threshold)

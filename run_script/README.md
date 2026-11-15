@@ -6,7 +6,7 @@
 `smile3_tpc_only`・`smile3_reconstruct` は `--root-input <ROOT>` で第2段階として実行できます。ETCCの第1段階は `smile3_etcc_raw` です。
 
 --- | --- |
-| [`run_chain.py`](run_chain.py) | 設定ファイル(`config/*.json`)を指定して EricaNext のチェーンを実行する。**通常はこれを使う** |
+| [`run_chain.py`](run_chain.py) | 設定ファイル(`config/stage1/*.json, config/stage2/*.json`)を指定して EricaNext のチェーンを実行する。**通常はこれを使う** |
 | [`run_runs.sh`](run_runs.sh) | 複数のランに `run_chain.py` を順に実行する(1 ランに 1 ファイル) |
 | [`plot_track3d.py`](plot_track3d.py) | `TOT_Skewness/tot_skewness` の点群(`flag_save_cloud: true`)から 1 イベントの飛跡を 3 次元で描く |
 | [`psa_position_nm.py`](psa_position_nm.py) | `peak_search.py` の `position_haNN.csv` にピクセル番号 `n,m` を足して `calib/psa/` に書く(`PSA_Calibration` 用。numpy の入った `/usr/bin/python3` で実行) |
@@ -73,7 +73,7 @@ python3 run_chain.py smile3_psa -o psa.root --data-dir ../mount_data/storage_g1/
 設定ファイルをコピーして値を書き換え、そのファイルを指定します。
 
 ```bash
-cp ../config/smile3_tpc_only.json ../config/my_test.json
+cp ../config/stage2/smile3_tpc_only.json ../config/my_test.json
 # my_test.json の "parameters" の値を編集
 python3 run_chain.py my_test -o my_test.root -n 10000
 ```

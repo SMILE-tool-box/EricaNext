@@ -14,6 +14,21 @@ SMILE-3 の検出器の構成(μ-PIC の 4 分割、ストリップ 0.4 mm、MPP
 
 開発の引き継ぎ(環境の落とし穴、検証のやり方、残りの仕事)は [`AGENTS.md`](AGENTS.md) にあります。
 
+## 目次
+
+- [使い方(まずここ)](#使い方まずここ)
+- [解析チェーン](#解析チェーン)
+  - [設定ファイルからチェーンを組む](#設定ファイルからチェーンを組む)
+  - [モジュールのつながり](#モジュールのつながり)
+- [依存関係](#依存関係)
+- [インストール](#インストール)
+  - [0. EricaNext を取ってくる](#0-ericanext-を取ってくる)
+  - [1. ANLnext を入れる](#1-anlnext-を入れる)
+  - [環境を確認する](#環境を確認する)
+  - [2. EricaNext をビルドする](#2-ericanext-をビルドする)
+- [データの置き場所](#データの置き場所)
+- [リポジトリの構成](#リポジトリの構成)
+
 ## 使い方(まずここ)
 
 ETCC（TPC＋PSA）の解析は、次の二段階を基本にします。
@@ -25,40 +40,31 @@ raw ROOT → 波形の積分・検出器の較正 → TPCの飛跡解析・PSA�
 ```
 
 ビルドは `bash scripts/env/build_ericanext.sh` で行います。
-以下はリポジトリ直下で実行します。入力・出力のパスは自分の環境に書き換えてください。
+以下はリポジトリ直下で実行します。`<…>` は役割を示す仮のパスです。自分の環境のパスに書き換えてください。第2段階の入力には第1段階で出力したraw ROOTを指定します。
 
 ```bash
 # 第1段階: 同じrunのTPC・PSAを読み、同期したヒット・波形・時刻を保存する
 python3 run_script/run_chain.py smile3_etcc_raw \
-    --data-dir /path/to/storage_g0/20261102_run04 \
-    --extra-data-dir /path/to/storage_g1/20261102_run04 \
-    -o /path/to/analysis/raw/run04.root
+    --data-dir "<入力rawのフォルダ（calltt）>" \
+    --extra-data-dir "<入力rawの追加フォルダ（killua）>" \
+    -o "<出力raw_ROOTのpath>"
 
 # 第2段階: 保存済みROOTから積分・較正・飛跡解析・ETCCイベント再構成を行う
 python3 run_script/run_chain.py smile3_reconstruct \
-    --root-input /path/to/analysis/raw/run04.root \
-    -o /path/to/analysis/reconstructed/run04.root
+    --root-input "<入力raw_ROOTのpath>" \
+    -o "<出力再構成ROOTのpath>"
 ```
 
 出力先の親ディレクトリは自動作成します。
 第1段階では共通の `RawTreeWriter` がTPC・PSAの生情報を同じROOTへ、同じイベント順で書きます。
 第2段階は設定ファイルに指定した較正を適用します。測定に対応するTPC・PSAの較正ファイルを用意してください。
 較正値や解析条件を変える場合は、第2段階を再実行します。
-まず第1段階に `-n 10000` を付けて小さいROOTで確認し、全件処理では外します。
 
 同じrunのファイルが `calltt` と `killua` など複数フォルダに分かれている場合は、
 片方を `--data-dir`、残りを `--extra-data-dir` に指定します。
 このデータ配置では `calltt` が `storage_g0`、`killua` が `storage_g1` に対応します。
 フォルダ名は固定ではないので、実際にファイルがあるrunのディレクトリを指定してください。
 事前にファイルをコピーしたり、1つのフォルダに集めたりする必要はありません。
-
-```bash
-# 同じrunがcalltt・killuaに分かれている場合（TPC＋PSAの例）
-python3 run_script/run_chain.py smile3_etcc_raw \
-    --data-dir /path/to/20261102/calltt/20261102_run04 \
-    --extra-data-dir /path/to/20261102/killua/20261102_run04 \
-    -o /path/to/analysis/raw/run04.root
-```
 
 3フォルダ以上に分かれている場合は、`--extra-data-dir <フォルダ>` を必要な回数繰り返します。
 これらは**同じrunの分割先**を指定するオプションです。異なるrunはrunごとにROOTを作ってください。
@@ -74,32 +80,26 @@ TPCだけ・PSAだけの測定も同じ二段階で処理できます。
 
 `--root-input` は1回の実行につき1ファイルです。複数runはrunごとに第1・第2段階を実行します。
 ETCC再構成にはTPC・PSA両方の生情報を含むROOTが必要です。
-従来の `PSA_TreeWriter/psa` は処理済みヒットのツリーなので、生波形の入力としては使いません。
 
 較正・診断にも第1段階のROOTを使います。例えばTPCの1-hitスペクトルとFADC積算は次で作れます。
 
 ```bash
 python3 scripts/calib/make_tpc_spec1hit.py \
-    /path/to/analysis/raw/run04.root -o /path/to/analysis/diagnostics/spec1hit.root
+    "<入力raw_ROOTのpath>" -o "<出力スペクトルROOTのpath>"
 python3 scripts/analysis/make_tpc_fadc_hist.py \
-    /path/to/analysis/raw/run04.root -o /path/to/analysis/diagnostics/fadc_accum.root
+    "<入力raw_ROOTのpath>" -o "<出力FADC積算ROOTのpath>"
 ```
 
-飛跡積算とドリフト速度は [`TPC_DriftVelocity.ipynb`](tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb)、
-TPCゲインマップは [`TPC_GainMap.ipynb`](tutorials/4_MakeCalibration/TPC_GainMap.ipynb)、
-全chの波形積算は [`TPC_FADC_Accumulation.ipynb`](tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb) を使います。
-PSAの位置・温度ゲイン・エネルギー較正は [`tutorials/4_MakeCalibration`](tutorials/README.md) を参照してください。
-TPCの積算・較正ノートブックでは `RAWS` に第1段階のROOT、`OUT` に出力先を指定します。
-同じ測定条件の複数runは `RAWS` に列挙してまとめられます。
+TPC・PSAの較正と飛跡積算のノートブックは [Make_calibration](tutorials/4_MakeCalibration/README.md)、
+FADC波形積算などの診断は [Diagnostics](tutorials/2_Diagnostics/) を参照してください。
+入力には第1段階のROOTを指定します。同じ測定条件の複数runをまとめる場合は、各ノートブックの入力一覧に列挙します。
 
-TPC保存の既定値は `save_hits: true`、`save_fadc: true`、`save_threshold: 0.0` です。
-再構成・飛跡積算にはヒット、波形積分・ゲイン較正には全波形が必要です。保存時に省略・閾値選別した情報は後段で復元できません。
-既存TPC ROOTも必要なヒットと全波形があれば利用できます（旧名 `RawTreeWriter_sm3` にも対応）。
+第1段階は全ヒット・レコード・全チャンネルの波形・時刻を保存します。閾値やイベント選別は第2段階以降で適用します。
 
 第1・第2段階を実行するスクリプトは [`run_script/run_chain.py`](run_script/run_chain.py) です。
-最初の引数に [`config/<名前>.json`](config/) の設定名を渡します。
+最初の引数に [`config/stage1/`](config/stage1/) または [`config/stage2/`](config/stage2/) に置いた設定の名前を渡します。
 
-- 設定ファイルは名前(拡張子なし)で書くと `config/` から探します。`.json` のパスを直接書いても構いません。
+- 設定ファイルは名前(拡張子なし)で書くと `config/` 配下の段階別フォルダも含めて探します。`.json` のパスを直接書いても構いません。
 - 値を変えるときは、設定ファイルをコピーして書き換えるか、`--set モジュール.パラメータ=値` でその場だけ上書きします。
 - 設定ファイルの各モジュールには、全パラメータの説明(`_doc`)と単位(`_units`)を書いています。書き方は [`config/README.md`](config/README.md)。
 - 失敗すると終了コード 1 で終わり、出力ファイルは残しません。
@@ -121,7 +121,7 @@ TPC保存の既定値は `save_hits: true`、`save_fadc: true`、`save_threshold
 
 ```mermaid
 flowchart LR
-  CFG["config/&lt;名前&gt;.json<br>chain: モジュールの順番<br>parameters: パラメータ(_doc, _units)"]
+  CFG["config/stage1/・stage2/<br>&lt;名前&gt;.json<br>chain: モジュールの順番<br>parameters: パラメータ(_doc, _units)"]
   EC["config/ericanext_config.py<br>{data_root} などを置き換え<br>_ で始まるキーを捨てる"]
   RUN["run_script/run_chain.py<br>--data-dir, --set で上書き"]
   CH["ANLNext の AnalysisChain<br>SaveFile → chain の順にモジュール"]
@@ -132,63 +132,59 @@ flowchart LR
 モジュールの順番とパラメータはすべて設定ファイルに書き、スクリプトには書きません。
 新しい解析の組み方を作るときは、`config/` に設定ファイルを足します(書き方は [`config/README.md`](config/README.md))。
 
+#### 第1段階：生データ → raw ROOT（config/stage1）
+
 | 設定ファイル | つなぐモジュール |
 | --- | --- |
-| [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
-| [`smile3_etcc_raw`](config/smile3_etcc_raw.json) | `ReadData → PSA_ReadData → RawTreeWriter`（TPC＋PSAの第1段階） |
-| [`smile3_tpc_raw`](config/smile3_tpc_raw.json) | `ReadData → RawTreeWriter`(TPCの同期済み生情報。後段の較正・診断・再構成の入力) |
-| [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
-| [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(TPC + シンチレータ) |
+| [`smile3_etcc_raw`](config/stage1/smile3_etcc_raw.json) | `ReadData → PSA_ReadData → RawTreeWriter`（TPC＋PSA） |
+| [`smile3_tpc_raw`](config/stage1/smile3_tpc_raw.json) | `ReadData → RawTreeWriter`（TPCのみ） |
+| [`smile3_psa_raw`](config/stage1/smile3_psa_raw.json) | `PSA_ReadData → RawTreeWriter`（PSAのみ） |
+
+#### 第2段階：raw ROOT → 積分・較正・再構成（config/stage2）
+
+入力ROOTを `--root-input` で指定します。先頭のreaderは保存済みの生情報を読み戻します。
+
+| 設定ファイル | つなぐモジュール |
+| --- | --- |
+| [`smile3_reconstruct`](config/stage2/smile3_reconstruct.json) | `ReadData → PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`（TPC＋PSA） |
+| [`smile3_tpc_only`](config/stage2/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`（TPCのみ） |
+| [`smile3_psa`](config/stage2/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`（PSAのみ） |
 
 ### モジュールのつながり
 
-TPCの処理とPSAの処理を、それぞれの読み込み・積分・較正モジュールで行い、イベント再構成で組み合わせます。
+第1段階はデコードとイベント同期、ROOTへの保存を行います。
 
 ```mermaid
-flowchart TD
-  RAW[("生データ<br>tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA *.dat(MPPC の波形)")]
-  subgraph L0["層0 入力"]
-    RD["ReadData<br>読み込み・ボード間のイベント同期"]
-    PRD["PSA_ReadData<br>PSA の読み込み・トリガーカウンタで同期"]
-  end
-  subgraph L1["層1 検出器ごとの処理"]
-    CF[CalcFADC] --> TC[TPC_Calibration]
-    TOT[TOT_Skewness]
-    PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration] --> PEV[PSA_Event]
-  end
-  subgraph L2["層2 イベント再構成"]
-    REC[Reconstruct]
-  end
-  subgraph L3["層3 出力"]
-    OUT["Reconstruct/single_hit<br>再構成 TTree"]
-    TOTT["TOT_Skewness/tot_skewness<br>電子飛跡の TTree"]
-    RAWT["TPC_RawTreeWriter/raw<br>同期済み生データ TTree"]
-    PSAT["PSA_TreeWriter/psa<br>シンチレータのヒットの TTree"]
-  end
-  PRM["パラメータファイル<br>ゲインマップ<br>ドリフト速度"]
-  PPRM["calib/psa/<br>温度センサー・位置(64 点)<br>エネルギー・ジオメトリ"]
+flowchart LR
+  RAW[("生データ<br>tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA *.dat（MPPCの波形）")]
+  RD["ReadData<br>TPC読み込み・ボード間同期"]
+  PRD["PSA_ReadData<br>PSA読み込み・TPCと同期"]
+  WR[RawTreeWriter]
+  ROOT[("raw ROOT<br>TPC・PSAの全生情報")]
+  RAW --> RD --> WR
+  RAW --> PRD --> WR
+  RD -- "トリガーカウンタ" --> PRD
+  WR --> ROOT
+```
 
-  RAW --> RD
-  RAW --> PRD
-  PRM -.-> TC
+第2段階はraw ROOTを読み、TPC・PSAそれぞれの積分・較正の結果をイベント再構成へ渡します。
+
+```mermaid
+flowchart LR
+  ROOT[(raw ROOT)] --> RD["ReadData<br>TPCを読み戻す"]
+  ROOT --> PRD["PSA_ReadData<br>PSAを読み戻す"]
+  RD --> CF[CalcFADC] --> TC[TPC_Calibration] --> REC[Reconstruct]
+  RD --> TOT[TOT_Skewness] --> REC
+  PRD --> PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration]
+  PCAL --> PEV[PSA_Event] --> REC
+  PCAL --> PSAT["PSA_TreeWriter/psa"]
+  REC --> OUT["Reconstruct/single_hit"]
+  TOT --> TOTT["TOT_Skewness/tot_skewness"]
+  PRM["TPC較正ファイル<br>ゲイン・ドリフト速度"] -.-> TC
   PRM -.-> TOT
-  PPRM -.-> PCF
+  PPRM["PSA較正ファイル<br>位置・温度・エネルギー・ジオメトリ"] -.-> PCF
   PPRM -.-> PCAL
   PPRM -.-> PEV
-  RD -- "FADC 波形(48 ch × 2)" --> CF
-  RD -- "TPC ヒット(パネル 0〜3)" --> TC
-  RD -- "TPC ヒット・時刻" --> TOT
-  RD -- "トリガーカウンタ(sync_tpc)" --> PRD
-  PRD -- "MPPC の波形(ボード × 6 ch)" --> PCF
-  CF -- "電荷" --> TC
-  TC -- "Ke" --> REC
-  PEV -- "Eg, Pg(1 ヒットのイベント)" --> REC
-  PCAL --> PSAT
-  TOT -- "Pe, Ve, Len" --> REC
-  REC --> OUT
-  TOT --> TOTT
-  RD -- "RawTreeWriter<br>(較正・診断用)" --> RAWT
-
 ```
 
 - 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みです。
@@ -209,7 +205,7 @@ flowchart TD
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
 | `SaveFile` | 出力の ROOT ファイルを開く(`run_chain.py` が先頭に必ずつなぐ) | |
-| `ReadData` | 生データを読み、ボード間でイベント ID をそろえる | 波形・ヒットは `RawTreeWriter` で保存。積算・選別・描画は保存後に行う |
+| `ReadData` | 第1段階では生データのボード間同期、第2段階ではROOTからTPC情報を読み戻す | 波形・ヒットは `RawTreeWriter` で保存。積算・選別・描画は保存後に行う |
 | `CalcFADC` | FADC 波形からベースラインを引いて電荷を積分し、`TPC_Calibration` に渡す | なし(ベースライン・電荷の分布と 1-hit スペクトルは、生データのツリーから `scripts/calib/make_tpc_spec1hit.py` で後段で作る) |
 | `TPC_Calibration` | 電荷とゲインマップから反跳電子のエネルギー | `TPC_Calibration/`: `Spectrum` など |
 | `TOT_Skewness` | 飛跡から散乱点 `Pe`、電子の方向 `Ve`、飛程 `Len` | `TOT_Skewness/tot_skewness`(TTree) |
@@ -277,8 +273,8 @@ Pythonが複数ある場合は、用途ごとに明示できます（パスは�
 
 ```bash
 python3 scripts/env/check_environment.py --mode all \
-  --python /path/to/chain/python \
-  --analysis-python /path/to/analysis/python
+  --python "<チェーン実行用Pythonのpath>" \
+  --analysis-python "<解析用Pythonのpath>"
 ```
 
 `--python` はANLNext・EricaPyのビルドとチェーン実行に使うPython、
@@ -347,6 +343,8 @@ make -j8 && make install
 | [`config/`](config/README.md) | 設定ファイル(チェーンとパラメータ)と読み込み(`ericanext_config.py`) |
 | [`tutorials/`](tutorials/README.md) | チュートリアル(まず `0_Introduction` で SMILE-3 の構成と座標系) |
 | [`run_script/`](run_script/README.md) | 実行スクリプト(`run_chain.py`, `run_runs.sh`)と図を描くスクリプト |
+| [`calib/`](calib/) | 較正ファイル: [`psa/`](calib/psa/README.md)(PSA)、[`tpc/`](calib/tpc/README.md)(TPC)、[`detector_coordinates/`](calib/detector_coordinates/README.md)(CAD と検出器の座標系) |
+| [`scripts/calib/`](scripts/calib/) | 較正ファイルを作るスクリプト |
 | [`scripts/env/`](scripts/env/) | ビルドのスクリプト |
 | `mount_data/`, `root_data/` | データと出力の置き場所(git では管理しない) |
 

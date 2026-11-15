@@ -1,17 +1,27 @@
 # 設定ファイルの書き方
 
-ここには `run_script/run_chain.py` が読む設定ファイルを置いています。
+ここには `run_script/run_chain.py` が読む設定ファイルを置いています。第1段階は `stage1/`、第2段階は `stage2/` に分けています。設定名はフォルダを省略して指定できます。
 このページでは設定ファイルの書き方だけを説明します。スクリプトの使い方は [`run_script/README.md`](../run_script/README.md) にあります。
+
+## 第1段階：生データの保存（stage1/）
 
 | ファイル | チェーン |
 | --- | --- |
-| [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
-| [`smile3_tpc_raw.json`](smile3_tpc_raw.json) | `ReadData → RawTreeWriter`(同期した生データのツリー) |
-| [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る。`TOT_Skewness` は AS_SKIP するので `Reconstruct` の直前) |
-| [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
-| [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p` |
-| [`smile2p_sim_d10_recon.json`](smile2p_sim_d10_recon.json) | SMILE-2+ のシミュレーションのデータの再構成(同じチェーン) |
-| [`tpc_caldata_2017_Ba133.json`](tpc_caldata_2017_Ba133.json) | SMILE-2+ の TPC だけの Ba-133 の較正のラン: `ReadData_2p → CalcFADC_2p`(ゲインマップを作る) |
+| [`smile3_etcc_raw.json`](stage1/smile3_etcc_raw.json) | `ReadData → PSA_ReadData → RawTreeWriter` |
+| [`smile3_tpc_raw.json`](stage1/smile3_tpc_raw.json) | `ReadData → RawTreeWriter` |
+| [`smile3_psa_raw.json`](stage1/smile3_psa_raw.json) | `PSA_ReadData → RawTreeWriter` |
+
+## 第2段階：ROOTから解析（stage2/）
+
+`--root-input` で第1段階のROOTを指定します。
+
+| ファイル | チェーン |
+| --- | --- |
+| [`smile3_reconstruct.json`](stage2/smile3_reconstruct.json) | TPC・PSAの積分・較正・飛跡解析・イベント再構成 |
+| [`smile3_tpc_only.json`](stage2/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
+| [`smile3_psa.json`](stage2/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter` |
+
+既存の `smile2p_*.json`・`tpc_caldata_2017_Ba133.json` は互換性維持のため、このディレクトリ直下に置いています。
 
 スクリプトには、名前(拡張子なし)かファイルのパスを渡します。
 新しい設定は、近いファイルをコピーして書き換えるのが簡単です(このディレクトリの外に置いても構いません)。
@@ -159,7 +169,7 @@ n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、�
 作り方(`scripts/calib/make_psa_geometry.py`):
 
 ```bash
-/usr/bin/python3 scripts/calib/make_psa_geometry.py calib/cad/SM3_Inner_3atm.step -o calib/psa/geometry.csv
+/usr/bin/python3 scripts/calib/make_psa_geometry.py calib/detector_coordinates/SM3_Inner_3atm.step -o calib/psa/geometry.csv
 ```
 
 - 位置は CAD(`SM3_Inner_3atm.step` の `GSO_26mm`(底面)と `GSO_13mm`(側面)の結晶のブロック)から取ります。CAD のライブラリは使わず、STEP の組み立ての木を `scripts/calib/step_reader.py` で直接たどります。
@@ -187,7 +197,7 @@ n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、�
 生データ入力の `--data-dir`・`--extra-data-dir`・`--raw` と同時には指定しません。
 `reverse_TPC`・`event_id` は第1段階にのみ適用します。後段では保存済みのストリップとIDを使います。
 
-TPCの再構成は全ヒットと全波形が必要です。`save_hits=true`、`save_fadc=true`、`save_threshold=0.0` で保存してください。
+第1段階のRawTreeWriterは全ヒット・レコード・全チャンネルの波形を必ず保存します。保存有無や閾値の設定はありません。
 PSAは `PSA_RawTreeWriter/raw` の生情報を読み戻します。従来の `PSA_TreeWriter/psa` は後段の処理結果です。
 
 PSA rawは1イベント1行で、`board` にpresentボードのID（ゼロヒットのフレームも含む）、

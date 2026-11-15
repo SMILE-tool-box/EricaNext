@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the EricaNext chain with a configuration from config/*.json.
+"""Run the EricaNext chain with a configuration from config/stage1/*.json, config/stage2/*.json.
 
     python3 run_chain.py smile3_tpc_raw --data-dir <run> -o raw.root
     python3 run_chain.py smile3_tpc_only --root-input raw.root -o out.root

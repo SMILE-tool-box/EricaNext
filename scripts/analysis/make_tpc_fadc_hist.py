@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 import ROOT
-from tpc_raw_io import raw_tree_path, run_info_path
+from tpc_raw_io import raw_tree_path, run_info_path, storage_threshold
 ROOT.gROOT.SetBatch(True)
 
 CPP = r"""
@@ -82,10 +82,10 @@ def validate(path):
         for name in ['fadc_ch','fadc_wave']:
             b=t.GetBranch(name)
             if not b or b.GetClassName().replace('std::','').replace(' ','')!='vector<short>':
-                raise ValueError(f'{path}: {name}にvector<short>が必要です（save_fadc=true）')
+                raise ValueError(f'{path}: {name}にvector<short>が必要です（全波形を保存したraw ROOT）')
         info.GetEntry(0);nclk=int(info.n_fadc_clk)
         if nclk<=0: raise ValueError(f'{path}: n_fadc_clkが不正です')
-        return nclk,int(t.GetEntries()),float(info.save_threshold)
+        return nclk,int(t.GetEntries()),storage_threshold(info)
     finally:
         f.Close()
 

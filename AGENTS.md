@@ -211,3 +211,5 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-15: 不要な互換入口mkdir.shを削除。ビルドはbash scripts/env/build_ericanext.shに統一。
 
 2026-11-15: TPC専用raw保存の設定名をsmile3_rawからsmile3_tpc_rawに変更。PSA専用はsmile3_psa_raw、TPC＋PSAはsmile3_etcc_raw。旧設定名は使用しない。
+
+2026-11-15レビュー反映: SMILE-3設定をconfig/stage1（raw保存）・stage2（ROOT解析）へ移動。ec.config_pathで短名・明示パスを解決。RawTreeWriterのsave_hits/save_fadc/save_threshold/base_window設定を廃止、全ヒット・全チャンネル波形を保存。TPC run_info schema_version=2。旧save_thresholdメタデータのROOTは読み込み互換性を維持。READMEは段階別表・横向き図・役割名のパスに統一。

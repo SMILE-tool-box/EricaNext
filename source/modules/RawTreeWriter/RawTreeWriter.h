@@ -24,7 +24,6 @@ class RawTreeWriter : public BasicModule {
   RawTreeWriter();
   ~RawTreeWriter();
 
-  ANLStatus mod_define()     override;
   ANLStatus mod_initialize() override;
   ANLStatus mod_analyze()    override;
 
@@ -42,11 +41,7 @@ class RawTreeWriter : public BasicModule {
   int psa_schema_version_=1, psa_n_sample_=50, psa_n_sig_=8;
   const ReadData* RawData = nullptr;
 
-  // parameters
-  double save_threshold;   // [ADU] above the baseline
-  int    base_window;      // [samples] used for the baseline in the save decision
-  bool   save_fadc;
-  bool   save_hits;        // hit_*_strip/clock and rec_*_board/clock
+  int tpc_schema_version_ = 2;
 
   int n_anode = 0, n_cathode = 0;
 

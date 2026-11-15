@@ -1,14 +1,6 @@
 #include "RawTreeWriter.h"
 #include <iostream>
 
-ANLStatus RawTreeWriter::mod_define(){
-  define_parameter("save_threshold", &mod_class::save_threshold);
-  define_parameter("base_window",    &mod_class::base_window);
-  define_parameter("save_fadc",      &mod_class::save_fadc);
-  define_parameter("save_hits",      &mod_class::save_hits);
-  return AS_OK;
-}
-
 ANLStatus RawTreeWriter::InitializeTPC(){
   if(!exist_module("SaveFile") || !exist_module("ReadData"))
     return AS_QUIT;
@@ -32,8 +24,7 @@ ANLStatus RawTreeWriter::InitializeTPC(){
   info_->Branch("anode_ids",   &anode_ids);
   info_->Branch("cathode_ids", &cathode_ids);
   info_->Branch("n_fadc_clk",  &n_fadc_clk,     "n_fadc_clk/I");
-  info_->Branch("save_threshold", &save_threshold, "save_threshold/D");
-  info_->Branch("base_window",    &base_window,    "base_window/I");
+  info_->Branch("schema_version", &tpc_schema_version_, "schema_version/I");
   info_->Fill();
 
   tree_ = new TTree("raw", "event-synchronized TPC raw data");
@@ -42,7 +33,7 @@ ANLStatus RawTreeWriter::InitializeTPC(){
   tree_->Branch("loopback", &loopback, "loopback/I");
   tree_->Branch("anode_time",   &anode_time);
   tree_->Branch("cathode_time", &cathode_time);
-  if(save_hits){
+  {
     tree_->Branch("hit_a_strip", &hit_a_strip);
     tree_->Branch("hit_a_clock", &hit_a_clock);
     tree_->Branch("hit_c_strip", &hit_c_strip);
@@ -52,7 +43,7 @@ ANLStatus RawTreeWriter::InitializeTPC(){
     tree_->Branch("rec_c_board", &rec_c_board);
     tree_->Branch("rec_c_clock", &rec_c_clock);
   }
-  if(save_fadc){
+  {
     tree_->Branch("fadc_ch",   &fadc_ch);
     tree_->Branch("fadc_wave", &fadc_wave);
   }
@@ -69,7 +60,7 @@ ANLStatus RawTreeWriter::AnalyzeTPC(){
   cathode_time.resize(n_cathode);
   for(int i=0; i<n_cathode; i++)  cathode_time[i] = RawData->Get_CathodeTime(i);
 
-  if(save_hits){
+  {
     hit_a_strip.clear();  hit_a_clock.clear();  hit_c_strip.clear();  hit_c_clock.clear();
     for(const auto& h : RawData->Get_Anode_Hits())   { hit_a_strip.push_back(h.strip); hit_a_clock.push_back(h.clock); }
     for(const auto& h : RawData->Get_Cathode_Hits()) { hit_c_strip.push_back(h.strip); hit_c_clock.push_back(h.clock); }
@@ -78,7 +69,7 @@ ANLStatus RawTreeWriter::AnalyzeTPC(){
     for(const auto& r : RawData->Get_Cathode_Records()) { rec_c_board.push_back(r.board); rec_c_clock.push_back(r.clock); }
   }
 
-  if(save_fadc){
+  {
     const int Nclk = n_fadc_clk;
     fadc_ch.clear();  fadc_wave.clear();
     std::vector<short> wave(4*Nclk);
@@ -88,17 +79,6 @@ ANLStatus RawTreeWriter::AnalyzeTPC(){
         RawData->Get_TPC_FADC(side == 1, i, wave.data());
         for(int ch=0; ch<4; ch++){
           const short* w = &wave[ch*Nclk];
-          double mean = 0;
-          for(int k=0; k<base_window; k++)  mean += w[k];
-          mean /= base_window;
-          short wmax = w[0];
-          bool all_zero = true;
-          for(int k=0; k<Nclk; k++){
-            if(w[k] > wmax) wmax = w[k];
-            if(w[k] != 0)   all_zero = false;
-          }
-          if(all_zero)  continue;   // board without data in this event
-          if(save_threshold > 0 && wmax - mean <= save_threshold)  continue;
           fadc_ch.push_back((short)(side*4*N_BOARD + 4*ids[i] + ch));
           fadc_wave.insert(fadc_wave.end(), w, w + Nclk);
         }
@@ -110,12 +90,7 @@ ANLStatus RawTreeWriter::AnalyzeTPC(){
   return AS_OK;
 }
 
-RawTreeWriter::RawTreeWriter(){
-  save_threshold = 0.;   // off
-  base_window    = 30;
-  save_fadc      = true;
-  save_hits      = true;
-}
+RawTreeWriter::RawTreeWriter(){}
 
 RawTreeWriter::~RawTreeWriter(){
 }
@@ -151,10 +126,6 @@ ANLStatus RawTreeWriter::mod_initialize(){
     return AS_CRITICAL_ERROR_TO_FINALIZE;
   }
   if(exist_module("ReadData")){
-    if(base_window<=0 || base_window>512 || save_threshold<0){
-      std::cerr << "RawTreeWriter: invalid base_window or save_threshold" << std::endl;
-      return AS_CRITICAL_ERROR_TO_FINALIZE;
-    }
     if(InitializeTPC()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
   }
   if(exist_module("PSA_ReadData")){

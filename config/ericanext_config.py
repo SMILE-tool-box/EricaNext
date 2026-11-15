@@ -1,4 +1,4 @@
-"""Run configurations of the EricaNext chain (config/*.json).
+"""Run configurations of the EricaNext chain (config/stage1/*.json, config/stage2/*.json).
 
     import ericanext_config as ec
     cfg = ec.load("smile3_tpc_only")
@@ -71,7 +71,7 @@ def sim_data_2p():
 
 
 def available():
-    return sorted(p.stem for p in CONFIG_DIR.glob("*.json"))
+    return sorted(p.stem for p in CONFIG_DIR.rglob("*.json"))
 
 
 def _resolve(obj, subs):
@@ -87,11 +87,23 @@ def _resolve(obj, subs):
     return obj
 
 
+def config_path(name):
+    """Resolve a short unique name, a stage-relative name, or an explicit JSON path."""
+    path = Path(name).expanduser()
+    if path.suffix == ".json" and path.is_file():
+        return path
+    candidate = CONFIG_DIR / (str(path) if path.suffix == ".json" else str(path) + ".json")
+    if candidate.is_file():
+        return candidate
+    matches = list(CONFIG_DIR.rglob(path.stem + ".json")) if path.parent == Path(".") else []
+    if len(matches) != 1:
+        raise ValueError(f"設定ファイルを一意に選べません: {name} (候補: {matches})")
+    return matches[0]
+
+
 def load(name):
-    """Load config/<name>.json (or a path to a .json file)."""
-    path = Path(name)
-    if path.suffix != ".json":
-        path = CONFIG_DIR / f"{name}.json"
+    """Load a configuration from stage1/, stage2/, or an explicit JSON path."""
+    path = config_path(name)
     with open(path) as fp:
         raw = json.load(fp)
     return _resolve(raw, {"{data_root}": data_root, "{repo}": lambda: REPO_DIR,

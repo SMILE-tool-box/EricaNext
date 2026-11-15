@@ -17,14 +17,16 @@ ANLStatus ReadData::InitializeROOT(){
     if(root_input_->Get("TPC_RawTreeWriter/raw") && root_input_->Get("RawTreeWriter_sm3/raw"))
       throw std::runtime_error("ambiguous input: both new and legacy TPC trees exist");
     if(!info || !root_tree_ || info->GetEntries()!=1) throw std::runtime_error("missing raw/run_info");
-    std::vector<int> *a=nullptr,*c=nullptr; int n=0; double threshold=0;
+    std::vector<int> *a=nullptr,*c=nullptr; int n=0, version=0; double threshold=0;
     auto bindInfo=[&](const char* name, auto* address){
       if(info->SetBranchAddress(name,address)<0) throw std::runtime_error(std::string("invalid run_info branch: ")+name);
     };
     bindInfo("anode_ids",&a);bindInfo("cathode_ids",&c);
-    bindInfo("n_fadc_clk",&n);bindInfo("save_threshold",&threshold);
-    if(info->GetEntry(0)<=0 || !a || !c || n!=512 || threshold!=0)
-      throw std::runtime_error("reconstruction requires 512 samples and save_threshold=0");
+    bindInfo("n_fadc_clk",&n);
+    if(info->GetBranch("schema_version")) bindInfo("schema_version",&version);
+    else bindInfo("save_threshold",&threshold);
+    if(info->GetEntry(0)<=0 || !a || !c || n!=512 || threshold!=0 || (info->GetBranch("schema_version") && version!=2))
+      throw std::runtime_error("reconstruction requires complete raw waveforms (schema 2 or unfiltered legacy ROOT)");
     N_anode=*a;N_cathode=*c;
     info->ResetBranchAddresses(); delete a;delete c;
     for(const auto& ids : {N_anode,N_cathode}){

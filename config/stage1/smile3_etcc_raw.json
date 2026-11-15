@@ -41,19 +41,8 @@
       "root_file": ""
     },
     "RawTreeWriter": {
-      "save_threshold": 0.0,
-      "base_window": 30,
-      "save_fadc": true,
-      "save_hits": true,
-      "_units": {
-        "save_threshold": "ADU (above the baseline)",
-        "base_window": "samples (20 ns each)"
-      },
       "_doc": {
-        "save_threshold": "FADC の波形を保存する閾値。波形の最大値 − ベースラインがこれ以下の ch は保存しない。0 なら、データのあるボードの全 ch を保存する [ADU]",
-        "base_window": "save_threshold の判定に使うベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
-        "save_fadc": "true: FADC の波形(fadc_ch, fadc_wave)を保存する",
-        "save_hits": "true: ヒット(hit_a/c_strip, hit_a/c_clock)とエンコーダーのレコード(rec_a/c_board, rec_a/c_clock)を保存する"
+        "_": "チェーンにあるTPC・PSAの全ヒット・レコード・全チャンネルの波形・時刻を保存する。保存閾値や保存有無のオプションは設けず、選別は後段解析で行う"
       }
     }
   }

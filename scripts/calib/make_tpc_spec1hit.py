@@ -30,7 +30,7 @@ import sys
 import ROOT
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analysis"))
-from tpc_raw_io import raw_tree_path, run_info_path
+from tpc_raw_io import raw_tree_path, run_info_path, storage_threshold
 
 ROOT.gROOT.SetBatch(True)
 
@@ -148,8 +148,9 @@ def main():
         info = f.Get(run_info_path(path))
         if info and info.GetEntries():
             info.GetEntry(0)
-            if info.save_threshold > 0 and info.save_threshold >= args.threshold:
-                print(f"WARNING: {path}: save_threshold {info.save_threshold} >= threshold {args.threshold}: "
+            saved_threshold = storage_threshold(info)
+            if saved_threshold > 0 and saved_threshold >= args.threshold:
+                print(f"WARNING: {path}: save_threshold {saved_threshold} >= threshold {args.threshold}: "
                       "channels with a small charge are missing from the tree", file=sys.stderr)
         if t.GetEntries() == 0:
             continue

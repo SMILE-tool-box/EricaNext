@@ -58,7 +58,7 @@
 
 チュートリアル専用の関数は使わず、実際に使うときと同じ手順で書いています。
 
-- チェーンの実行: `run_script/run_chain.py`(設定ファイル `config/*.json` を指定)をノートブックから `subprocess` で実行
+- チェーンの実行: `run_script/run_chain.py`(設定ファイル `config/stage1/*.json, config/stage2/*.json` を指定)をノートブックから `subprocess` で実行
 - 較正ファイルを作る: `scripts/calib/*.py` を `subprocess` で実行
 - 結果の読み込み・計算: ROOT の `RDataFrame` と numpy で各ノートブックに直接記述
 

@@ -120,11 +120,18 @@ def main():
     # A TPC-only raw file cannot supply PSA waveforms to ETCC reconstruction.
     tpc_only = run('smile3_tpc_raw', 'tpc_only', ['--root-input', str(raw)])
     run('smile3_reconstruct', 'missing_psa', ['--root-input', str(tpc_only)], expected=1)
-    # A waveform-filtered file is unsuitable for reconstruction from complete raw information.
-    filtered = run('smile3_tpc_raw', 'filtered', ['--root-input', str(raw), '--set', 'RawTreeWriter.save_threshold=100.0'])
-    run('smile3_tpc_only', 'filtered_rejected', ['--root-input', str(filtered)], expected=1)
-    nohits = run('smile3_tpc_raw', 'nohits', ['--root-input', str(raw), '--set', 'RawTreeWriter.save_hits=false'])
-    run('smile3_tpc_only', 'nohits_rejected', ['--root-input', str(nohits)], expected=1)
+    incomplete = work / 'nohits.root'
+    first = ROOT.TFile.Open(str(tpc_only))
+    second = ROOT.TFile.Open(str(incomplete), 'RECREATE')
+    directory = second.mkdir('TPC_RawTreeWriter')
+    for tree_name in ('run_info', 'raw'):
+        tree = first.Get('TPC_RawTreeWriter/' + tree_name)
+        if tree_name == 'raw':
+            tree.SetBranchStatus('hit_a_strip', 0)
+        directory.cd()
+        tree.CloneTree(-1, 'fast').Write()
+    second.Close(); first.Close()
+    run('smile3_tpc_only', 'nohits_rejected', ['--root-input', str(incomplete)], expected=1)
     mismatched = work / 'mismatched.root'
     mismatch_psa_ids(raw, mismatched)
     run('smile3_reconstruct', 'mismatch_rejected', ['--root-input', str(mismatched)], expected=1)
