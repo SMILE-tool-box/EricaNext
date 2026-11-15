@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "ReadData.h"
 
 void ReadData::Scan_Encoder(){
@@ -107,6 +108,11 @@ const TH2C* ReadData::Get_Track_C() const {
 }
 
 void ReadData::Get_TPC_FADC(bool c_flag, int id, short *data) const {
+  if(root_tree_){
+    const int board=(c_flag ? N_cathode : N_anode).at(id);
+    std::copy_n(root_fadc_ + ((c_flag ? 48 : 0)+4*board)*512, 4*512, data);
+    return;
+  }
   for(int ch=0; ch<4; ch++)
     for(int clk=0; clk<512; clk++){
       if(c_flag){

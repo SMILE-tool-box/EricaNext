@@ -1,6 +1,7 @@
 #include "ReadData.h"
 
 ANLStatus ReadData::mod_define(){
+  define_parameter("root_file", &mod_class::root_file_);
   define_parameter("data_dir", &mod_class::DataDir);
   define_parameter("extra_data_dirs", &mod_class::ExtraDataDirs);
   define_parameter("reverse_TPC", &mod_class::Reverse);
@@ -11,6 +12,7 @@ ANLStatus ReadData::mod_define(){
 }
 
 ANLStatus ReadData::mod_initialize(){
+  if(!root_file_.empty()) return InitializeROOT();
   if(exist_module("SaveFile")){
     SaveFile* saveModule = nullptr;
     get_module_NC("SaveFile", &saveModule);
@@ -26,6 +28,7 @@ ANLStatus ReadData::mod_initialize(){
 }
 
 ANLStatus ReadData::mod_begin_run(){
+  if(root_tree_) return AS_OK;
   int flag=0;
 
   for(unsigned i=0; i<N_anode.size(); i++){
@@ -48,6 +51,7 @@ ANLStatus ReadData::mod_begin_run(){
 }
 
 ANLStatus ReadData::mod_analyze(){
+  if(root_tree_) return ReadROOT();
   ////////////////////////////////////////////////
   // ID check
   int loop_flag=0;

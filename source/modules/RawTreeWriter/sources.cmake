@@ -1,4 +1,4 @@
 set(ANL_MODULES
-  ${CUR_DIR}/TPC_RawTreeWriter.cxx
+  ${CUR_DIR}/RawTreeWriter.cxx
   ${ANL_MODULES}
 )

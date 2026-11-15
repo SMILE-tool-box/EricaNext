@@ -25,8 +25,10 @@
         "extra_data_dirs": "ほかにも HA のファイルがあるディレクトリ(同じランの別の storage ノード、例 storage_g0/<ラン>)。同じボードのファイルが複数のディレクトリにあれば、番号でまとめて読む(同じ番号が 2 つあれば警告して 1 つだけ)",
         "recursive": "true: data_dir と extra_data_dirs のサブディレクトリも探す(長いランで part0, part1, … に分かれたもの。UVSOR の 20261103_run12 など)",
         "sync_tpc": "true: チェーンに ReadData があれば、そのイベント(トリガーカウンタ、ReadData.event_id = true)に合わせて読む。ReadData が無いときは HA のボード同士をトリガーカウンタでそろえる",
-        "save_hit_pattern": "true: ボード × ch のヒット数(PSA_ReadData/HitPattern)を保存する"
-      }
+        "save_hit_pattern": "true: ボード × ch のヒット数(PSA_ReadData/HitPattern)を保存する",
+        "root_file": "後段解析に使うRawTreeWriterのROOTファイル。空なら生データを読む。指定時はdata_dir・extra_data_dirsを使わない。TPCは全波形・ヒット保存、PSAはRawTreeWriterでPSA生情報を保存したROOTが必要"
+      },
+      "root_file": ""
     },
     "PSA_CalcFADC": {
       "pedestal_samples": 23,

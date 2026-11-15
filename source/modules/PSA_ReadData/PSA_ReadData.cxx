@@ -8,6 +8,7 @@
 #include <regex>
 
 ANLStatus PSA_ReadData::mod_define(){
+  define_parameter("root_file", &mod_class::root_file_);
   define_parameter("data_dir",         &mod_class::data_dir_);
   define_parameter("extra_data_dirs",  &mod_class::extra_data_dirs_);
   define_parameter("sync_tpc",         &mod_class::sync_tpc_);
@@ -70,6 +71,9 @@ int PSA_ReadData::Index(int id) const {
 }
 
 ANLStatus PSA_ReadData::mod_initialize(){
+  if(!root_file_.empty()){
+    if(InitializeROOT()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
+  }else{
   ScanDir(data_dir_);
   for(const auto& d : extra_data_dirs_)  ScanDir(d);
   CollectFiles();
@@ -86,6 +90,7 @@ ANLStatus PSA_ReadData::mod_initialize(){
   for(int id : board_ids_)  std::cout << " " << PSA_Board::Name(id);
   std::cout << std::endl;
 
+  }
   present_.assign(boards_.size(), false);
   consumed_.assign(boards_.size(), true);   // read the first frame at the first event
 
@@ -109,6 +114,7 @@ ANLStatus PSA_ReadData::mod_initialize(){
 }
 
 ANLStatus PSA_ReadData::mod_analyze(){
+  if(root_tree_) return ReadROOT();
   const int nb = (int)boards_.size();
   for(int i=0; i<nb; i++){
     if(consumed_[i])  boards_[i]->Next();

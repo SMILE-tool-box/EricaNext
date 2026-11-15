@@ -9,7 +9,7 @@
 #include "TPC_Calibration.h"
 #include "TOT_Skewness.h"
 #include "Reconstruct.h"
-#include "TPC_RawTreeWriter.h"
+#include "RawTreeWriter.h"
 #include "PSA_ReadData.h"
 #include "PSA_CalcFADC.h"
 #include "PSA_CenterGravity.h"
@@ -39,7 +39,7 @@ class CalcFADC         : public anlnext::BasicModule {};
 class TPC_Calibration  : public anlnext::BasicModule {};
 class TOT_Skewness     : public anlnext::BasicModule {};
 class Reconstruct      : public anlnext::BasicModule {};
-class TPC_RawTreeWriter: public anlnext::BasicModule {};
+class RawTreeWriter: public anlnext::BasicModule {};
 class PSA_ReadData     : public anlnext::BasicModule {};
 class PSA_CalcFADC     : public anlnext::BasicModule {};
 class PSA_CenterGravity: public anlnext::BasicModule {};

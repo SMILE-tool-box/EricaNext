@@ -1,6 +1,7 @@
-#include "TPC_RawTreeWriter.h"
+#include "RawTreeWriter.h"
+#include <iostream>
 
-ANLStatus TPC_RawTreeWriter::mod_define(){
+ANLStatus RawTreeWriter::mod_define(){
   define_parameter("save_threshold", &mod_class::save_threshold);
   define_parameter("base_window",    &mod_class::base_window);
   define_parameter("save_fadc",      &mod_class::save_fadc);
@@ -8,7 +9,7 @@ ANLStatus TPC_RawTreeWriter::mod_define(){
   return AS_OK;
 }
 
-ANLStatus TPC_RawTreeWriter::mod_initialize(){
+ANLStatus RawTreeWriter::InitializeTPC(){
   if(!exist_module("SaveFile") || !exist_module("ReadData"))
     return AS_QUIT;
   get_module("ReadData", &RawData);
@@ -58,7 +59,7 @@ ANLStatus TPC_RawTreeWriter::mod_initialize(){
   return AS_OK;
 }
 
-ANLStatus TPC_RawTreeWriter::mod_analyze(){
+ANLStatus RawTreeWriter::AnalyzeTPC(){
   event_id = RawData->Get_EventID_coincidence();
   sevt_id  = RawData->Get_SEvtID();
   loopback = evs("IDcheck_Loopback") ? 1 : 0;
@@ -109,12 +110,70 @@ ANLStatus TPC_RawTreeWriter::mod_analyze(){
   return AS_OK;
 }
 
-TPC_RawTreeWriter::TPC_RawTreeWriter(){
+RawTreeWriter::RawTreeWriter(){
   save_threshold = 0.;   // off
   base_window    = 30;
   save_fadc      = true;
   save_hits      = true;
 }
 
-TPC_RawTreeWriter::~TPC_RawTreeWriter(){
+RawTreeWriter::~RawTreeWriter(){
+}
+
+ANLStatus RawTreeWriter::InitializePSA(){
+ if(!exist_module("PSA_ReadData") || !exist_module("SaveFile"))return AS_CRITICAL_ERROR_TO_FINALIZE;
+ get_module("PSA_ReadData",&psa_reader_);
+ SaveFile* save=nullptr;get_module_NC("SaveFile",&save);save->cd();
+ auto* dir=save->GetDirectory()->mkdir("PSA_RawTreeWriter");dir->cd();
+ psa_ids_=*psa_reader_->Get_BoardID();
+ auto* info=new TTree("run_info","PSA raw board layout");info->Branch("board_ids",&psa_ids_);
+ info->Branch("schema_version",&psa_schema_version_);info->Branch("n_sample",&psa_n_sample_);info->Branch("n_sig",&psa_n_sig_);info->Fill();
+ psa_tree_=new TTree("raw","event-synchronized PSA raw frames");psa_row_.Branch(psa_tree_);
+ return AS_OK;
+}
+ANLStatus RawTreeWriter::AnalyzePSA(){
+ psa_row_=PSA_RawEvent{};
+ psa_row_.trig=psa_reader_->Trig();psa_row_.sevt=psa_reader_->SEvtID();psa_row_.epoch=psa_reader_->Epoch();
+ for(int i=0;i<psa_reader_->NBoard();++i){
+  if(!psa_reader_->Present(i))continue;
+  const auto& b=psa_reader_->Board(i);unsigned mask=0;
+  for(int ch=0;ch<6;++ch)if(b.Hit(ch))mask|=1u<<ch;
+  psa_row_.board.push_back(b.ID());psa_row_.board_epoch.push_back(b.Epoch());psa_row_.clk.push_back(b.Clk());psa_row_.time.push_back(b.Time());psa_row_.mask.push_back(mask);
+  for(int k=0;k<6;++k)psa_row_.temp.push_back(b.TempRaw(k));
+  for(int ch=0;ch<6;++ch)for(int k=0;k<50;++k)for(int s=0;s<8;++s)psa_row_.adc.push_back(b.ADC(ch,k,s));
+ }
+ psa_tree_->Fill();return AS_OK;
+}
+
+ANLStatus RawTreeWriter::mod_initialize(){
+  if(!exist_module("SaveFile") || (!exist_module("ReadData") && !exist_module("PSA_ReadData"))){
+    std::cerr << "RawTreeWriter: SaveFile and at least one raw reader are required" << std::endl;
+    return AS_CRITICAL_ERROR_TO_FINALIZE;
+  }
+  if(exist_module("ReadData")){
+    if(base_window<=0 || base_window>512 || save_threshold<0){
+      std::cerr << "RawTreeWriter: invalid base_window or save_threshold" << std::endl;
+      return AS_CRITICAL_ERROR_TO_FINALIZE;
+    }
+    if(InitializeTPC()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
+  }
+  if(exist_module("PSA_ReadData")){
+    if(InitializePSA()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
+    if(RawData && !psa_reader_->SyncTPC()){
+      std::cerr << "RawTreeWriter: PSA_ReadData.sync_tpc must be true with TPC" << std::endl;
+      return AS_CRITICAL_ERROR_TO_FINALIZE;
+    }
+  }
+  return AS_OK;
+}
+
+ANLStatus RawTreeWriter::mod_analyze(){
+  if(RawData && psa_reader_ &&
+     (RawData->Get_EventID_coincidence()!=psa_reader_->Trig() || RawData->Get_SEvtID()!=psa_reader_->SEvtID())){
+    std::cerr << "RawTreeWriter: TPC and PSA are not synchronized" << std::endl;
+    return AS_CRITICAL_ERROR_TO_FINALIZE;
+  }
+  if(RawData && AnalyzeTPC()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
+  if(psa_reader_ && AnalyzePSA()!=AS_OK) return AS_CRITICAL_ERROR_TO_FINALIZE;
+  return AS_OK;
 }

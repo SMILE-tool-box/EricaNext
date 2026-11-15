@@ -7,6 +7,9 @@
 #include <vector>
 
 #include <TH2.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <memory>
 
 #include "SaveFile.h"
 #include "TPC_Encoder.h"
@@ -51,8 +54,8 @@ public:
   // 0-based count of the merged (board-synchronized) events processed so far
   unsigned           Get_SEvtID()     const {return sevt_id_;};
   // header time word N_time of anode / cathode board i (index in Get_AnodeID() / Get_CathodeID())
-  unsigned           Get_AnodeTime(int i)   const {return Anode[i]->GetNtime();};
-  unsigned           Get_CathodeTime(int i) const {return Cathode[i]->GetNtime();};
+  unsigned           Get_AnodeTime(int i)   const {return root_tree_ ? root_at_->at(i) : Anode[i]->GetNtime();};
+  unsigned           Get_CathodeTime(int i) const {return root_tree_ ? root_ct_->at(i) : Cathode[i]->GetNtime();};
   // every hit record of the encoder (board number, clock), also records whose strip bits are all zero
   struct Record { short board; short clock; };
   const std::vector<Record>& Get_Anode_Records()   const { return anode_records_; }
@@ -67,6 +70,19 @@ public:
   };
   
  private:
+  std::string root_file_;
+  std::unique_ptr<TFile> root_input_;
+  TTree* root_tree_ = nullptr;
+  Long64_t root_entry_ = 0;
+  int root_loopback_ = 0;
+  std::vector<unsigned>* root_at_ = nullptr;
+  std::vector<unsigned>* root_ct_ = nullptr;
+  std::vector<short> *root_as_=nullptr, *root_ac_=nullptr, *root_cs_=nullptr, *root_cc_=nullptr;
+  std::vector<short> *root_ab_=nullptr, *root_ar_=nullptr, *root_cb_=nullptr, *root_cr_=nullptr;
+  std::vector<short> *root_ch_=nullptr, *root_wave_=nullptr;
+  short root_fadc_[96*512] = {};
+  ANLStatus InitializeROOT();
+  ANLStatus ReadROOT();
   std::string       DataDir;
   // other directories with encoder files of the same run (the other storage node, e.g. killua for the
   // cathode boards when data_dir is calltt). Each board is read from the first directory that has its

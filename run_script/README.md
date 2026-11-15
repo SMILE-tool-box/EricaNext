@@ -1,7 +1,11 @@
 # run_script: チェーンの実行と図のスクリプト
 
 | スクリプト | 何をするか |
-| --- | --- |
+| TPCの較正・診断は、まず `smile3_raw` でROOTを作り、後段の `scripts/calib/`・`scripts/analysis/` にそのROOTを入力する二段階を基本にします。
+コマンド例は[リポジトリのREADME](../README.md#使い方まずここ)を参照してください。
+`smile3_tpc_only`・`smile3_reconstruct` は `--root-input <ROOT>` で第2段階として実行できます。ETCCの第1段階は `smile3_etcc_raw` です。
+
+--- | --- |
 | [`run_chain.py`](run_chain.py) | 設定ファイル(`config/*.json`)を指定して EricaNext のチェーンを実行する。**通常はこれを使う** |
 | [`run_runs.sh`](run_runs.sh) | 複数のランに `run_chain.py` を順に実行する(1 ランに 1 ファイル) |
 | [`plot_track3d.py`](plot_track3d.py) | `TOT_Skewness/tot_skewness` の点群(`flag_save_cloud: true`)から 1 イベントの飛跡を 3 次元で描く |
@@ -28,6 +32,7 @@ python3 run_chain.py <設定名> -o <出力ファイル> [-n <イベント数>] 
 | `<設定名>` | `config/` の中の設定ファイルの名前(拡張子なし、例 `smile3_tpc_only`)。`.json` のパスを直接書いてもよい |
 | `-o`, `--output` | 出力する ROOT ファイル(必須) |
 | `-n`, `--n-events` | 処理するイベント数。省略すると全イベント(`-1`) |
+| `--root-input <ROOT>` | SMILE-3のRawTreeWriter ROOTを後段解析の入力にする。生データ用オプションや `--raw` と併用不可。1ファイル/run。出力先の親ディレクトリは自動作成する |
 | `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)を置き換える |
 | `--extra-data-dir <ディレクトリ>` | 同じランの別のディレクトリ(FM では 2 つの storage の片方)。`ReadData.extra_data_dirs` と `PSA_ReadData.extra_data_dirs` に足す(何回でも) |
 | `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0` |
@@ -113,4 +118,6 @@ python3 plot_track3d.py [<エントリー番号>]
 
 読むファイルは中の `ROOT_FILE`(今は `output_3.root`)です。`uproot`、`awkward`、`matplotlib` が要ります。
 
-SMILE-3のTPC raw writer名は `TPC_RawTreeWriter` です（旧 `RawTreeWriter_sm3`）。設定の `chain`・パラメータキー・`--set` は新名を使います。新規ROOTは `TPC_RawTreeWriter/raw` と `TPC_RawTreeWriter/run_info` に保存します。後段のTPC解析スクリプトとチュートリアルは旧名ROOTも自動判別して読みます。既存の入力ROOTを改名・再変換する必要はありません。
+SMILE-3のTPC raw writer名は `RawTreeWriter` です（旧 `RawTreeWriter_sm3`）。設定の `chain`・パラメータキー・`--set` は新名を使います。新規ROOTは `TPC_RawTreeWriter/raw` と `TPC_RawTreeWriter/run_info` に保存します。後段のTPC解析スクリプトとチュートリアルは旧名ROOTも自動判別して読みます。既存の入力ROOTを改名・再変換する必要はありません。
+
+`--raw` はSMILE-3ではTPCだけを保存する短縮指定です。TPC＋PSAを保存するときは `smile3_etcc_raw` を指定し、`--raw` を付けずに実行してください。

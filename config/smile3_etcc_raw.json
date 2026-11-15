@@ -1,0 +1,60 @@
+{
+  "_comment": [
+    "第1段階: ReadData・PSA_ReadDataのうちチェーンにある検出器の生情報を、共通RawTreeWriterでROOTへ保存する。"
+  ],
+  "chain": [
+    "ReadData",
+    "PSA_ReadData",
+    "RawTreeWriter"
+  ],
+  "parameters": {
+    "ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "extra_data_dirs": [],
+      "reverse_TPC": false,
+      "TPC_Only": true,
+      "event_id": true,
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(tpc_enc_a<ボード>_<番号>.raw, tpc_enc_c<ボード>_<番号>.raw)のディレクトリ",
+        "reverse_TPC": "true: エンコーダーのストリップのビットの並びを反転して読む",
+        "TPC_Only": "true: TPC だけを読む(SMILE-2+ の HA のファイルは探さない)",
+        "event_id": "イベント ID に使うもの。true: トリガーカウンタ(N_trg)、false: N_gso & 0x1fffffff",
+        "extra_data_dirs": "ほかにも TPC のエンコーダーのファイル(tpc_enc_*.raw)があるディレクトリ(同じランの別の storage。例 data_dir が calltt のとき killua/<ラン>)。ボードごとに、data_dir、extra_data_dirs の順で最初にファイルのあるディレクトリから読む(同じボードが 2 か所にあれば警告して最初の方)。run_chain.py の --extra-data-dir でも足せる",
+        "root_file": "後段解析に使うRawTreeWriterのROOTファイル。空なら生データを読む。指定時はdata_dir・extra_data_dirsを使わない。TPCは全波形・ヒット保存、PSAはRawTreeWriterでPSA生情報を保存したROOTが必要"
+      },
+      "root_file": ""
+    },
+    "PSA_ReadData": {
+      "data_dir": "{data_root}/storage_g0/run_20260628T232149Z",
+      "extra_data_dirs": [],
+      "recursive": false,
+      "sync_tpc": true,
+      "save_hit_pattern": false,
+      "_doc": {
+        "data_dir": "1 ラン分の生データ(ha<ボード>_<番号>.dat)のディレクトリ。.dat が無い番号は .dat.tmp を読む。TPC と同じランのディレクトリ(--data-dir で ReadData.data_dir と一緒に変わる)",
+        "extra_data_dirs": "ほかにも HA のファイルがあるディレクトリ(同じランの別の storage ノード、例 storage_g0/<ラン>)。同じボードのファイルが複数のディレクトリにあれば、番号でまとめて読む(同じ番号が 2 つあれば警告して 1 つだけ)",
+        "recursive": "true: data_dir と extra_data_dirs のサブディレクトリも探す(長いランで part0, part1, … に分かれたもの。UVSOR の 20261103_run12 など)",
+        "sync_tpc": "true: チェーンに ReadData があれば、そのイベント(トリガーカウンタ、ReadData.event_id = true)に合わせて読む。ReadData が無いときは HA のボード同士をトリガーカウンタでそろえる",
+        "save_hit_pattern": "true: ボード × ch のヒット数(PSA_ReadData/HitPattern)を保存する",
+        "root_file": "後段解析に使うRawTreeWriterのROOTファイル。空なら生データを読む。指定時はdata_dir・extra_data_dirsを使わない。TPCは全波形・ヒット保存、PSAはRawTreeWriterでPSA生情報を保存したROOTが必要"
+      },
+      "root_file": ""
+    },
+    "RawTreeWriter": {
+      "save_threshold": 0.0,
+      "base_window": 30,
+      "save_fadc": true,
+      "save_hits": true,
+      "_units": {
+        "save_threshold": "ADU (above the baseline)",
+        "base_window": "samples (20 ns each)"
+      },
+      "_doc": {
+        "save_threshold": "FADC の波形を保存する閾値。波形の最大値 − ベースラインがこれ以下の ch は保存しない。0 なら、データのあるボードの全 ch を保存する [ADU]",
+        "base_window": "save_threshold の判定に使うベースライン(波形の最初のこのサンプル数の平均)[samples, 1 サンプル 20 ns]",
+        "save_fadc": "true: FADC の波形(fadc_ch, fadc_wave)を保存する",
+        "save_hits": "true: ヒット(hit_a/c_strip, hit_a/c_clock)とエンコーダーのレコード(rec_a/c_board, rec_a/c_clock)を保存する"
+      }
+    }
+  }
+}

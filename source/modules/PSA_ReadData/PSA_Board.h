@@ -34,6 +34,8 @@ class PSA_Board {
 
   // Read the next frame. false at the end of the data.
   bool Next();
+  void Restore(unsigned trig, unsigned clk, int epoch, double time, unsigned mask,
+               const unsigned short* temp, const unsigned short* adc);
 
   int      ID()      const { return id_; }
   bool     End()     const { return end_; }

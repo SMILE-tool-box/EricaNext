@@ -199,3 +199,11 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-15: SMILE-3 TPCのraw writerを `RawTreeWriter_sm3` から `TPC_RawTreeWriter` に改名。クラス・設定キー・ROOTディレクトリを新名に統一し、ブランチ内容は変更しない。旧名の設定は新名に書き換える。後段解析とチュートリアルは `scripts/analysis/tpc_raw_io.py` で新旧ROOTを判別し、既存ROOTの再変換は不要。新旧両ツリーを含む曖昧な入力はエラー。
 
 2026-11-15: TPC_GainMap.ipynbの2点較正でピーク中心の標準誤差をKa/Kbへ一次伝播し、標準誤差・共分散・相関係数をgain_map.jsonのcalibration_uncertaintyに保存。2ピーク独立・線エネルギー固定の統計誤差であり、系統誤差を含まない。datは4列のまま。
+
+2026-11-15: TPC較正・診断の標準手順を、生データ→TPC_RawTreeWriterのROOT→後段解析の二段階としてREADMEとtutorialsに明記。再構成のROOT入力・PSA生波形保存については後述の実装記録を参照。mkdir.shは旧/usr/local向けビルドを廃止し、scripts/env/build_ericanext.shへの互換入口に変更（通常は直接新スクリプトを使う）。
+
+2026-11-15: 再構成の二段階化を実装。ReadData.root_fileはTPC_RawTreeWriter（旧RawTreeWriter_sm3も可）の全ヒット・全波形を復元し、PSA_ReadData.root_fileは新PSA_RawTreeWriterの生ADC・温度・時刻・present状態を復元する。run_chain.py --root-inputで両readerをROOT入力へ切り替える。第1段階ETCC用configはsmile3_etcc_raw、後段smile3_reconstruct。1ファイル/run。TPC全ヒット・save_threshold=0の全波形が必須、TPCとPSAのID・sevt対応を確認。従来の生データ直接処理は比較検証用として維持。
+
+検証: scripts/check/check_raw_replay.py（20261102_run04先頭200イベント）で直接処理とROOT経由の218オブジェクトが全値一致、TPC/PSA raw4ツリーも往復一致。PSA単独100イベントも18オブジェクト一致。ROOT入力の失敗はAS_CRITICAL_ERROR_TO_FINALIZEで返す（ANLNextは通常のAS_ERRORを非致命的として処理継続するため）。専用手順tutorials/1_DataIO/RawROOT_Pipeline.ipynb、既存モジュール12冊とPSA較正3冊を二段階へ更新。
+
+2026-11-15: SMILE-3の保存モジュールをRawTreeWriterに統合。チェーン内のReadData/PSA_ReadDataを検出してTPCのみ・PSAのみ・両方を保存する。旧TPC_RawTreeWriter/PSA_RawTreeWriterクラスは廃止し、configのchain・TPC用パラメータはRawTreeWriterへ移動。ROOTの保存パスTPC_RawTreeWriter/*、PSA_RawTreeWriter/*は互換性のため維持。両readerがある場合はPSA sync_tpcとイベントID・連番の一致を検証。SMILE-2+のRawTreeWriter_2pは変更しない。

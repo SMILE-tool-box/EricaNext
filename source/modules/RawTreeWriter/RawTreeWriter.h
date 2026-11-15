@@ -1,5 +1,5 @@
-#ifndef TPC_RawTreeWriter_h
-#define TPC_RawTreeWriter_h 1
+#ifndef RawTreeWriter_h
+#define RawTreeWriter_h 1
 
 #include <anlnext/BasicModule.hh>
 #include <vector>
@@ -8,29 +8,21 @@
 
 #include "SaveFile.h"
 #include "ReadData.h"
+#include "PSA_ReadData.h"
+#include "PSA_RawEvent.h"
 
 using namespace anlnext;
 
-// Writes the event-synchronized TPC raw data of ReadData to a TTree
-// (TPC_RawTreeWriter/raw), one row per event, so that calibrations (gain maps,
-// energy calibration, drift velocity) can be redone without re-reading the
-// raw files. SMILE-3: 12 anode and 12 cathode boards (4 uPIC panels x 3),
-// some of which may be missing in a run.
-//   - every TPC (strip, clock) hit bit, anode and cathode
-//     (strip = 128*board + 32*ch + bit, 0-1535; panel = strip/384)
-//   - every encoder hit record (board, clock)
-//   - full 512-sample FADC waveforms of every channel of the boards that
-//     have data in this event (optionally only channels whose maximum
-//     excursion above the baseline exceeds `save_threshold`; 0 = off)
-//   - header time words and event IDs
-// The HA (PSA, MPPC waveforms) is not read by ReadData yet and not written.
-// Chain it right after ReadData.
-class TPC_RawTreeWriter : public BasicModule {
-  DEFINE_ANL_MODULE(TPC_RawTreeWriter, 1.0);
+// Saves the raw information of the readers present in the chain.
+// Existing TPC_RawTreeWriter/* and PSA_RawTreeWriter/* on-disk paths are retained
+// so that existing reconstruction and analysis scripts can read both old and new files.
+// Place this module after ReadData and/or PSA_ReadData, before any event selection.
+class RawTreeWriter : public BasicModule {
+  DEFINE_ANL_MODULE(RawTreeWriter, 1.0);
 
  public:
-  TPC_RawTreeWriter();
-  ~TPC_RawTreeWriter();
+  RawTreeWriter();
+  ~RawTreeWriter();
 
   ANLStatus mod_define()     override;
   ANLStatus mod_initialize() override;
@@ -39,6 +31,15 @@ class TPC_RawTreeWriter : public BasicModule {
   static constexpr int N_BOARD = 12;   // boards per side (anode or cathode)
 
  private:
+  ANLStatus InitializeTPC();
+  ANLStatus AnalyzeTPC();
+  ANLStatus InitializePSA();
+  ANLStatus AnalyzePSA();
+  const PSA_ReadData* psa_reader_ = nullptr;
+  TTree* psa_tree_ = nullptr;
+  std::vector<int> psa_ids_;
+  PSA_RawEvent psa_row_;
+  int psa_schema_version_=1, psa_n_sample_=50, psa_n_sig_=8;
   const ReadData* RawData = nullptr;
 
   // parameters

@@ -7,6 +7,9 @@
 #include <vector>
 
 #include <TH2.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <memory>
 
 #include "SaveFile.h"
 #include "PSA_Board.h"
@@ -54,6 +57,17 @@ class PSA_ReadData : public BasicModule {
   bool             SyncTPC()       const { return sync_; }
 
  private:
+  std::string root_file_;
+  std::unique_ptr<TFile> root_input_;
+  TTree* root_tree_ = nullptr;
+  Long64_t root_entry_ = 0;
+  unsigned root_trig_=0,root_sevt_=0; int root_epoch_=0;
+  std::vector<int> *root_board_=nullptr,*root_board_epoch_=nullptr;
+  std::vector<unsigned> *root_clk_=nullptr,*root_mask_=nullptr;
+  std::vector<double>* root_time_=nullptr;
+  std::vector<unsigned short> *root_temp_=nullptr,*root_adc_=nullptr;
+  ANLStatus InitializeROOT();
+  ANLStatus ReadROOT();
   void ScanDir(const std::string& dir);
   void CollectFiles();
 

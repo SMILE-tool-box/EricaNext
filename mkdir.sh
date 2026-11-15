@@ -1,6 +1,5 @@
-rm -rf build
-mkdir build
-cd build
-cmake ../source/ -DCMAKE_INSTALL_PREFIX=/usr/local -DUSE_PYTHON=ON
-make
-sudo make install
+#!/usr/bin/env bash
+# Compatibility entry point; use the maintained repository-local build script.
+set -euo pipefail
+echo "mkdir.sh is deprecated; use bash scripts/env/build_ericanext.sh" >&2
+exec bash "$(dirname "$0")/scripts/env/build_ericanext.sh" "$@"

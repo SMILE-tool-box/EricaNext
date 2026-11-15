@@ -6,7 +6,7 @@
 | ファイル | チェーン |
 | --- | --- |
 | [`smile3_tpc_only.json`](smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
-| [`smile3_raw.json`](smile3_raw.json) | `ReadData → TPC_RawTreeWriter`(同期した生データのツリー) |
+| [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter`(同期した生データのツリー) |
 | [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る。`TOT_Skewness` は AS_SKIP するので `Reconstruct` の直前) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
 | [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p`(EricaNext_try と同じ) |
@@ -172,3 +172,30 @@ n, m の向きは `x_hg`, `y_hg`(4 隅の信号の重心)で決まるので、�
 - 吸収点はブロックの深さの中心です。ピクセルの間隔は CAD のピクセルの溝から 5.96 mm。
 - **ピクセルの向き(u, v)は、MPPC の 4 隅の信号の配線(重心の式の符号)でも変わるので、データで確かめる必要があります**(まだ確かめていない)。
 
+
+## Raw ROOTを経由する標準手順
+
+| 用途 | 第1段階（生データ → ROOT） | 第2段階（ROOT → 解析） |
+| --- | --- | --- |
+| TPC | `smile3_raw` | `smile3_tpc_only --root-input <ROOT>`、較正・診断スクリプト |
+| PSA | `smile3_psa_raw` | `smile3_psa --root-input <ROOT>` |
+| ETCC | `smile3_etcc_raw` | `smile3_reconstruct --root-input <ROOT>` |
+
+`ReadData.root_file` と `PSA_ReadData.root_file` は入力ROOTのパスです。
+空文字なら従来の生データ読み込み、指定時は `data_dir`・`extra_data_dirs` を使いません。
+`--root-input` はチェーン内の両readerに同じファイルを指定します。1ファイル/runです。
+生データ入力の `--data-dir`・`--extra-data-dir`・`--raw` と同時には指定しません。
+`reverse_TPC`・`event_id` は第1段階にのみ適用します。後段では保存済みのストリップとIDを使います。
+
+TPCの再構成は全ヒットと全波形が必要です。`save_hits=true`、`save_fadc=true`、`save_threshold=0.0` で保存してください。
+PSAは `PSA_RawTreeWriter/raw` の生情報を読み戻します。従来の `PSA_TreeWriter/psa` は後段の処理結果です。
+
+PSA rawは1イベント1行で、`board` にpresentボードのID（ゼロヒットのフレームも含む）、
+`board_epoch`、`clk` [1 MHz clock]、`time` [s]、`hit_mask`（bit ch）、`temp_raw` [raw ADC]、
+`adc` [raw ADC, 0–16383] を保存します。
+`temp_raw` はボードごとに6値、`adc` はボード→ch（6）→sample（50）→信号（HG0–3、LG0–3）の順に平坦化した2400値です。
+`run_info` には `board_ids`、`schema_version=1`、`n_sample=50`、`n_sig=8` を記録します。
+TPCとPSAは同一run・同一イベント順で保存し、後段でイベントIDと連番の一致を確認します。
+
+検証は `python3 scripts/check/check_raw_replay.py --data-dir <run> --extra-data-dir <other storage/run>`。
+直接処理と二段階処理の全ツリー・ヒストグラム、raw ROOTの往復一致、不完全な入力の拒否を確認します。

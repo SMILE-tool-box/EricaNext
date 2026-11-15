@@ -26,6 +26,17 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`PSA_TempGain`](4_MakeCalibration/PSA_TempGain.ipynb) | 温度ごとの相対ゲイン → `calib/psa/temp_gain_haNN.csv` |
 | └ [`PSA_Energy`](4_MakeCalibration/PSA_Energy.ipynb) | ピクセルごとの hg_corr → keV(Cs-137 の 662 keV)→ `calib/psa/energy_haNN.csv` |
 
+## TPC解析の基本手順
+
+1. `smile3_raw`（`ReadData → RawTreeWriter`）で生データを一度ROOTに変換します。コマンド例は[リポジトリのREADME](../README.md#使い方まずここ)を参照してください。
+2. 較正・診断のノートブックには、作成済みROOTを `RAWS` に指定します。波形積算・スペクトル・ゲイン・ドリフト速度の計算時に、生データの変換は繰り返しません。
+
+汎用の入力として残す場合は `save_hits: true`、`save_fadc: true`、`save_threshold: 0.0` を使います。
+ゲインのfitだけをやり直す場合は、既存のスペクトルROOTを再利用してfitのセルから実行します。
+モジュール解説・PSA較正ノートブックも、最初に生情報のROOTを用意し、以降はROOTを読み込む手順です。
+再構成も `--root-input` でRawTreeWriterのROOTを入力にします。TPC＋PSAでは第1段階に `smile3_etcc_raw` を使い、両検出器の生情報を同じROOTに保存してください。
+実行例は [`RawROOT_Pipeline.ipynb`](1_DataIO/RawROOT_Pipeline.ipynb) にあります。
+
 ## 準備
 
 1. EricaNext をビルドしておく(`bash scripts/env/build_ericanext.sh`)。

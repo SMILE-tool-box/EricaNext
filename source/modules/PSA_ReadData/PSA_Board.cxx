@@ -204,3 +204,15 @@ void PSA_Board::Decode(const unsigned char* ev, size_t len){
     }
   }
 }
+
+// Restore the complete decoded frame without repeating binary decoding.
+void PSA_Board::Restore(unsigned trig, unsigned clk, int epoch, double time, unsigned mask,
+                        const unsigned short* temp, const unsigned short* adc){
+  trig_=trig;clk_=clk;epoch_=epoch;time_=time;hit_mask_=mask;end_=false;
+  std::memcpy(temp_raw_,temp,sizeof(temp_raw_));
+  std::memcpy(adc_,adc,sizeof(adc_));
+  std::memset(satu_h_,0,sizeof(satu_h_));std::memset(satu_l_,0,sizeof(satu_l_));
+  for(int ch=0;ch<N_CH;++ch) for(int k=0;k<N_SAMPLE;++k) for(int s=0;s<N_SIG;++s)
+    if(adc_[ch][k][s]>=ADC_MAX){if(s<4)satu_h_[ch]=true;else satu_l_[ch]=true;}
+  ++n_frames_;
+}

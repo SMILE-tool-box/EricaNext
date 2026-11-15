@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run the EricaNext chain with a configuration from config/*.json.
 
-    python3 run_chain.py smile3_tpc_only -o out.root
+    python3 run_chain.py smile3_raw --data-dir <run> -o raw.root
+    python3 run_chain.py smile3_tpc_only --root-input raw.root -o out.root
     python3 run_chain.py smile3_tpc_only -o out.root -n 10000 --data-dir ../mount_data/storage_g0/run_20260618T010203Z
 
 SMILE-2+ data (modules *_2p from EricaNext_try):
@@ -12,7 +13,7 @@ SMILE-2+ data (modules *_2p from EricaNext_try):
 --extra-data-dir adds another directory of the same run (SMILE-3 FM: the other storage node), e.g.
     python3 run_chain.py smile3_reconstruct -o run04.root --data-dir <NAS>/20261102/calltt/20261102_run04 \
         --extra-data-dir <NAS>/20261102/killua/20261102_run04
---raw runs only the reader and the raw data tree writer (ReadData -> TPC_RawTreeWriter, ReadData_2p -> RawTreeWriter_2p).
+--raw runs only the reader and the raw data tree writer (ReadData -> RawTreeWriter, ReadData_2p -> RawTreeWriter_2p).
 --set Module.param=value overrides a parameter of the config (repeatable), e.g.
     python3 run_chain.py smile3_tpc_only -o out.root --set CalcFADC.threshold=30.0
 """
@@ -41,8 +42,9 @@ def main():
     ap.add_argument("--extra-data-dir", action="append", default=[], metavar="DIR",
                     help="another directory of the same run (the other storage node), added to ReadData.extra_data_dirs "
                          "and PSA_ReadData.extra_data_dirs; repeatable")
+    ap.add_argument("--root-input", help="RawTreeWriter ROOT input for SMILE-3 downstream chains")
     ap.add_argument("--raw", action="store_true",
-                    help="ReadData -> TPC_RawTreeWriter (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
+                    help="ReadData -> RawTreeWriter (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
     ap.add_argument("--compression", type=int, default=-1,
                     help="ROOT compression setting, 100*algorithm+level (505 = zstd 5, recommended with --raw); -1 = ROOT default")
     ap.add_argument("--set", action="append", default=[], metavar="MODULE.PARAM=VALUE",
@@ -71,8 +73,22 @@ def main():
 
     chain = cfg["chain"]
     if args.raw:
-        chain = ["ReadData_2p", "RawTreeWriter_2p"] if "ReadData_2p" in chain else ["ReadData", "TPC_RawTreeWriter"]
+        chain = ["ReadData_2p", "RawTreeWriter_2p"] if "ReadData_2p" in chain else ["ReadData", "RawTreeWriter"]
+    if args.root_input:
+        if args.raw or args.data_dir or args.extra_data_dir or "ReadData_2p" in chain:
+            ap.error("--root-input cannot be combined with raw data input options or SMILE-2+")
+        if not any(m in chain for m in ("ReadData", "PSA_ReadData")):
+            ap.error("this chain has no SMILE-3 reader")
+        for m in ("ReadData", "PSA_ReadData"):
+            if m in chain:
+                params.setdefault(m, {})["root_file"] = os.path.abspath(args.root_input)
     for m in readers:
+        if m not in chain:
+            continue
+        if params.get(m, {}).get("root_file"):
+            if os.path.realpath(params[m]["root_file"]) == os.path.realpath(args.output):
+                ap.error("input ROOT and output must differ")
+            continue
         data_dir = params.get(m, {}).get("data_dir") if m in chain else None
         if data_dir and not os.path.isdir(data_dir):
             print(f"run_chain.py: no run directory {data_dir}", file=sys.stderr)
@@ -84,6 +100,7 @@ def main():
 
     # write to <output>.part and rename it only when the chain succeeded, so that a failed run never leaves
     # a broken file that looks finished
+    os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
     part = args.output + ".part"
     if os.path.exists(part):
         os.remove(part)
