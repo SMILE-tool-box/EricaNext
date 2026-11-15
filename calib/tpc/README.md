@@ -22,6 +22,7 @@ TPC の較正ファイルの置き場です。
   - 1-hit スペクトルを `scripts/calib/make_tpc_spec1hit.py` で作り、確認した2本の線をガウス＋直線の背景でフィットして係数を決めます。
   - 線源・エネルギー・フィット範囲はノートブックで指定します。較正できなかった組は 0 にし、作り方とフィット結果は別の JSON に保存します。
   - SMILE-3 の電荷は pC ではなく ADU × sample なので、係数の単位（keV/(ADU × sample)）に注意してください。
+  - ガス増幅率のマップは、`gain_map.dat` から `scripts/calib/plot_tpc_gas_gain.py` で描けます（G = Q(E) × W / E / e / G_board。電荷の換算・W・G_board は SMILE-2+ の値）。
 - **ドリフト速度**: [TPC_DriftVelocity.ipynb](../../tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb)、または次のコマンド
 
   ```bash
