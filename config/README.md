@@ -9,7 +9,7 @@
 | [`smile3_raw.json`](smile3_raw.json) | `ReadData → RawTreeWriter`(同期した生データのツリー) |
 | [`smile3_reconstruct.json`](smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(`energy_haNN.csv`、`geometry.csv` が要る。`TOT_Skewness` は AS_SKIP するので `Reconstruct` の直前) |
 | [`smile3_psa.json`](smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ。較正ファイルは下の [PSA の較正ファイル](#psa-の較正ファイル-calibpsa)) |
-| [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p`(EricaNext_try と同じ) |
+| [`smile2p_20190701_Per02.json`](smile2p_20190701_Per02.json), [`smile2p_20190701_Per03.json`](smile2p_20190701_Per03.json) | SMILE-2+ の地上較正のラン: `ReadData_2p → CalcFADC_2p → TPC_Calibration_2p → HA_CenterGravity_2p → HA_Calc_2p → TOT_Skewness_2p → Reconstruct_2p` |
 | [`smile2p_sim_d10_recon.json`](smile2p_sim_d10_recon.json) | SMILE-2+ のシミュレーションのデータの再構成(同じチェーン) |
 | [`tpc_caldata_2017_Ba133.json`](tpc_caldata_2017_Ba133.json) | SMILE-2+ の TPC だけの Ba-133 の較正のラン: `ReadData_2p → CalcFADC_2p`(ゲインマップを作る) |
 
@@ -80,7 +80,7 @@
 
 `smile3_psa.json` の `PSA_CalcFADC.psa_param_file`、`PSA_Calibration.position_dir`、`temp_gain_dir`、`energy_dir` は `{repo}/calib/psa/` を指しています。
 ボード `ha<NN>` ごとに次のファイルを置きます。無いボードは、そのファイルを使う処理だけを飛ばします(実行は止まりません)。
-EricaNext_try のゲインマップやドリフト速度と同じく、**較正のランから `scripts/calib/` のスクリプトで作り、チェーンはファイルを読むだけ**です。
+**較正のランから `scripts/calib/` のスクリプトで作り、チェーンはファイルを読むだけ**です。
 どのファイルも `#` で始まる行はコメントで、作ったスクリプトが入力のファイルと条件を書き込みます。
 
 | ファイル | 中身 | 作り方 | 無いとき |

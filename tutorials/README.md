@@ -1,10 +1,10 @@
 # チュートリアル
 
-EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解説の番号は、設定ファイル `smile3_reconstruct` のチェーンの順です。
+モジュールの解説の番号は、設定ファイル `smile3_reconstruct` のチェーンの順です。
 
 | フォルダ | 中身 |
 | --- | --- |
-| [`0_Introduction`](0_Introduction/Introduction.ipynb) | SMILE-3 の検出器の構成(μ-PIC の 4 分割、ストリップ 0.4 mm、MPPC の PSA)と SMILE-2+ からの変更点、座標系 |
+| [`0_Introduction`](0_Introduction/Introduction.ipynb) | SMILE-3 の検出器の構成(μ-PIC の 4 分割、ストリップ 0.4 mm、MPPC の PSA)と座標系 |
 | `1_DataIO/modules/` | 各モジュールの解説 |
 | ├ [`1_ReadData/`](1_DataIO/modules/1_ReadData/ReadData.ipynb) | TPC の生データの読み込みとボード間のイベント同期 |
 | ├ [`2_PSA_ReadData/`](1_DataIO/modules/2_PSA_ReadData/PSA_ReadData.ipynb) | シンチレータ(PSA)の生データの読み込みとイベントの同期 |
@@ -19,7 +19,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
 | └ [`12_TPC_RawTreeWriter/`](1_DataIO/modules/12_TPC_RawTreeWriter/TPC_RawTreeWriter.ipynb) | 同期した TPC の生データの TTree |
 | [`2_Diagnostics/TPC_FADC_Accumulation`](2_Diagnostics/TPC_FADC_Accumulation.ipynb) | raw ROOT → 全ボード・全chのFADC波形積算TH2Dを1つのROOTに保存（ボードごとのPNGも出力可） |
-| `4_MakeCalibration/` | 較正ファイルを作る(EricaNext_try のゲインマップ、ドリフト速度と同じ扱い。チェーンはファイルを読むだけ) |
+| `4_MakeCalibration/` | 較正ファイルを作る(チェーンは作成済みの較正ファイルを読む) |
 | ├ [`TPC_DriftVelocity`](4_MakeCalibration/TPC_DriftVelocity.ipynb) | RawTreeWriterのROOT → 飛跡積算図・クロック分布 → ドリフト速度 |
 | ├ [`TPC_GainMap`](4_MakeCalibration/TPC_GainMap.ipynb) | RawTreeWriterのROOT → 1-hitスペクトル・2本の線のfit → TPCゲインマップ |
 | ├ [`PSA_Position`](4_MakeCalibration/PSA_Position.ipynb) | バタフライマップの 64 点 → `calib/psa/position_haNN.csv` |
@@ -40,7 +40,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 ## 準備
 
 1. EricaNext をビルドしておく(`bash scripts/env/build_ericanext.sh`)。
-2. Jupyter のカーネルは「EricaNext」(EricaNext_try の `make_jupyter_kernel.sh` で登録したもの、`/usr/bin/python3`)を選びます。
+2. Jupyterでは、PyROOT・numpy・scipyと解析に必要なライブラリを利用できるPythonカーネルを選びます。
    ノートブックはリポジトリの中のどこから開いても、リポジトリの場所を自分で探します。
 3. 入力と出力: 各ノートブックの冒頭のセル「入力と出力」に絶対パスで書きます。データ量が大きいので、どちらもリポジトリの外(NAS など)に置きます。
    `<書き換え>` が残っているとエラーで止まるので、自分の環境のパスに書き換えてから実行してください。
