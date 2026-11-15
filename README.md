@@ -155,36 +155,67 @@ flowchart LR
 第1段階はデコードとイベント同期、ROOTへの保存を行います。
 
 ```mermaid
-flowchart LR
+flowchart TD
   RAW[("生データ<br>tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA *.dat（MPPCの波形）")]
-  RD["ReadData<br>TPC読み込み・ボード間同期"]
-  PRD["PSA_ReadData<br>PSA読み込み・TPCと同期"]
-  WR[RawTreeWriter]
+  subgraph L0["読み込み・同期"]
+    RD["ReadData<br>TPC読み込み・ボード間同期"]
+    PRD["PSA_ReadData<br>PSA読み込み・TPCと同期"]
+  end
+  subgraph L1["保存"]
+    WR[RawTreeWriter]
+  end
   ROOT[("raw ROOT<br>TPC・PSAの全生情報")]
-  RAW --> RD --> WR
-  RAW --> PRD --> WR
-  RD -- "トリガーカウンタ" --> PRD
+  RAW --> RD
+  RAW --> PRD
+  RD -- "トリガーカウンタ(sync_tpc)" --> PRD
+  RD -- "TPCのヒット・FADC波形" --> WR
+  PRD -- "MPPCの波形" --> WR
   WR --> ROOT
 ```
 
 第2段階はraw ROOTを読み、TPC・PSAそれぞれの積分・較正の結果をイベント再構成へ渡します。
 
 ```mermaid
-flowchart LR
-  ROOT[(raw ROOT)] --> RD["ReadData<br>TPCを読み戻す"]
-  ROOT --> PRD["PSA_ReadData<br>PSAを読み戻す"]
-  RD --> CF[CalcFADC] --> TC[TPC_Calibration] --> REC[Reconstruct]
-  RD --> TOT[TOT_Skewness] --> REC
-  PRD --> PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration]
-  PCAL --> PEV[PSA_Event] --> REC
-  PCAL --> PSAT["PSA_TreeWriter/psa"]
-  REC --> OUT["Reconstruct/single_hit"]
-  TOT --> TOTT["TOT_Skewness/tot_skewness"]
-  PRM["TPC較正ファイル<br>ゲイン・ドリフト速度"] -.-> TC
+flowchart TD
+  ROOT[(raw ROOT)]
+  subgraph L0["層0 読み戻し"]
+    RD["ReadData<br>TPCを読み戻す"]
+    PRD["PSA_ReadData<br>PSAを読み戻す"]
+  end
+  subgraph L1["層1 検出器ごとの処理"]
+    CF[CalcFADC] --> TC[TPC_Calibration]
+    TOT[TOT_Skewness]
+    PCF[PSA_CalcFADC] --> PCG[PSA_CenterGravity] --> PCAL[PSA_Calibration] --> PEV[PSA_Event]
+  end
+  subgraph L2["層2 イベント再構成"]
+    REC[Reconstruct]
+  end
+  subgraph L3["層3 出力"]
+    OUT["Reconstruct/single_hit<br>再構成 TTree"]
+    TOTT["TOT_Skewness/tot_skewness<br>電子飛跡の TTree"]
+    PSAT["PSA_TreeWriter/psa<br>シンチレータのヒットの TTree"]
+  end
+  PRM["TPC較正ファイル<br>ゲイン・ドリフト速度"]
+  PPRM["PSA較正ファイル<br>位置・温度・エネルギー・ジオメトリ"]
+
+  ROOT --> RD
+  ROOT --> PRD
+  PRM -.-> TC
   PRM -.-> TOT
-  PPRM["PSA較正ファイル<br>位置・温度・エネルギー・ジオメトリ"] -.-> PCF
+  PPRM -.-> PCF
   PPRM -.-> PCAL
   PPRM -.-> PEV
+  RD -- "FADC 波形(48 ch × 2)" --> CF
+  RD -- "TPC ヒット(パネル 0〜3)" --> TC
+  RD -- "TPC ヒット・時刻" --> TOT
+  PRD -- "MPPC の波形(ボード × 6 ch)" --> PCF
+  CF -- "電荷" --> TC
+  TC -- "Ke" --> REC
+  TOT -- "Pe, Ve, Len" --> REC
+  PEV -- "Eg, Pg(1 ヒットのイベント)" --> REC
+  PCAL --> PSAT
+  REC --> OUT
+  TOT --> TOTT
 ```
 
 - 実線の矢印はデータの受け渡し(ラベルは渡すもの)、点線の矢印はパラメータファイルの読み込みです。
@@ -193,7 +224,7 @@ flowchart LR
 - ゲインマップは `TPC_Calibration.NoCalData: false` のときだけ読みます。
 - PSA の部分は `analysis_sm3_FM/PSA_analysis` の `psa_decode.py` → `pixel_id.py` と同じ計算です
   (同じ .dat で、ヒット・peak_id・ピクセルは全部一致、hg などは Python の float32 の丸めの範囲で一致)。
-  較正ファイルは [`calib/psa/`](calib/psa/)(作り方は [`config/README.md`](config/README.md#psa-の較正ファイル-calibpsa))。
+  PSAの較正ファイルの内容・作り方は [`calib/psa/README.md`](calib/psa/README.md) を参照してください。
 - `Reconstruct` は `PSA_Event`(`PSA_SingleHit` のイベント)を使います。
 - ジオメトリ `calib/psa/geometry.csv` は、CAD の STEP ファイルと HA の配置図から `scripts/calib/make_psa_geometry.py` で作りました(ピクセルの向きはデータでの確認がまだ)。
   エネルギー(`energy_haNN.csv`)とジオメトリが無いブロックのヒットは、`PSA_Event` が使いません。
