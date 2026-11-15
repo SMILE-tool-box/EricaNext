@@ -12,7 +12,7 @@ SMILE-2+ data (modules *_2p from EricaNext_try):
 --extra-data-dir adds another directory of the same run (SMILE-3 FM: the other storage node), e.g.
     python3 run_chain.py smile3_reconstruct -o run04.root --data-dir <NAS>/20261102/calltt/20261102_run04 \
         --extra-data-dir <NAS>/20261102/killua/20261102_run04
---raw runs only the reader and the raw data tree writer (ReadData -> RawTreeWriter_sm3, ReadData_2p -> RawTreeWriter_2p).
+--raw runs only the reader and the raw data tree writer (ReadData -> TPC_RawTreeWriter, ReadData_2p -> RawTreeWriter_2p).
 --set Module.param=value overrides a parameter of the config (repeatable), e.g.
     python3 run_chain.py smile3_tpc_only -o out.root --set CalcFADC.threshold=30.0
 """
@@ -42,7 +42,7 @@ def main():
                     help="another directory of the same run (the other storage node), added to ReadData.extra_data_dirs "
                          "and PSA_ReadData.extra_data_dirs; repeatable")
     ap.add_argument("--raw", action="store_true",
-                    help="ReadData -> RawTreeWriter_sm3 (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
+                    help="ReadData -> TPC_RawTreeWriter (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
     ap.add_argument("--compression", type=int, default=-1,
                     help="ROOT compression setting, 100*algorithm+level (505 = zstd 5, recommended with --raw); -1 = ROOT default")
     ap.add_argument("--set", action="append", default=[], metavar="MODULE.PARAM=VALUE",
@@ -71,7 +71,7 @@ def main():
 
     chain = cfg["chain"]
     if args.raw:
-        chain = ["ReadData_2p", "RawTreeWriter_2p"] if "ReadData_2p" in chain else ["ReadData", "RawTreeWriter_sm3"]
+        chain = ["ReadData_2p", "RawTreeWriter_2p"] if "ReadData_2p" in chain else ["ReadData", "TPC_RawTreeWriter"]
     for m in readers:
         data_dir = params.get(m, {}).get("data_dir") if m in chain else None
         if data_dir and not os.path.isdir(data_dir):

@@ -4,7 +4,7 @@
 使い方の説明は [`README.md`](README.md)、設定ファイルの書き方は [`config/README.md`](config/README.md)、スクリプトは [`run_script/README.md`](run_script/README.md) にあります。
 ここには、**それらに書いていない作業の約束・環境の落とし穴・これまでの経緯・残りの仕事**をまとめます。
 
-最終更新: 2026-11-14(ブランチ `feature-restructure`)
+最終更新: 2026-11-15(ブランチ `feature-restructure`)
 
 ---
 
@@ -73,7 +73,7 @@ cd run_script && python3 run_chain.py smile3_psa -o /tmp/psa.root --data-dir <�
 ### ReadDataの図出力（2026-11-13）
 
 SMILE-3の `ReadData` から積算ヒストグラム・波形ヒストグラム・PNG出力とその選別パラメータを削除した。
-波形・ヒット・時刻は `RawTreeWriter_sm3` で保存し、積算・選別・描画は後段で行う。
+波形・ヒット・時刻は `TPC_RawTreeWriter` で保存し、積算・選別・描画は後段で行う。
 `Track_A/C` は再構成モジュールが `Get_Track_A/C` を初めて呼んだときだけ生成する。ROOTには書かない。raw保存だけのチェーンでは生成・Reset・Fillを行わない。
 SMILE-2+の `ReadData_2p` は今回の変更対象ではない。
 
@@ -151,7 +151,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
    - シミュレーター(Geant4)の配置と同じ元(この STEP と `HA_LAYOUT`)からそろえる。SMILE-2+ では `HAs.pos` が 2 つあって、底面の z がシミュレーションと実データで 11 mm 違っていた(EricaNext_try の `docs/simulation_port_log.md`)。シミュレーターの製作ログの TPC の Z(10.5〜308 mm)は、この CAD(GEM 10 mm、天板 317 mm)と違うので、古い形状のはず。
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
-4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いものは 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)。TPC のゲインマップとドリフト速度の較正の本は2026-11-13に追加済み（`tutorials/4_MakeCalibration/TPC_GainMap.ipynb`, `TPC_DriftVelocity.ipynb`）。RawTreeWriter_sm3のROOTを入力とし、前者は1-hitスペクトルと指定した2線のfit、後者は飛跡積算図と既存の速度算出スクリプトを使う。実測較正値はまだ確定していない。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
+4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いものは 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)。TPC のゲインマップとドリフト速度の較正の本は2026-11-13に追加済み（`tutorials/4_MakeCalibration/TPC_GainMap.ipynb`, `TPC_DriftVelocity.ipynb`）。TPC_RawTreeWriterのROOTを入力とし、前者は1-hitスペクトルと指定した2線のfit、後者は飛跡積算図と既存の速度算出スクリプトを使う。実測較正値はまだ確定していない。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
 5. **TPC 側で分かっていて、まだ直していないこと**
    - `TPC_Calibration` には、SMILE_tool_box の 2 つの条件(同時計数が 100 を超える組 (i, j) だけを使う、各チャンネルの 32 ストリップの両端 4 本ずつを数えない)が無い。**今は入れない**と決めた(2026-11-06)。SMILE-3 のゲインマップを作るときに、要るかどうかをもう一度見る。
    - `Reconstruct` の幾何の α・入射方向(2026-11-08): SMILE_tool_box の `Erica/Reconstruct`(TRA、SingleHit)と SMLib `Compton_common`(`recon_vector`、`ARM`、`SPD`)と同じ式で入れた(EricaNext_try の `Reconstruct_2p` には無い)。
@@ -181,7 +181,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 | `c132646` | 温度ゲインの表と hg_corr、`scripts/calib/`(位置・温度ゲイン・エネルギー)、PSA のモジュールのチュートリアル |
 | `7818fdd` | TPC の CalcFADC がイベントを飛ばさない(SMILE_tool_box と同じ。前はアノード 2 ch 以上の 29% を捨てていた)、TPC_Ee_Valid、NoCalData のエネルギーを和に |
 | `fa7e472` | TPC_Calibration の FADC の ch を strip / 32 に(ボードが欠けると範囲外で落ちていた) |
-| `c9a8343` | TPC のモジュールのチュートリアル(1_ReadData、7_CalcFADC、8_TPC_Calibration、9_TOT_Skewness、11_Reconstruct、12_RawTreeWriter_sm3) |
+| `c9a8343` | TPC のモジュールのチュートリアル(1_ReadData、7_CalcFADC、8_TPC_Calibration、9_TOT_Skewness、11_Reconstruct、12_TPC_RawTreeWriter) |
 | `91afdbd` | 位置の格子の方法、PSA_ReadData がボードのファイルを複数のディレクトリから集める(`recursive`)、UVSOR のデータから作った位置・温度ゲイン・エネルギーの較正ファイル、`4_MakeCalibration/PSA_*` |
 | `e1c2070` | EricaNext_try の SMILE-2+ のモジュールを `*_2p` で取り込み、`smile2p_*.json`、古い HA_Calc / HA_CenterGravity を削除、`run_chain.py --raw --compression` |
 | `5343695` | 設定ファイルの名前(`smile3_tpc_only` = TPC だけ TOT_Skewness まで、`smile3_reconstruct`)、PSA_Calibration の `temp_coef`・`temp_ref` を削除、`calib/tpc/`、test2/test3/run_all を削除 |
@@ -195,3 +195,5 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
 FADC波形の後段積算は `scripts/analysis/make_tpc_fadc_hist.py` と `tutorials/2_Diagnostics/TPC_FADC_Accumulation.ipynb`。全96chをTH2Dとして1つのROOTに保存し、波形数・入力条件はmetadata_jsonに記録。`-n` は複数入力を通じたイベント数上限、-1は全件。rawのカソードは反転済みなので再反転しない。
 
 TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを通じてアノード1 ASIC・カソード1 ASICだけに電荷があり、同じμPICの組を選ぶ。ボード1-hitも全体で各側1ボードかつ同じμPIC。旧「カソードは同じμPIC内だけ数える」条件のスペクトルとゲインマップは比較用として残し、再解析結果は別ファイルに保存する。新ROOTは `selection_metadata_json` に条件を記録。
+
+2026-11-15: SMILE-3 TPCのraw writerを `RawTreeWriter_sm3` から `TPC_RawTreeWriter` に改名。クラス・設定キー・ROOTディレクトリを新名に統一し、ブランチ内容は変更しない。旧名の設定は新名に書き換える。後段解析とチュートリアルは `scripts/analysis/tpc_raw_io.py` で新旧ROOTを判別し、既存ROOTの再変換は不要。新旧両ツリーを含む曖昧な入力はエラー。

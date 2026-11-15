@@ -4,7 +4,7 @@
     python3 run_script/run_chain.py smile3_raw -o raw.root --data-dir <TPC_cal run>
     /usr/bin/python3 scripts/calib/make_tpc_spec1hit.py -o spec1hit.root raw.root [raw2.root ...]
 
-The charge of every FADC channel is computed from RawTreeWriter_sm3/raw (fadc_ch, fadc_wave) exactly as
+The charge of every FADC channel is computed from TPC_RawTreeWriter/raw (fadc_ch, fadc_wave) exactly as
 CalcFADC does (baseline = mean of the first base_window samples, added sample by sample as in C++; charge =
 sum of (wave - baseline) over the samples more than threshold above it). Cathode waveforms in the tree are
 already inverted (1023 - ADC).
@@ -28,6 +28,9 @@ import os
 import sys
 
 import ROOT
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analysis"))
+from tpc_raw_io import raw_tree_path, run_info_path
 
 ROOT.gROOT.SetBatch(True)
 
@@ -124,7 +127,7 @@ struct Spec1Hit {
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (RawTreeWriter_sm3/raw)")
+    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (TPC_RawTreeWriter/raw)")
     ap.add_argument("-o", "--output", required=True, help="output ROOT file")
     ap.add_argument("--base-window", type=int, default=30, help="baseline samples (CalcFADC.base_window)")
     ap.add_argument("--threshold", type=float, default=20.0, help="charge threshold [ADU] (CalcFADC.threshold)")
@@ -139,10 +142,10 @@ def main():
     spec = None
     for path in args.inputs:
         f = ROOT.TFile.Open(path)
-        t = f.Get("RawTreeWriter_sm3/raw") if f else None
+        t = f.Get(raw_tree_path(path)) if f else None
         if not t:
-            sys.exit(f"{path}: no RawTreeWriter_sm3/raw")
-        info = f.Get("RawTreeWriter_sm3/run_info")
+            sys.exit(f"{path}: no TPC_RawTreeWriter/raw")
+        info = f.Get(run_info_path(path))
         if info and info.GetEntries():
             info.GetEntry(0)
             if info.save_threshold > 0 and info.save_threshold >= args.threshold:

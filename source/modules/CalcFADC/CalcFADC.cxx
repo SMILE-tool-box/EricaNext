@@ -3,7 +3,7 @@
 // FADC waveform -> charge of every anode and cathode channel (sum of the samples more than `threshold`
 // above the baseline = mean of the first `base_window` samples). The charges go to TPC_Calibration.
 // This module makes no histogram and sets no flag: the 1-hit spectra etc. are made afterwards from the
-// raw data tree (smile3_raw / RawTreeWriter_sm3, scripts/calib/make_tpc_spec1hit.py).
+// raw data tree (smile3_raw / TPC_RawTreeWriter, scripts/calib/make_tpc_spec1hit.py).
 // Every event goes on to the next modules (as SMILE_tool_box CalcFADC::Process()).
 
 ANLStatus CalcFADC::mod_define(){

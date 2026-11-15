@@ -1,6 +1,6 @@
-#include "RawTreeWriter_sm3.h"
+#include "TPC_RawTreeWriter.h"
 
-ANLStatus RawTreeWriter_sm3::mod_define(){
+ANLStatus TPC_RawTreeWriter::mod_define(){
   define_parameter("save_threshold", &mod_class::save_threshold);
   define_parameter("base_window",    &mod_class::base_window);
   define_parameter("save_fadc",      &mod_class::save_fadc);
@@ -8,7 +8,7 @@ ANLStatus RawTreeWriter_sm3::mod_define(){
   return AS_OK;
 }
 
-ANLStatus RawTreeWriter_sm3::mod_initialize(){
+ANLStatus TPC_RawTreeWriter::mod_initialize(){
   if(!exist_module("SaveFile") || !exist_module("ReadData"))
     return AS_QUIT;
   get_module("ReadData", &RawData);
@@ -24,8 +24,8 @@ ANLStatus RawTreeWriter_sm3::mod_initialize(){
   SaveFile* saveModule = nullptr;
   get_module_NC("SaveFile", &saveModule);
   saveModule->cd();
-  saveModule->GetDirectory()->mkdir("RawTreeWriter_sm3");
-  saveModule->GetDirectory()->cd("RawTreeWriter_sm3");
+  saveModule->GetDirectory()->mkdir("TPC_RawTreeWriter");
+  saveModule->GetDirectory()->cd("TPC_RawTreeWriter");
 
   info_ = new TTree("run_info", "board IDs and writer settings");
   info_->Branch("anode_ids",   &anode_ids);
@@ -58,7 +58,7 @@ ANLStatus RawTreeWriter_sm3::mod_initialize(){
   return AS_OK;
 }
 
-ANLStatus RawTreeWriter_sm3::mod_analyze(){
+ANLStatus TPC_RawTreeWriter::mod_analyze(){
   event_id = RawData->Get_EventID_coincidence();
   sevt_id  = RawData->Get_SEvtID();
   loopback = evs("IDcheck_Loopback") ? 1 : 0;
@@ -109,12 +109,12 @@ ANLStatus RawTreeWriter_sm3::mod_analyze(){
   return AS_OK;
 }
 
-RawTreeWriter_sm3::RawTreeWriter_sm3(){
+TPC_RawTreeWriter::TPC_RawTreeWriter(){
   save_threshold = 0.;   // off
   base_window    = 30;
   save_fadc      = true;
   save_hits      = true;
 }
 
-RawTreeWriter_sm3::~RawTreeWriter_sm3(){
+TPC_RawTreeWriter::~TPC_RawTreeWriter(){
 }

@@ -5,7 +5,7 @@
     /usr/bin/python3 scripts/calib/make_tpc_drift_velocity.py -o calib/tpc/drift_velocity.dat raw.root [raw2.root ...]
 
 Method (EricaNext_try tutorials_caldata/4_MakeCalibration/DriftVelocity, drift_speed_s2p_v3.C):
-  1. clock distribution of all strip hits (hit_a_clock / hit_c_clock of RawTreeWriter_sm3/raw), anode and
+  1. clock distribution of all strip hits (hit_a_clock / hit_c_clock of TPC_RawTreeWriter/raw), anode and
      cathode separately. Electrons made uniformly between the GEM plane and the top plate give a box.
      --rebin N sums N clocks into one bin first (for runs with few hits, where the derivative is noisy).
   2. derivative |h[b+1] - h[b]| (first derivative): the two edges of the box become two peaks.
@@ -36,6 +36,9 @@ import sys
 
 import numpy as np
 import ROOT
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analysis"))
+from tpc_raw_io import raw_tree_path, run_info_path
 
 ROOT.gROOT.SetBatch(True)
 
@@ -43,7 +46,7 @@ ROOT.gROOT.SetBatch(True)
 def clock_hist(paths, column, nclk, tree):
     h = None
     for p in paths:
-        df = ROOT.RDataFrame(tree, p)
+        df = ROOT.RDataFrame(raw_tree_path(p, tree), str(p))
         x = df.Histo1D(("h_" + column, "", nclk, -0.5, nclk - 0.5), column).GetValue()
         if h is None:
             h = x.Clone(); h.SetDirectory(0)
@@ -169,7 +172,7 @@ def qa_figure(path, res):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (RawTreeWriter_sm3/raw)")
+    ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_raw (TPC_RawTreeWriter/raw)")
     ap.add_argument("-o", "--output", required=True, help="output file (e.g. calib/tpc/drift_velocity.dat)")
     ap.add_argument("--z-gem", type=float, default=10.0, help="uPIC - GEM [mm] (SMILE-3 10)")
     ap.add_argument("--drift-length", type=float, default=317.0, help="uPIC - top plate [mm] (SMILE-3 317)")
@@ -178,7 +181,7 @@ def main():
     ap.add_argument("--nclk", type=int, default=1024, help="clocks of the encoder")
     ap.add_argument("--gem-window", type=float, default=40.0, help="half width of the GEM side fit range [clock]")
     ap.add_argument("--rebin", type=int, default=1, help="clocks summed into one bin (must divide --nclk)")
-    ap.add_argument("--tree", default="RawTreeWriter_sm3/raw", help="raw data tree (SMILE-2+: RawTreeWriter_2p/raw)")
+    ap.add_argument("--tree", default=None, help="raw data tree (default: auto-detect TPC_RawTreeWriter/raw or legacy RawTreeWriter_sm3/raw; SMILE-2+: RawTreeWriter_2p/raw)")
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--force", action="store_true", help="write the file even if a check fails")
     ap.add_argument("--no-qa", action="store_true")

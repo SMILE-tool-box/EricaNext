@@ -13,7 +13,7 @@ SMILE-3 の TPC の寸法: μ-PIC から GEM 面まで 10 mm(`z_gem_mm`、SMILE-
 ドリフト速度は、全ヒットのクロックの分布(箱の形)の GEM 側の端を `clock_offset`、天板側の端までのクロックで 317 − 10 = 307 mm を割ったものを velocity にします
 (SMILE-2+ は 305 mm)。2026-06-23 の TPC_cal はクロックの分布が箱の形にならない(天板側の端が見えない)ので、これには使えません。
 
-作り方は [TPC_GainMap.ipynb](../../tutorials/4_MakeCalibration/TPC_GainMap.ipynb) と [TPC_DriftVelocity.ipynb](../../tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb) にあります。いずれも `RawTreeWriter_sm3` のROOTを入力にします。SMILE-3の電荷はpCではなくADU × sampleなので、ゲイン係数の単位に注意してください。
+作り方は [TPC_GainMap.ipynb](../../tutorials/4_MakeCalibration/TPC_GainMap.ipynb) と [TPC_DriftVelocity.ipynb](../../tutorials/4_MakeCalibration/TPC_DriftVelocity.ipynb) にあります。いずれも `TPC_RawTreeWriter` のROOTを入力にします。SMILE-3の電荷はpCではなくADU × sampleなので、ゲイン係数の単位に注意してください。
 ドリフト速度のファイルは `scripts/calib/make_tpc_drift_velocity.py` で作ります(生データのツリー `smile3_raw` から):
 
 ```bash

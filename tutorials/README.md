@@ -17,7 +17,7 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 | ├ [`9_TOT_Skewness/`](1_DataIO/modules/9_TOT_Skewness/TOT_Skewness.ipynb) | 電子の飛跡(散乱点・方向・飛程) |
 | ├ [`10_PSA_Event/`](1_DataIO/modules/10_PSA_Event/PSA_Event.ipynb) | 吸収点と 1 ヒットの判定(Reconstruct へ渡す) |
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
-| └ [`12_RawTreeWriter_sm3/`](1_DataIO/modules/12_RawTreeWriter_sm3/RawTreeWriter_sm3.ipynb) | 同期した TPC の生データの TTree |
+| └ [`12_TPC_RawTreeWriter/`](1_DataIO/modules/12_TPC_RawTreeWriter/TPC_RawTreeWriter.ipynb) | 同期した TPC の生データの TTree |
 | [`2_Diagnostics/TPC_FADC_Accumulation`](2_Diagnostics/TPC_FADC_Accumulation.ipynb) | raw ROOT → 全ボード・全chのFADC波形積算TH2Dを1つのROOTに保存（ボードごとのPNGも出力可） |
 | `4_MakeCalibration/` | 較正ファイルを作る(EricaNext_try のゲインマップ、ドリフト速度と同じ扱い。チェーンはファイルを読むだけ) |
 | ├ [`TPC_DriftVelocity`](4_MakeCalibration/TPC_DriftVelocity.ipynb) | RawTreeWriterのROOT → 飛跡積算図・クロック分布 → ドリフト速度 |
@@ -51,4 +51,4 @@ EricaNext_try の `tutorials_caldata` と同じ形です。モジュールの解
 - 較正ファイルを作る: `scripts/calib/*.py` を `subprocess` で実行
 - 結果の読み込み・計算: ROOT の `RDataFrame` と numpy で各ノートブックに直接記述
 
-TPC較正の2冊は既存の `RawTreeWriter_sm3/raw` を入力にします。入力ROOTのパスは冒頭の `RAWS`、出力先は `OUT` で指定します。生データからROOTを用意するコマンドも各冊に記載しています。ゲイン較正の線源・線のエネルギー・電荷のfit範囲は測定に合わせて指定してください。
+TPC較正の2冊は既存の `TPC_RawTreeWriter/raw` を入力にします。入力ROOTのパスは冒頭の `RAWS`、出力先は `OUT` で指定します。生データからROOTを用意するコマンドも各冊に記載しています。ゲイン較正の線源・線のエネルギー・電荷のfit範囲は測定に合わせて指定してください。

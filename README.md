@@ -73,7 +73,7 @@ flowchart LR
 | 設定ファイル | つなぐモジュール |
 | --- | --- |
 | [`smile3_tpc_only`](config/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness`(TPC だけ。ゲインマップ無し、電子の飛跡まで) |
-| [`smile3_raw`](config/smile3_raw.json) | `ReadData → RawTreeWriter_sm3`(同期した生データのツリー。較正・診断用) |
+| [`smile3_raw`](config/smile3_raw.json) | `ReadData → TPC_RawTreeWriter`(同期した生データのツリー。較正・診断用) |
 | [`smile3_psa`](config/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter`(シンチレータだけ) |
 | [`smile3_reconstruct`](config/smile3_reconstruct.json) | `ReadData → PSA_* → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct`(TPC + シンチレータ) |
 
@@ -101,7 +101,7 @@ flowchart TD
   subgraph L3["層3 出力"]
     OUT["Reconstruct/single_hit<br>再構成 TTree"]
     TOTT["TOT_Skewness/tot_skewness<br>電子飛跡の TTree"]
-    RAWT["RawTreeWriter_sm3/raw<br>同期済み生データ TTree"]
+    RAWT["TPC_RawTreeWriter/raw<br>同期済み生データ TTree"]
     PSAT["PSA_TreeWriter/psa<br>シンチレータのヒットの TTree"]
   end
   PRM["パラメータファイル<br>ゲインマップ<br>ドリフト速度"]
@@ -126,7 +126,7 @@ flowchart TD
   TOT -- "Pe, Ve, Len" --> REC
   REC --> OUT
   TOT --> TOTT
-  RD -- "RawTreeWriter_sm3<br>(較正・診断用)" --> RAWT
+  RD -- "TPC_RawTreeWriter<br>(較正・診断用)" --> RAWT
 
 ```
 
@@ -148,7 +148,7 @@ flowchart TD
 | モジュール | すること | 主な出力(`SaveFile` の ROOT ファイルの中) |
 | --- | --- | --- |
 | `SaveFile` | 出力の ROOT ファイルを開く(`run_chain.py` が先頭に必ずつなぐ) | |
-| `ReadData` | 生データを読み、ボード間でイベント ID をそろえる | 波形・ヒットは `RawTreeWriter_sm3` で保存。積算・選別・描画は保存後に行う |
+| `ReadData` | 生データを読み、ボード間でイベント ID をそろえる | 波形・ヒットは `TPC_RawTreeWriter` で保存。積算・選別・描画は保存後に行う |
 | `CalcFADC` | FADC 波形からベースラインを引いて電荷を積分し、`TPC_Calibration` に渡す | なし(ベースライン・電荷の分布と 1-hit スペクトルは、生データのツリーから `scripts/calib/make_tpc_spec1hit.py` で後段で作る) |
 | `TPC_Calibration` | 電荷とゲインマップから反跳電子のエネルギー | `TPC_Calibration/`: `Spectrum` など |
 | `TOT_Skewness` | 飛跡から散乱点 `Pe`、電子の方向 `Ve`、飛程 `Len` | `TOT_Skewness/tot_skewness`(TTree) |
@@ -159,7 +159,7 @@ flowchart TD
 | `PSA_TreeWriter` | PSA のヒットを 1 ヒット 1 行で書く | `PSA_TreeWriter/psa`(TTree) |
 | `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` [mm]、使えるヒットの数(`PSA_SingleHit` / `MultiHit` / `NoHits`)。`Reconstruct` に渡す | `PSA_Event/NHits`, `SingleHitEnergy` |
 | `Reconstruct` | TPC と PSA(`PSA_Event`)を合わせたイベント再構成。運動学の角度、飛跡があれば幾何の α と入射ガンマ線の方向 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
-| `RawTreeWriter_sm3` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `RawTreeWriter_sm3/raw`, `RawTreeWriter_sm3/run_info`(TTree) |
+| `TPC_RawTreeWriter` | ボード間でそろえた TPC の生データ(ヒット、エンコーダーのレコード、FADC 波形、時刻)を 1 イベント 1 行で書く。`ReadData` の直後につなぐ | `TPC_RawTreeWriter/raw`, `TPC_RawTreeWriter/run_info`(TTree) |
 
 ### SMILE-2+ のデータ(`*_2p` のモジュール)
 
@@ -172,7 +172,7 @@ ANLNext はモジュールを名前で探すので、SMILE-3 と SMILE-2+ のモ
 | `CalcFADC_2p`, `TPC_Calibration_2p`, `TOT_Skewness_2p` | `CalcFADC`, `TPC_Calibration`, `TOT_Skewness` |
 | `HA_CenterGravity_2p`, `HA_Calc_2p` | `PSA_*`, `PSA_Event`(SMILE-2+ の HA は PMT の ADC) |
 | `Reconstruct_2p` | `Reconstruct` |
-| `RawTreeWriter_2p` | `RawTreeWriter_sm3` |
+| `RawTreeWriter_2p` | `TPC_RawTreeWriter` |
 
 設定ファイルは `config/smile2p_*.json` と `config/tpc_caldata_2017_Ba133.json` です。データは EricaNext_try と同じ場所(環境変数 `SMILE2P_DATA`、無ければ研究室の NAS)を読みます。
 

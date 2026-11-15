@@ -76,7 +76,7 @@ python3 run_chain.py my_test -o my_test.root -n 10000
 ### 飛跡・波形の描画
 
 `ReadData` はイベントの読み込みと同期を行います。飛跡・波形の積算、閾値による選別、PNG保存は、
-`smile3_raw` で保存した `RawTreeWriter_sm3/raw` を読み、後段で行います。
+`smile3_raw` で保存した `TPC_RawTreeWriter/raw` を読み、後段で行います。
 旧 `Image_A_C`、`FADC_TH`、`save_track_png`、`save_fadc_png`、`save_fadc_*_filter` と関連する閾値設定は削除しました。
 既存の設定ファイルや `--set` に残っている場合は取り除いてください。
 
@@ -112,3 +112,5 @@ python3 plot_track3d.py [<エントリー番号>]
 ```
 
 読むファイルは中の `ROOT_FILE`(今は `output_3.root`)です。`uproot`、`awkward`、`matplotlib` が要ります。
+
+SMILE-3のTPC raw writer名は `TPC_RawTreeWriter` です（旧 `RawTreeWriter_sm3`）。設定の `chain`・パラメータキー・`--set` は新名を使います。新規ROOTは `TPC_RawTreeWriter/raw` と `TPC_RawTreeWriter/run_info` に保存します。後段のTPC解析スクリプトとチュートリアルは旧名ROOTも自動判別して読みます。既存の入力ROOTを改名・再変換する必要はありません。

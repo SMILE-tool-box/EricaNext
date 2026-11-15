@@ -5,7 +5,7 @@ set(SUB_DIRS
   TPC_Calibration
   TOT_Skewness
   Reconstruct
-  RawTreeWriter_sm3
+  TPC_RawTreeWriter
   PSA_ReadData
   PSA_CalcFADC
   PSA_CenterGravity

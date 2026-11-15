@@ -31,7 +31,7 @@ def probe(python, modules, local=False):
         if name == 'ROOT':
             source += "assert hasattr(m, 'RDataFrame'), 'ROOT.RDataFrame がありません'\n"
         if name == 'EricaPy':
-            source += "assert all(hasattr(m, n) for n in ['ReadData','RawTreeWriter_sm3','TOT_Skewness']), 'SMILE-3モジュールがありません'\n"
+            source += "assert all(hasattr(m, n) for n in ['ReadData','TPC_RawTreeWriter','TOT_Skewness']), 'SMILE-3モジュールがありません'\n"
         source += "print('MODULE=' + json.dumps({'name':" + repr(name) + ", 'path':getattr(m,'__file__','built-in')}))\n"
     return execute([python, '-B', '-c', source])
 

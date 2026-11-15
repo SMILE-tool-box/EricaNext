@@ -1,5 +1,5 @@
-#ifndef RawTreeWriter_sm3_h
-#define RawTreeWriter_sm3_h 1
+#ifndef TPC_RawTreeWriter_h
+#define TPC_RawTreeWriter_h 1
 
 #include <anlnext/BasicModule.hh>
 #include <vector>
@@ -12,7 +12,7 @@
 using namespace anlnext;
 
 // Writes the event-synchronized TPC raw data of ReadData to a TTree
-// (RawTreeWriter_sm3/raw), one row per event, so that calibrations (gain maps,
+// (TPC_RawTreeWriter/raw), one row per event, so that calibrations (gain maps,
 // energy calibration, drift velocity) can be redone without re-reading the
 // raw files. SMILE-3: 12 anode and 12 cathode boards (4 uPIC panels x 3),
 // some of which may be missing in a run.
@@ -25,12 +25,12 @@ using namespace anlnext;
 //   - header time words and event IDs
 // The HA (PSA, MPPC waveforms) is not read by ReadData yet and not written.
 // Chain it right after ReadData.
-class RawTreeWriter_sm3 : public BasicModule {
-  DEFINE_ANL_MODULE(RawTreeWriter_sm3, 1.0);
+class TPC_RawTreeWriter : public BasicModule {
+  DEFINE_ANL_MODULE(TPC_RawTreeWriter, 1.0);
 
  public:
-  RawTreeWriter_sm3();
-  ~RawTreeWriter_sm3();
+  TPC_RawTreeWriter();
+  ~TPC_RawTreeWriter();
 
   ANLStatus mod_define()     override;
   ANLStatus mod_initialize() override;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RawTreeWriter_sm3のFADC波形を全ボード・全chで積算し、1つのROOTへ保存する。"""
+"""TPC_RawTreeWriterのFADC波形を全ボード・全chで積算し、1つのROOTへ保存する。"""
 import argparse
 import json
 import os
@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 import ROOT
+from tpc_raw_io import raw_tree_path, run_info_path
 ROOT.gROOT.SetBatch(True)
 
 CPP = r"""
@@ -76,7 +77,7 @@ def validate(path):
     f=ROOT.TFile.Open(str(path))
     if not f or f.IsZombie(): raise ValueError(f'{path}: ROOTを開けません')
     try:
-        t=f.Get('RawTreeWriter_sm3/raw');info=f.Get('RawTreeWriter_sm3/run_info')
+        t=f.Get(raw_tree_path(path));info=f.Get(run_info_path(path))
         if not t or not info or info.GetEntries()!=1: raise ValueError(f'{path}: raw/run_infoがありません')
         for name in ['fadc_ch','fadc_wave']:
             b=t.GetBranch(name)
@@ -108,7 +109,7 @@ def write_pngs(output, directory):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('inputs',nargs='+',help='RawTreeWriter_sm3/rawを含むROOT（同じ測定条件）')
+    ap.add_argument('inputs',nargs='+',help='TPC_RawTreeWriter/rawを含むROOT（同じ測定条件）')
     ap.add_argument('-o','--output',required=True,help='積算ヒストグラムをまとめる出力ROOT')
     ap.add_argument('-n','--max-events',type=int,default=-1,help='全入力を通じた先頭イベント数。-1は全件 [events]')
     ap.add_argument('--png-dir',type=Path,help='ボードごとの4ch確認PNGの保存先（省略時は描画しない）')
@@ -130,7 +131,7 @@ def main():
         if threshold>0:print(f'WARNING: {path}: save_threshold={threshold} ADU。保存されていない波形は積算できません。',file=sys.stderr)
         f=ROOT.TFile.Open(str(path))
         try:
-            before=int(acc.events);acc.run(f.Get('RawTreeWriter_sm3/raw'),left)
+            before=int(acc.events);acc.run(f.Get(raw_tree_path(path)),left)
             used.append({'path':str(path),'available_events':entries,'used_events':int(acc.events)-before,'save_threshold_ADU':threshold})
         finally:f.Close()
         print(path.name,used[-1]['used_events'],'events',flush=True)
