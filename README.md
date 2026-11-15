@@ -155,8 +155,9 @@ flowchart LR
 第1段階はデコードとイベント同期、ROOTへの保存を行います。
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart TD
-  RAW[("生データ<br>tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA *.dat（MPPCの波形）")]
+  RAW[("生データ<br>TPC: tpc_enc_a00〜a11, c00〜c11 *.raw<br>PSA: *.dat（MPPCの波形）")]
   subgraph L0["読み込み・同期"]
     RD["ReadData<br>TPC読み込み・ボード間同期"]
     PRD["PSA_ReadData<br>PSA読み込み・TPCと同期"]
@@ -176,6 +177,7 @@ flowchart TD
 第2段階はraw ROOTを読み、TPC・PSAそれぞれの積分・較正の結果をイベント再構成へ渡します。
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart TD
   ROOT[(raw ROOT)]
   subgraph L0["層0 読み戻し"]
