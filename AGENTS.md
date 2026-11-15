@@ -20,7 +20,7 @@
 | `config/` | チェーンの設定ファイル(`*.json`)と読み込み(`ericanext_config.py`)。SMILE-3 は `smile3_tpc_only`(TPC だけ、TOT_Skewness まで)、`smile3_psa`、`smile3_reconstruct`(TPC + PSA)、`smile3_raw` |
 | `calib/psa/` | PSA(シンチレータ)の較正ファイル |
 | `calib/tpc/` | TPC の較正ファイル(ゲインマップ、ドリフト速度)の置き場。まだ空(README だけ) |
-| `calib/detector_coordinates/` | SMILE-3 の内部の CAD(STEP)と、CAD・EricaNext の座標系の図(`scripts/calib/plot_detector_coordinates.py` で作る)。2026-11-15 に `calib/cad/` から名前を変えた |
+| `calib/detector_coordinates/` | SMILE-3 の内部の CAD(STEP)と座標系の説明。`coordinates.png` は再構成で使う位置(μ-PIC・GEM・天板の Z、HA の全ピクセル)の図で、`scripts/calib/plot_detector_coordinates.py` が `calib/psa/geometry.csv` から作る。2026-11-15 に `calib/cad/` から名前を変えた |
 | `run_script/` | `run_chain.py`、`run_runs.sh`、補助スクリプト |
 | `scripts/env/` | ビルド(`build_ericanext.sh`) |
 | `scripts/check/` | 検証用のスクリプト(Python の解析との突き合わせ) |

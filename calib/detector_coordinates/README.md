@@ -7,27 +7,21 @@ SMILE-3 の内部（3 気圧の容器の中）の CAD と、EricaNext で使う�
 | ファイル | 中身 |
 | --- | --- |
 | `SM3_Inner_3atm.step` | SMILE-3 の内部の組み立て（TPC、μ-PIC、GEM、ドリフトケージ、底面と側面の HA のモジュール）。2026-11-06 に Autodesk の CAD から書き出した STEP（AP214） |
-| `cad_view.png` | CAD の各部品の頂点を、CAD の座標のまま描いた図（横から見た図と上から見た図） |
-| `coordinates.png` | 同じ部品を EricaNext の座標で描き、座標軸と μ-PIC・GEM・天板の位置を書き込んだ図 |
+| `coordinates.png` | 再構成で使う位置の図: μ-PIC・GEM・天板の Z と、HA の全ピクセルの吸収点（`calib/psa/geometry.csv` から）を EricaNext の座標で描いたもの |
 
-図は次のコマンドで作り直せます（CAD のライブラリは要りません）。
+図は次のコマンドで作り直せます（`geometry.csv` を作り直したら、図も作り直す）。
 
 ```bash
-/usr/bin/python3 scripts/calib/plot_detector_coordinates.py calib/detector_coordinates/SM3_Inner_3atm.step -o calib/detector_coordinates
+/usr/bin/python3 scripts/calib/plot_detector_coordinates.py calib/psa/geometry.csv -o calib/detector_coordinates
 ```
-
-## CAD の図
-
-![CAD の図](cad_view.png)
-
-STEP に入っている各部品の頂点を点で描いています。面は描いていません。
-色は部品の種類で、赤が μ-PIC、橙が GEM、青がドリフトケージ、緑が底面の HA、黄緑が側面の HA、灰色がそのほか（フレーム、TPC の部品、TCU）です。
-
-CAD の座標は、原点が底板、z が上向きです。
 
 ## EricaNext の座標系
 
 ![EricaNext の座標系](coordinates.png)
+
+再構成で使う位置は、μ-PIC・GEM・天板の Z と、HA のシンチレータの各ピクセルの位置だけです。図はこの位置関係だけを描いています。
+左上が 3D、右上が上から見た図（北が上）、下の2つが横から見た図です。
+赤・橙・青の線が μ-PIC・GEM・天板（μ-PIC の範囲 ±153.6 mm で描いた）、緑の点が底面の HA、黄緑の点が側面の HA のピクセルの吸収点です。
 
 | | EricaNext | CAD との関係 |
 | --- | --- | --- |
