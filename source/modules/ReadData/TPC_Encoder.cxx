@@ -91,9 +91,10 @@ std::string TPC_Encoder::FileName(bool next_flag=0){
 }
 
 int TPC_Encoder::Init(){
-  raw.open(FileName());
+  const std::string first = FileName();
+  raw.open(first);
   if(raw)
-    std::cout << FileName() << std::endl;
+    std::cout << first << std::endl;
 
   bool flag=0;
   int check=0;
@@ -105,6 +106,11 @@ int TPC_Encoder::Init(){
     if(header == 0xeb901964)
       flag = 1;
   }while(!flag);
+  if(check){
+    std::cerr << "TPC_Encoder: ERROR: no event header (0xeb901964) in " << first
+              << " and the files after it" << std::endl;
+    return check;
+  }
   raw.seekg(-4, std::ios::cur);
 
   return check;
@@ -112,11 +118,14 @@ int TPC_Encoder::Init(){
 
 unsigned TPC_Encoder::ReadData(int& flag){
   flag = 0;
-  char data[4];
+  char data[4] = {0, 0, 0, 0};
   for(int i=0; i<4; i++){
     raw.read(&data[i], 1);
-    if(raw.eof()){
+    // !raw, not raw.eof(): a stream that failed to open (or was left in a failed
+    // state) never sets eofbit, and the caller would loop on garbage forever.
+    if(!raw){
       raw.close();
+      raw.clear();
       raw.open(FileName(1));
       if(raw)
 	std::cout << FileName() << std::endl;
@@ -137,10 +146,11 @@ unsigned TPC_Encoder::ReadData(int& flag){
 unsigned TPC_Encoder::ReadData(int& flag, unsigned initial){
   flag = 0;
 
-  char data;
+  char data = 0;
   raw.read(&data, 1);
-  if(raw.eof()){
+  if(!raw){   // see ReadData(int&)
     raw.close();
+    raw.clear();
     raw.open(FileName(1));
     if(raw)
       std::cout << FileName() << std::endl;

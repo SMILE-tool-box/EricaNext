@@ -26,7 +26,15 @@ std::string ReadData::FindDir(const std::string& filename){
   dirs.insert(dirs.end(), ExtraDataDirs.begin(), ExtraDataDirs.end());
   std::string found;
   for(const auto& d : dirs){
-    if(!std::filesystem::exists(d + "/" + filename))  continue;
+    const std::string path = d + "/" + filename;
+    if(!std::filesystem::exists(path))  continue;
+    // The DAQ makes a file for every enabled board when a run starts; a board that
+    // sent nothing leaves it empty. Such a board has no event to synchronize with.
+    std::error_code ec;
+    if(std::filesystem::file_size(path, ec) == 0 && !ec){
+      std::cerr << "ReadData: WARNING: " << path << " is empty; this board is not read" << std::endl;
+      continue;
+    }
     if(found.empty())  found = d;
     else  std::cerr << "ReadData: WARNING: " << filename << " is in " << found << " and " << d
                     << "; reading " << found << std::endl;
