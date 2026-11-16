@@ -219,4 +219,6 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 
 2026-11-15: SMILE-2+用C++モジュール8件をsource/modules/smile2p/配下へ移動。modules/sources.cmakeの登録パスを更新。クラス名・Python公開名・設定名・処理内容は変更しない。
 
+2026-11-16: ReadDataは0バイトの `tpc_enc_*_00000.raw` を警告してボードごと読み飛ばす（DAQはラン開始時に有効な全ボードのファイルを作り、データの来なかったボードは空のまま残る。例: 20261113_run13 の a00〜a02・c00〜c02）。以前は空ファイルで `mod_begin_run` が AS_ERROR を返したあと解析ループに入り、`TPC_Encoder::ReadData` が `raw.eof()` しか見ないため `GetEventID` が無限ループしていた（CPU 100%、`.q` 不可）。`ReadData` は読み込み失敗全般（`!raw`）を次ファイルへの切り替え・終了として扱い、`Init` はヘッダの無いボードのファイル名を表示、`mod_begin_run` の失敗は AS_CRITICAL_ERROR_TO_FINALIZE で返す。検証は `TPC_Encoder` 単体（スタブでビルド）のみ: 2ファイルにまたがる合成データで旧版と出力一致、空ファイル・ファイル無しで停止。ANLNext込みのビルドと実データでの確認は未実施。
+
 2026-11-16: TPC_EnergyCalibration.ipynbを追加。smile3_tpc_energyで1-hit選別せずTPC_Calibrationのイベント全体エネルギーを集積。未較正Ka=Kb=0の寄与は0、イベントは除外しない。3ピーク二次補正datをenergy_correction_fileで適用可能。範囲外は接線延長・負値は0。係数共分散はJSONのみ。基準線確認・fit品質OKまで実データの補正ファイルは出力しない。

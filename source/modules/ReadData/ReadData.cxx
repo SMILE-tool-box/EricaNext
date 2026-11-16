@@ -46,7 +46,8 @@ ANLStatus ReadData::mod_begin_run(){
     }
   }
 
-  if(flag)  return AS_ERROR;
+  // ANLNext goes on to the event loop after a plain AS_ERROR here; stop the run instead.
+  if(flag)  return AS_CRITICAL_ERROR_TO_FINALIZE;
   return AS_OK;
 }
 
