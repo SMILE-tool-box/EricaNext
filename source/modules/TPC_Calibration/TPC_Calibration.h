@@ -9,6 +9,7 @@
 #include "SaveFile.h"
 #include "ReadData.h"
 #include "CalcFADC.h"
+#include "EnergyCorrection.h"
 
 using namespace anlnext;
 
@@ -39,6 +40,9 @@ class TPC_Calibration : public BasicModule {
   // TH2D                 *Image_XYZ;
   TH2C                 *Coinci_A, *Coinci_C;
   std::string           PrmFile;
+  std::string           energy_correction_file_;
+  TPCEnergyCorrection   energy_correction_;
+  TH1D*                 Spectrum_Gain = nullptr;
   bool                  no_cal_data;
   bool                  Coinci_TH;
   bool                  Image_XY_TH;

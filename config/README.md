@@ -18,6 +18,7 @@
 | ファイル | チェーン |
 | --- | --- |
 | [`smile3_reconstruct.json`](stage2/smile3_reconstruct.json) | `ReadData → PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter → CalcFADC → TPC_Calibration → PSA_Event → TOT_Skewness → Reconstruct` |
+| [`smile3_tpc_energy.json`](stage2/smile3_tpc_energy.json) | `ReadData → CalcFADC → TPC_Calibration`（全イベントのエネルギースペクトル。ゲインマップを指定） |
 | [`smile3_tpc_only.json`](stage2/smile3_tpc_only.json) | `ReadData → CalcFADC → TPC_Calibration → TOT_Skewness` |
 | [`smile3_psa.json`](stage2/smile3_psa.json) | `PSA_ReadData → PSA_CalcFADC → PSA_CenterGravity → PSA_Calibration → PSA_TreeWriter` |
 

@@ -12,7 +12,8 @@ Same fits as analysis_sm3_FM/PSA_analysis/src_onoda/energy_calib.py (there per c
 hg; here per pixel, of hg_corr):
   - hits at the trigger time without saturation, with the temperature (temp_mean) inside the range of the
     temperature gain table of the ch (--temp-gain-dir; outside it the table only repeats its end value and
-    hg_corr would be off by about 8 % per degC),
+    hg_corr would be off by about 8 % per degC); a ch without a table (PSA_Calibration: hg_corr = hg) uses
+    the hits of all temperatures,
   - Cs 661.66 keV: Gaussian + line in 0.8-1.25 x the maximum of the 5-bin smoothed spectrum above --peak-min
     (energy_calib.py: mean - 1 sigma .. mean + 2 sigma; too narrow for the statistics of a pixel),
   - Co 1173.23 / 1332.49 keV: the two lines are not resolved (one bump). Two Gaussians + line, the 1332 keV one
@@ -137,8 +138,8 @@ def line(pos):
 
 def temp_ranges(temp_gain_dir, board):
     """{ch: (tmin, tmax)} of the temperature gain table (bin centres +- 0.5 degC); {} without the file"""
-    path = os.path.join(temp_gain_dir, f"temp_gain_ha{board:02d}.csv")
-    if not os.path.exists(path):
+    path = os.path.join(temp_gain_dir, f"temp_gain_ha{board:02d}.csv") if temp_gain_dir else ""
+    if not path or not os.path.exists(path):
         return {}
     r = {}
     for row in open(path):
@@ -181,7 +182,8 @@ def main():
     ap.add_argument("--cs", nargs="+", required=True, help="smile3_psa outputs of the Cs-137 runs")
     ap.add_argument("--co", nargs="+", help="smile3_psa outputs of the Co-60 runs (without: p0 = 0)")
     ap.add_argument("--temp-gain-dir", default=os.path.join(REPO, "calib", "psa"),
-                    help="temperature gain tables used for the inputs (only hits inside their temperature range)")
+                    help="temperature gain tables used for the inputs (only hits inside their temperature range); "
+                         "'' if the inputs were made without them (all hits)")
     ap.add_argument("--boards", type=int, nargs="*")
     ap.add_argument("--min-hits", type=int, default=1000, help="fewer hits in a pixel (per source): not fitted")
     ap.add_argument("--hg-max", type=float, default=150e3)
@@ -217,10 +219,13 @@ def main():
             pid.append((lo, hi))
             sels.append(m & (d["peak_id"] >= lo) & (d["peak_id"] <= hi))
         rows, qa = [], {}
+        no_table = [c for c in range(6) if c not in trange]
+        if no_table:
+            print(f"ha{b:02d}: no temperature gain table for ch {no_table} "
+                  f"(PSA_Calibration: hg_corr = hg); all temperatures used")
         for c in range(6):
-            if c not in trange:
-                continue
-            tlo, thi = trange[c]
+            # without a table PSA_Calibration does not correct (hg_corr = hg): no temperature cut
+            tlo, thi = trange.get(c, (-np.inf, np.inf))
             mc = [s & (d["ch"] == c) & (d["temp_mean"] >= tlo) & (d["temp_mean"] <= thi) for s, d in zip(sels, data)]
             ch_cs, ch_co = spec(0, mc[0]), (spec(1, mc[1]) if args.co else None)
             ch = calibrate(ch_cs, ch_co, centers, args)
@@ -252,7 +257,8 @@ def main():
         summary = ", ".join(f"{k} {v}" for k, v in count.items()) + f"; quality bad: {n_bad}"
         info = [f"hits: {sel}, at the trigger time (peak_id {pid[0][0]}-{pid[0][1]} Cs" +
                 (f", {pid[1][0]}-{pid[1][1]} Co)" if args.co else ")") +
-                f", temp_mean inside the temperature gain table of the ch ({args.temp_gain_dir})",
+                f", temp_mean inside the temperature gain table of the ch ({args.temp_gain_dir})" +
+                (f"; ch {no_table} without a table: all temperatures (hg_corr = hg)" if no_table else ""),
                 f"spectra of hg_corr ({args.hg_bins} bins up to {args.hg_max:g}); Cs 661.66 keV: " +
                 ", ".join(os.path.basename(x) for x in args.cs) +
                 ("; Co 1173.23, 1332.49 keV: " + ", ".join(os.path.basename(x) for x in args.co) if args.co else ""),

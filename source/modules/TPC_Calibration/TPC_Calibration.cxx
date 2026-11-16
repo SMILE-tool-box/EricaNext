@@ -1,6 +1,7 @@
 #include "TPC_Calibration.h"
 
 ANLStatus TPC_Calibration::mod_define(){
+  define_parameter("energy_correction_file", &mod_class::energy_correction_file_);
   define_parameter("ParameterFile", &mod_class::PrmFile);
   define_parameter("NoCalData",     &mod_class::no_cal_data);
   define_parameter("Coinci_TH",     &mod_class::Coinci_TH);
@@ -77,6 +78,17 @@ ANLStatus TPC_Calibration::mod_initialize(){
     }
   }
   
+  if(!energy_correction_file_.empty()){
+    if(no_cal_data){
+      std::cerr << "TPC_Calibration: energy correction requires NoCalData=false" << std::endl;
+      return AS_CRITICAL_ERROR_TO_FINALIZE;
+    }
+    try {energy_correction_.Load(energy_correction_file_);}
+    catch(const std::exception& e){std::cerr << e.what() << std::endl;return AS_CRITICAL_ERROR_TO_FINALIZE;}
+    if(Spectrum_TH){
+      Spectrum_Gain = new TH1D("Spectrum_GainMap", "Before global correction;Energy [keV];events",2000,0,400);
+    }
+  }
   return AS_OK;
 }
 
@@ -154,6 +166,10 @@ ANLStatus TPC_Calibration::mod_analyze(){
 	  * ((double)(HitPanel.at(i*Nc+j))/total);
     if(no_cal_data)  Energy += charge;   // sum of the anode channels with coincidences
     }
+  }
+  if(energy_correction_.enabled && Energy>0){
+    if(Spectrum_Gain)Spectrum_Gain->Fill(Energy);
+    Energy=energy_correction_.Apply(Energy);
   }
   // SMILE_tool_box TPC_Calibration::Process(): evs "Ee" only when Ee != 0; this module never skips,
   // Reconstruct checks TPC_Ee_Valid

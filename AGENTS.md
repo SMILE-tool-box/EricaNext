@@ -218,3 +218,5 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-15: SMILE-2+用JSON設定4件をconfig/smile2p/へ集約。短い設定名での実行はec.config_pathの再帰探索により継続可能。
 
 2026-11-15: SMILE-2+用C++モジュール8件をsource/modules/smile2p/配下へ移動。modules/sources.cmakeの登録パスを更新。クラス名・Python公開名・設定名・処理内容は変更しない。
+
+2026-11-16: TPC_EnergyCalibration.ipynbを追加。smile3_tpc_energyで1-hit選別せずTPC_Calibrationのイベント全体エネルギーを集積。未較正Ka=Kb=0の寄与は0、イベントは除外しない。3ピーク二次補正datをenergy_correction_fileで適用可能。範囲外は接線延長・負値は0。係数共分散はJSONのみ。基準線確認・fit品質OKまで実データの補正ファイルは出力しない。

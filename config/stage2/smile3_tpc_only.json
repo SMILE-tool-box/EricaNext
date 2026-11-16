@@ -48,8 +48,10 @@
         "NoCalData": "true: ゲインマップを使わず、エネルギー = 電荷 [ADU] とする(ParameterFile は読まない)。false のときは ParameterFile にゲインマップ(E = Ka Q + Kb)を指定する",
         "Coinci_TH": "true: アノードとカソードが同じクロック・同じパネル(384 ストリップごと)で鳴ったヒット(ストリップ × クロック)の図 Coinci_A / Coinci_C を作る(イベントごとに作り直す)",
         "Image_XY_TH": "true: 同時ヒットのアノード × カソードの位置の図 Image_XY を作る",
-        "Spectrum_TH": "true: エネルギーのスペクトル Spectrum(0–400 keV、2000 ビン)を作る。NoCalData: true のときは中身が電荷 [ADU] なので、範囲に入らないことが多い"
-      }
+        "Spectrum_TH": "true: エネルギーのスペクトル Spectrum(0–400 keV、2000 ビン)を作る。NoCalData: true のときは中身が電荷 [ADU] なので、範囲に入らないことが多い",
+        "energy_correction_file": "ゲインマップ適用後のTPC全体エネルギーを補正するファイル。空なら補正なし。NoCalData=falseが必要。3ピーク間は二次式、範囲外は端点の接線、負の補正値は0。TPC_EnergyCalibration.ipynbで作成する"
+      },
+      "energy_correction_file": ""
     },
     "TOT_Skewness": {
       "pitch_x_mm_per_strip": 0.4,
