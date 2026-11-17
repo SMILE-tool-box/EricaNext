@@ -360,6 +360,35 @@ SMILE-3 の設定ファイルの `ReadData.data_dir`・`PSA_ReadData.data_dir` �
 FM のデータのように同じランが 2 つの storage に分かれているときは、片方を `--data-dir`、もう片方を `--extra-data-dir` で渡します。
 設定ファイルに `{data_root}` と書くと、環境変数 `SMILE3_DATA`(無ければリポジトリの `mount_data/`)に置き換わります(`config/ericanext_config.py`)。
 
+## ETCC のカット比較
+
+入力・カットの説明と図の表示は [ETCC_CutComparison チュートリアル](tutorials/3_Reconstruction/ETCC_CutComparison.ipynb) にあります。
+
+再構成 ROOT の `Reconstruct/single_hit` と `TOT_Skewness/tot_skewness` から、
+エネルギースペクトル、天頂を中心とする方向図、線源位置からの ARM を描きます。
+
+```bash
+/usr/bin/python3 scripts/analysis/compare_etcc_cuts.py 'recon/*.part*.root' \
+  --out figures/etcc --src 0 0 -152 --label '20261115 run03' --alpha 0.5 --bins 24
+```
+
+`--src` は線源の検出器座標 [mm]。追加カットなし、fiducial のみ、dE/dx のみ、両方、
+両方に `|cosα_geo − cosα_kin| < 0.5` を加えた5条件を比較します。Eg の追加カットはありません。
+スペクトルは E0 で絞らず、方向図と ARM は既定で E0 = 630–700 keV (`--emin` / `--emax`)です。
+方向図のビン数は `--bins`（CLI既定45、チュートリアル24）。共通の色スケールと、各条件に合わせた版を保存します。
+`--projection zenith` は天頂角を半径にする図（既定）、`--projection lambert` は Lambert 正積投影です。
+
+fiducial は飛跡全体が外壁・ドリフト領域の両端から `--margin` (既定5 mm) 内側に入る条件です。
+dE/dx は SMILE-2+ の Ke–Len の帯を `--len-scale` (既定2/3)倍し、Ke = 5–400 keV と
+長さ上限180 mmを併用します。この帯は気圧比を仮定した比較用で、SMILE-3 の実測から決めた帯ではありません。
+正確な式、入力ファイル、残存数は出力の `selection_summary.json` に保存します。
+天頂角を半径にした図は等立体角ビンではありません。Lambert は正積ですが、円周の部分ビンの面積と検出効率は補正していません。
+
+飛跡の対応はファイルごとの `evt_id` で確認し、Pe も一致を検証します。
+`evt_id`・`track_min`・`track_max` のない古い ROOT は再構成し直してください。
+追加カットなしの図だけなら `--baseline-only` で古い ROOT も読めます。
+TPC と PSA は同じ座標系と仮定しています。
+
 ## リポジトリの構成
 
 | 場所 | 中身 |

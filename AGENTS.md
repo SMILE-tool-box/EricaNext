@@ -4,7 +4,7 @@
 使い方の説明は [`README.md`](README.md)、設定ファイルの書き方は [`config/README.md`](config/README.md)、スクリプトは [`run_script/README.md`](run_script/README.md) にあります。
 ここには、**それらに書いていない作業の約束・環境の落とし穴・これまでの経緯・残りの仕事**をまとめます。
 
-最終更新: 2026-11-15(ブランチ `feature-restructure`)
+最終更新: 2026-11-17(ブランチ `feature-restructure`)
 
 ---
 
@@ -239,3 +239,19 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 2026-11-17: `TPC_Calibration` は、電荷 Q = 0 のアノード ch を足さない(Q = 0 で `Ka Q + Kb` を足すと切片 Kb が残り、ゲインマップを使うと、同時計数はあるがアノードの電荷が無いイベントが Energy = Kb ≠ 0 で `TPC_Ee_Valid` になっていた。`NoCalData: true` では Ka = Kb = 0 なので変わらない)。20261116_run03 の先頭 5000 イベント(`smile3_reconstruct`、20261113 のゲインマップ)で single_hit が 2497 → 1099。落ちた 1398 のうち 1372 は Ke < 0(大半がアノード ch 23 × カソード 14/15 の Kb = −1.756 keV ちょうど)。残ったイベントの 218 は、電荷の無い ch の Kb が抜けた分だけ Ke が変わった(中央値 −0.6 keV)。さらに、Q > 0 でも小さく Ka Q + Kb < 0(Kb < 0 の組で Q < −Kb / Ka)になる ch 組は足さない(負の寄与は 0。全体のエネルギーは負にならず、そういう組だけのイベントは Energy = 0 で `TPC_Ee_Valid` にならない。判定の「≠ 0」は SMILE_tool_box のまま)。同じ 5000 イベントで single_hit は 1099 → 1073(Ke < 0 だった 31 のうち 26 が落ち、残り 5 は負の組を除くと 0.5〜1.1 keV)。81 イベントは負の寄与が抜けた分だけ Ke が増えた(中央値 0.65 keV、最大 14 keV)。Ke < 0 で `cos_alpha_kin` などが NaN になるイベントも無くなった。
 
 2026-11-17: ETCC の事象表示 `scripts/analysis/plot_etcc_event.py`(1 イベントの TPC の飛跡の点、TOT_Skewness の Pe・Ve、HA のヒット点 Pg、Pe → Pg、TPC のドリフト領域と geometry.csv の HA のブロック)。入力は `TOT_Skewness.flag_save_cloud=true` で流した `smile3_reconstruct` の出力。tot_skewness と single_hit は Pe で対応させる(Reconstruct は Ve を単位ベクトルにして書くので、Ve では対応しない)。20261115_run03 の 2 万イベントで見えたこと: μ-PIC に平行な部分(同じクロック)で偽の点が四角く大量に出る、Pe が飛跡から離れた 1 点になることがある(TOT_Skewness は飛跡の端の点を Pe にする)、Ve_z = 0(Pe の周り 10 mm で傾きの fit ができず XY 面の向きだけ)が track ありの 8 %。
+
+2026-11-17: ETCC のカット比較を `scripts/analysis/compare_etcc_cuts.py` に追加。再構成 ROOT の single_hit と tot_skewness をファイルごとの evt_id で結び、Pe も検証。Eg の追加カットなしで、追加カットなし・fiducial のみ・dE/dx のみ・両方・両方＋|Δcosα| < 0.5 のスペクトルと方向図・ARM を比較する。スペクトルは E0 窓なし、方向図は既定630–700 keV。fiducial は全飛跡の外接範囲が壁から5 mm内側、dE/dx は SMILE-2+ の帯を気圧比2/3倍した仮定（Ke=5–400 keV、Len<180 mm併用）。CLI の説明は README。入力と残存数は selection_summary.json。11/16 run03+06 の E0 窓の基準23,114件・上半球20,026件は Claude の図と一致。24×24ビン版も出力した。
+
+11/15 run03 の既存再構成 ROOT は evt_id・track_min/max が tot_skewness にないため、同じ raw ROOT から比較用に再構成。作業用出力は /home/onoda/ericanext_out/etcc_cut_comparison/、ROOT は /home/onoda/ericanext_out/20261115_selected/。再構成を速める一時 SingleHitGate（PSA_SingleHit && TPC_Ee_Valid のときだけ TOT_Skewness 以降を実行）は出力先の replay_helper/ に置いた。一時ゲートはリポジトリのチェーンには組み込んでいない。先頭5000イベントで通常処理と single_hit 全ブランチ、および選ばれた tot_skewness 全ブランチが一致（557件）。この作業用 ROOT の tot_skewness は候補事象に限定される。
+
+
+2026-11-17 Claude 引き継ぎの補足: 未コミットだった TOT_Skewness の evt_id・track_min/max の保存、plot_etcc_event.py の --min-len/--max-len [mm]・--top・--order points|length を取り込み。前者は保存列の追加のみで、飛跡計算は変えない。実データの3511行で、外接範囲の対角線が Len と一致し、evt_id が一意であることを検証。後者は run03 の点群つき ROOT で --order length --top 1 による図の出力を確認。
+
+ETCC の現時点の較正・判断の注意点（Claude の2026-11-17引き継ぎ）: TPC の較正済みは576組中230組（μPIC0:0、1:144、2:51、3:35）、未較正の寄与は0。全体の二次補正 E′ ≈ 0.68 + 0.888 E + 0.00303 E² は、TPC_Calibration の負の寄与を直す前のスペクトルから決めた。ドリフト速度は run03 の約0.387 mm/clock・offset約133.7の暫定値（上端が鈍く品質判定NG）。PSA は11/15・228 Vの較正を使用し、温度補正なし。Co run07 は Cs run04〜06 より1〜2 °C低く、この差も較正に入っている。TPC/PSAの座標系の同一性も未確認。
+
+線源位置は11/15 run03が (0,0,-152) mm、11/16 run03+06が (-380,-1090,-1412) mm。ARMの中央値の正の偏りは背景だけでも起こる。信号の判断は真の線源−回転した偽線源、または測定時間などで規格化した線源あり−なしで行う。Claude の報告では11/16の Ke>80 keVで |ARM|<10° の真−偽の超過が136±45。今後は線源なしランの背景、ETCC時のHA温度、未較正TPC領域の確認が必要。引き継いだ解析・スライドのスクリプトは /home/onoda/ericanext_out/handover_20261117/ に保持。最新 etcc_image.py の Lambert 正積図も compare_etcc_cuts.py の --projection lambert として選択可能にし、従来の天頂角半径図は --projection zenith（既定）で維持。
+
+
+2026-11-17: `tutorials/3_Reconstruction/ETCC_CutComparison.ipynb` を追加し、11/15 run03全件（104分割）と11/16 run03+06（12分割）で実行・図を埋め込み。天頂角半径図と Lambert 正積図を併記し、投影法を変えても全5カットの選択件数・上半球件数が不変であることを確認。11/15の基準はE0窓247040件・上半球226773件で既存ROOTと一致し、fiducial+dE/dx+|Δcosα|<0.5では28752件・上半球27446件（ARM中央値28.2°）。11/16の最終段は2742件・上半球2613件（中央値19.9°）。通常のビルドも成功。
+
+TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)、3:(-X,-Y)。11/15 PSA較正は /mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261115/HA_cal/calib_psa に保持。run07のgrid法で12ボード72ch、格子内94.5〜97.6%。Cs run04〜06とCo run07で68chが3点、4ch（ha01 ch3/5、ha09 ch1、ha13 ch0）はCs単点。4608ピクセルのうち4230が3点、378がcs+ch。UVSOR11/03の旧較正はcalib/psaに保持。
