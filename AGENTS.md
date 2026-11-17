@@ -268,3 +268,6 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 
 
 2026-11-17: ETCC_CutComparison の冒頭を入力ファイル→tree→使用ブランチと用途→イベント対応の順に整理。現在の2気圧・倍率1.0・270 mm・Ke範囲なしを明示し、各カットを独立した短いブロックに分けた。表示が崩れていたMarkdownの表を廃止し、パラメータは箇条書き、残存数の表はHTML表示へ変更。実ファイル一覧と長い実行ログは折りたたみ。再解析は行わず、同じ12/104入力であること、各測定の先頭ROOTで記載ブランチが存在すること、表示セルの実行を検証。
+
+
+2026-11-17: ETCC_CutComparison.ipynb は埋め込みPNGで6.4 MBになりGitHub表示が重くなったため、10枚の実行例を tutorials/3_Reconstruction/figures/ のPNGに分離し、Markdownの相対参照へ変更。ノートブック本体は画像出力を除いて150 kB未満に制限。計算・入力・選別条件は維持。高解像度の実行結果と元の実行済みノートブックは /home/onoda/ericanext_out/tutorials/ETCC_CutComparison/ に保持。今後コミットするときもPNGのbase64をノートブックに大量埋め込みしないこと。
