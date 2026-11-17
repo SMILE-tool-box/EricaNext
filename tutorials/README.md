@@ -19,6 +19,7 @@
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
 | └ [`12_TPC_RawTreeWriter/`](1_DataIO/modules/12_TPC_RawTreeWriter/TPC_RawTreeWriter.ipynb) | 同期した TPC の生データの TTree |
 | [`2_Diagnostics/TPC_FADC_Accumulation`](2_Diagnostics/TPC_FADC_Accumulation.ipynb) | raw ROOT → 全ボード・全chのFADC波形積算TH2Dを1つのROOTに保存（ボードごとのPNGも出力可） |
+| [`2_Diagnostics/ETCC_MuonTracks`](2_Diagnostics/ETCC_MuonTracks.ipynb) | 点群つきで再構成したROOT → 長い直線の飛跡（ミューオンらしいもの）と同じイベントのHAのヒットの図（`scripts/analysis/plot_muon_tracks.py`） |
 | [`3_Reconstruction/ETCC_CutComparison`](3_Reconstruction/ETCC_CutComparison.ipynb) | ETCC のカットごとのエネルギースペクトル・dE/dx 分布・Compton cone・ETCC 方向図・ARM（Eg追加カットなし） |
 | `4_MakeCalibration/` | 較正ファイルを作る(チェーンは作成済みの較正ファイルを読む) |
 | ├ [`TPC_DriftVelocity`](4_MakeCalibration/TPC_DriftVelocity.ipynb) | RawTreeWriterのROOT → 飛跡積算図・クロック分布 → ドリフト速度 |

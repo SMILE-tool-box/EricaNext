@@ -271,3 +271,5 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 
 
 2026-11-17: ETCC_CutComparison.ipynb は埋め込みPNGで6.4 MBになりGitHub表示が重くなったため、10枚の実行例を tutorials/3_Reconstruction/figures/ のPNGに分離し、Markdownの相対参照へ変更。ノートブック本体は画像出力を除いて150 kB未満に制限。計算・入力・選別条件は維持。高解像度の実行結果と元の実行済みノートブックは /home/onoda/ericanext_out/tutorials/ETCC_CutComparison/ に保持。今後コミットするときもPNGのbase64をノートブックに大量埋め込みしないこと。
+
+2026-11-17: ミューオンらしい飛跡の図 `scripts/analysis/plot_muon_tracks.py` とチュートリアル `tutorials/2_Diagnostics/ETCC_MuonTracks.ipynb`（実行例の図は `tutorials/2_Diagnostics/figures/`）。入力は `TOT_Skewness.flag_save_cloud=true` で流した `smile3_reconstruct` の出力。選び方: 重複を除いた点 ≥ 50、PCA の直線方向の長さ（点の1〜99 %）≥ 200 mm、直線からの RMS ≤ 5 mm（z の範囲・HA のヒットは条件にしない）。HA のヒットは `PSA_TreeWriter/psa` を trig = evt_id で対応させる。ミューオンの HA のヒットは HG が飽和（`satu_h`）していることが多く、エネルギーは較正範囲外の外挿で下限の目安にすぎない。20261115 run03 の2万イベントで、飛跡の z はドリフト領域（10〜317 mm）から約 ±10 mm はみ出す（ドリフト速度の誤差）。
