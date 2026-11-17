@@ -3,6 +3,7 @@
 ANLStatus ReadData::mod_define(){
   define_parameter("root_file", &mod_class::root_file_);
   define_parameter("root_first_entry", &mod_class::root_first_entry_);
+  define_parameter("root_skip_unreadable", &mod_class::root_skip_unreadable_);
   define_parameter("data_dir", &mod_class::DataDir);
   define_parameter("extra_data_dirs", &mod_class::ExtraDataDirs);
   define_parameter("reverse_TPC", &mod_class::Reverse);
@@ -133,6 +134,9 @@ ANLStatus ReadData::mod_analyze(){
 }
 
 ANLStatus ReadData::mod_finalize(){
+  if(root_unreadable_)
+    std::cerr << "ReadData: WARNING: " << root_unreadable_ << " unreadable rows of " << root_file_
+              << " were skipped (broken baskets in the file; check it with scripts/check/check_root_holes.py)" << std::endl;
   if(is_evs_defined("ClearPulse80256")){
     for(unsigned i=0; i<N_HA2p.size(); i++){
       delete SM2p_HA[i];

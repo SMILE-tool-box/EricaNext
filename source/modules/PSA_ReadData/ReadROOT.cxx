@@ -31,11 +31,21 @@ ANLStatus PSA_ReadData::InitializeROOT(){
 }
 ANLStatus PSA_ReadData::ReadROOT(){
  try {
+  // TPC rows skipped by ReadData (unreadable) did not reach this module: follow its row in the same raw ROOT
+  if(sync_ && tpc_->Get_RootRow()>=0) root_entry_=tpc_->Get_RootRow();
   if(root_entry_>=root_tree_->GetEntries()){
     if(sync_)throw std::runtime_error("PSA raw ended before TPC");
     return AS_QUIT_ALL;
   }
-  if(root_tree_->GetEntry(root_entry_++)<=0)throw std::runtime_error("cannot read event");
+  if(root_tree_->GetEntry(root_entry_++)<=0){
+    if(!root_skip_unreadable_)throw std::runtime_error("cannot read event");
+    // e.g. a basket of the file filled with zeros (pages lost when the file was written to the NAS)
+    if(++root_unreadable_<=20)
+      std::cerr<<"PSA_ReadData: WARNING: row "<<root_entry_-1<<" of "<<root_file_<<" cannot be read; skipped"
+               <<(root_unreadable_==20 ? " (further rows: count only)" : "")<<std::endl;
+    present_.assign(boards_.size(),false);n_present_=0;
+    return AS_SKIP;
+  }
   if(sync_ && (root_trig_!=tpc_->Get_EventID_coincidence() || root_sevt_!=tpc_->Get_SEvtID()))throw std::runtime_error("TPC/PSA rows are not synchronized; use the same combined raw ROOT");
   const size_t n=root_board_->size();
   if(root_board_epoch_->size()!=n || root_clk_->size()!=n || root_mask_->size()!=n || root_time_->size()!=n || root_temp_->size()!=n*6 || root_adc_->size()!=n*2400)throw std::runtime_error("PSA vector size mismatch");

@@ -53,6 +53,8 @@ public:
   unsigned           Get_EventID_coincidence()    const {return event_id_coincidence;};
   // 0-based count of the merged (board-synchronized) events processed so far
   unsigned           Get_SEvtID()     const {return sevt_id_;};
+  // row of root_file read for this event (-1 without ROOT input)
+  long long          Get_RootRow()    const {return root_tree_ ? root_entry_-1 : -1;};
   // header time word N_time of anode / cathode board i (index in Get_AnodeID() / Get_CathodeID())
   unsigned           Get_AnodeTime(int i)   const {return root_tree_ ? root_at_->at(i) : Anode[i]->GetNtime();};
   unsigned           Get_CathodeTime(int i) const {return root_tree_ ? root_ct_->at(i) : Cathode[i]->GetNtime();};
@@ -75,6 +77,8 @@ public:
   TTree* root_tree_ = nullptr;
   Long64_t root_entry_ = 0;
   int root_first_entry_ = 0;   // first row of root_file to read (to split a run over several processes)
+  bool root_skip_unreadable_ = true;   // a row ROOT cannot read (broken basket) is skipped with a warning
+  long root_unreadable_ = 0;
   int root_loopback_ = 0;
   std::vector<unsigned>* root_at_ = nullptr;
   std::vector<unsigned>* root_ct_ = nullptr;

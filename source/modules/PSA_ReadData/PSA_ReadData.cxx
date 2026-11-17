@@ -10,6 +10,7 @@
 ANLStatus PSA_ReadData::mod_define(){
   define_parameter("root_file", &mod_class::root_file_);
   define_parameter("root_first_entry", &mod_class::root_first_entry_);
+  define_parameter("root_skip_unreadable", &mod_class::root_skip_unreadable_);
   define_parameter("data_dir",         &mod_class::data_dir_);
   define_parameter("extra_data_dirs",  &mod_class::extra_data_dirs_);
   define_parameter("sync_tpc",         &mod_class::sync_tpc_);
@@ -171,6 +172,9 @@ ANLStatus PSA_ReadData::mod_finalize(){
     delete b;
   }
   boards_.clear();
+  if(root_unreadable_)
+    std::cerr << "PSA_ReadData: WARNING: " << root_unreadable_ << " unreadable rows of " << root_file_
+              << " were skipped (broken baskets in the file; check it with scripts/check/check_root_holes.py)" << std::endl;
   if(n_tmp_files_)
     std::cout << "PSA_ReadData: " << n_tmp_files_ << " .dat.tmp files were read" << std::endl;
   return AS_OK;

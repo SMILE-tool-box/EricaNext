@@ -57,7 +57,14 @@ ANLStatus ReadData::InitializeROOT(){
 ANLStatus ReadData::ReadROOT(){
   if(root_entry_>=root_tree_->GetEntries()) return AS_QUIT_ALL;
   try {
-    if(root_tree_->GetEntry(root_entry_++)<=0) throw std::runtime_error("failed reading event");
+    if(root_tree_->GetEntry(root_entry_++)<=0){
+      if(!root_skip_unreadable_) throw std::runtime_error("failed reading event");
+      // e.g. a basket of the file filled with zeros (pages lost when the file was written to the NAS)
+      if(++root_unreadable_<=20)
+        std::cerr<<"ReadData: WARNING: row "<<root_entry_-1<<" of "<<root_file_<<" cannot be read; skipped"
+                 <<(root_unreadable_==20 ? " (further rows: count only)" : "")<<std::endl;
+      return AS_SKIP;
+    }
     if(root_at_->size()!=N_anode.size() || root_ct_->size()!=N_cathode.size()) throw std::runtime_error("board time size mismatch");
     std::fill_n(root_fadc_,96*512,0);
     if(root_wave_->size()!=root_ch_->size()*512) throw std::runtime_error("waveform size mismatch");
