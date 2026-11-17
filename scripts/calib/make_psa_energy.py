@@ -14,11 +14,14 @@ hg; here per pixel, of hg_corr):
     temperature gain table of the ch (--temp-gain-dir; outside it the table only repeats its end value and
     hg_corr would be off by about 8 % per degC); a ch without a table (PSA_Calibration: hg_corr = hg) uses
     the hits of all temperatures,
-  - Cs 661.66 keV: Gaussian + line in 0.8-1.25 x the maximum of the 5-bin smoothed spectrum above --peak-min
-    (energy_calib.py: mean - 1 sigma .. mean + 2 sigma; too narrow for the statistics of a pixel),
+  - Cs 661.66 keV: Gaussian + line in 0.8-1.25 x the highest-hg peak of the 5-bin smoothed spectrum above
+    --peak-min with a prominence of at least --cs-prominence x the maximum (not the maximum itself: a bump at
+    hg ~ 25000 can be higher than the Cs line; energy_calib.py: mean - 1 sigma .. mean + 2 sigma; too narrow for
+    the statistics of a pixel),
   - Co 1173.23 / 1332.49 keV: the two lines are not resolved (one bump). Two Gaussians + line, the 1332 keV one
     at mean1 * r (r = 1.06-1.16) with width sigma1 sqrt(r) and height ratio 0.5-1.5; window 0.85-1.30 x the
-    maximum of the smoothed spectrum in 1.4-2.2 x the Cs position,
+    most prominent peak of the smoothed spectrum in 1.4-2.2 x the Cs position (not its maximum: the bump sits
+    on the falling Compton part),
   - hg_corr = a E + b fitted to the 3 points (errors of the Gaussian centres, scaled by sqrt(chi2/ndf) if > 1),
     p1 = 1 / a, p0 = -b / a.
 Each pixel (column src):
@@ -42,9 +45,11 @@ import sys
 
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from psa_calib_common import header, on_time_range, read_tree  # noqa: E402
+from psa_calib_common import (N_BOARDS, board_peak_ranges, declare, header, hist_array,  # noqa: E402
+                              peak_range_filter, rdataframe)
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 E_CS, E_CO1, E_CO2 = 661.66, 1173.23, 1332.49
@@ -87,11 +92,49 @@ def smoothed_argmax(centers, counts, low, high):
     return centers[inside][np.argmax(smooth[inside])]
 
 
-def fit_cs(centers, counts, peak_min, hg_max):
-    """Cs line -> (mean, mean_err, sigma) or None. Window 0.8-1.25 x the maximum of the smoothed spectrum
-    (energy_calib.py: mean - 1 sigma .. mean + 2 sigma, 3 times; with the few thousand hits of a pixel the
-    Gaussian and the line background are degenerate in that narrow window and the fit runs away)."""
-    peak = smoothed_argmax(centers, counts, peak_min, hg_max)
+def last_prominent_peak(centers, counts, low, high, prominence):
+    """position of the highest-hg peak of the 5-bin smoothed spectrum in [low, high] whose prominence is at least
+    `prominence` x the maximum there; nan if none. The Cs line is the last peak of the spectrum, but it can be
+    lower than the bump at hg ~ 25000 below it (seen in the 20261115 runs, in Cs and Co alike)."""
+    smooth = np.convolve(counts, np.ones(5) / 5, mode="same")
+    inside = (centers >= low) & (centers <= high)
+    if not inside.any() or smooth[inside].max() <= 0:
+        return np.nan
+    s = smooth[inside]
+    idx, _ = find_peaks(s, prominence=prominence * s.max())
+    if len(idx) == 0:
+        return centers[inside][np.argmax(s)]
+    return centers[inside][idx.max()]
+
+
+def most_prominent_peak(centers, counts, low, high):
+    """position of the most prominent peak of the 5-bin smoothed spectrum in [low, high] (the Co bump sits on
+    the falling Compton part: the maximum there is the low end of the range); the maximum if there is no peak"""
+    smooth = np.convolve(counts, np.ones(5) / 5, mode="same")
+    inside = (centers >= low) & (centers <= high)
+    if not inside.any() or smooth[inside].max() <= 0:
+        return np.nan
+    s = smooth[inside]
+    idx, prop = find_peaks(s, prominence=0)
+    if len(idx) == 0:
+        return centers[inside][np.argmax(s)]
+    return centers[inside][idx[np.argmax(prop["prominences"])]]
+
+
+class FitPos(tuple):
+    """(mean, mean_err, sigma) of a line, with the fit it came from (model, params, window) for the QA figure"""
+    def __new__(cls, values, model=None, params=None, window=None):
+        t = super().__new__(cls, values)
+        t.model, t.params, t.window = model, params, window
+        return t
+
+
+def fit_cs(centers, counts, peak_min, hg_max, prominence):
+    """Cs line -> (mean, mean_err, sigma) or None. Window 0.8-1.25 x the last prominent peak of the smoothed
+    spectrum (last_prominent_peak; energy_calib.py: mean - 1 sigma .. mean + 2 sigma, 3 times; with the few
+    thousand hits of a pixel the Gaussian and the line background are degenerate in that narrow window and the
+    fit runs away)."""
+    peak = last_prominent_peak(centers, counts, peak_min, hg_max, prominence)
     if not np.isfinite(peak):
         return None
     window = (0.8 * peak, 1.25 * peak)
@@ -101,26 +144,28 @@ def fit_cs(centers, counts, peak_min, hg_max):
     if out is None:
         return None
     p, cov = out
-    return p[1], np.sqrt(cov[1, 1]), abs(p[2])
+    return FitPos((p[1], np.sqrt(cov[1, 1]), abs(p[2])), model_cs, p, window)
 
 
 def fit_co(centers, counts, cs_mean):
     """Co lines -> [(mean1, err1, sigma1), (mean2, err2, sigma2)] or None. The window stays at the bump (made
     wider from the fit, the 1173 keV Gaussian runs into the Compton part below)."""
-    peak = smoothed_argmax(centers, counts, 1.4 * cs_mean, 2.2 * cs_mean)
+    peak = most_prominent_peak(centers, counts, 1.4 * cs_mean, 2.2 * cs_mean)
     if not np.isfinite(peak):
         return None
     height = counts[np.argmin(abs(centers - peak))]
     p0 = [max(0.7 * height, 1), 0.96 * peak, 0.05 * peak, 0.9, 1.11, 0, 0]
     bounds = ([0, 0.80 * peak, 0.01 * peak, 0.5, 1.06, -np.inf, -np.inf],
               [np.inf, 1.10 * peak, 0.15 * peak, 1.5, 1.16, np.inf, np.inf])
-    out = fit(model_co, centers, counts, (0.85 * peak, 1.30 * peak), p0, bounds)
+    window = (0.85 * peak, 1.30 * peak)
+    out = fit(model_co, centers, counts, window, p0, bounds)
     if out is None:
         return None
     p, cov = out
     m1, s1, r = p[1], p[2], p[4]
     j = np.zeros(len(p)); j[1], j[4] = r, m1          # d(mean2) / d(mean1, r)
-    return [(m1, np.sqrt(cov[1, 1]), s1), (m1 * r, np.sqrt(j @ cov @ j), s1 * np.sqrt(r))]
+    return [FitPos((m1, np.sqrt(cov[1, 1]), s1), model_co, p, window),
+            FitPos((m1 * r, np.sqrt(j @ cov @ j), s1 * np.sqrt(r)))]
 
 
 def line(pos):
@@ -151,12 +196,52 @@ def temp_ranges(temp_gain_dir, board):
     return {c: (lo - 0.5, hi + 0.5) for c, (lo, hi) in r.items()}
 
 
+def spectra(files, sel, temp_gain_dir, hg_max, hg_bins, boards=None):
+    """hg_corr spectra filled inside RDataFrame (the hits are never held in memory: a run of 10^8 hits as
+    numpy arrays did not fit in 16 GB). Two passes over the files:
+      1. peak_id per board -> the trigger-time range of the board (on_time_range),
+      2. hits of `sel` at the trigger time of their board, with temp_mean inside the temperature gain table of
+         their ch (all temperatures for a ch without a table), filled per (board, ch) and per (board, ch, pixel).
+    Returns dict(boards, pid {board: (lo, hi)}, ch [board][ch] -> counts, px [board][ch][n-1][m-1] -> counts,
+    hits [board][ch][n-1][m-1] -> number of hits incl. those outside 0..hg_max). Spectra are int64 arrays
+    with np.histogram's bins (np.linspace(0, hg_max, hg_bins + 1))."""
+    df = rdataframe(files, sel)
+    pid = board_peak_ranges(df, boards)
+    found = sorted(pid)
+    tlo, thi = np.full(N_BOARDS * 6, -np.inf), np.full(N_BOARDS * 6, np.inf)
+    for b in found:
+        tr = temp_ranges(temp_gain_dir, b)
+        for c in range(6):
+            tlo[b * 6 + c], thi[b * 6 + c] = tr.get(c, (-np.inf, np.inf))
+    cpp = lambda a: ", ".join("-INFINITY" if v == -np.inf else "INFINITY" if v == np.inf else repr(float(v)) for v in a)
+    in_temp = declare(lambda name: f"""
+    #include <cmath>
+    bool {name}(int b, int c, double t) {{
+        static const double lo[] = {{{cpp(tlo)}}}, hi[] = {{{cpp(thi)}}};
+        return b >= 0 && b < {N_BOARDS} && c >= 0 && c < 6 && t >= lo[b * 6 + c] && t <= hi[b * 6 + c];
+    }}""")
+    nb = max(found) + 1 if found else 1
+    d = (df.Filter(f"{peak_range_filter(pid)}(board, peak_id) && {in_temp}(board, ch, temp_mean)")
+         .Define("key_ch", "board * 6 + ch")
+         .Define("key_px", "(pix_n >= 1 && pix_n <= 8 && pix_m >= 1 && pix_m <= 8) ? "
+                           "(board * 6 + ch) * 64 + (pix_n - 1) * 8 + (pix_m - 1) : -1"))
+    hch = d.Histo2D(("ch", "", nb * 6, 0, nb * 6, hg_bins, 0, hg_max), "key_ch", "hg_corr")
+    hpx = d.Histo2D(("px", "", nb * 384, 0, nb * 384, hg_bins, 0, hg_max), "key_px", "hg_corr")
+    ach = hist_array(hch.GetValue(), nb * 6, hg_bins)[1:-1]
+    apx = hist_array(hpx.GetValue(), nb * 384, hg_bins)[1:-1]
+    # np.histogram puts hg_corr == hg_max in the last bin; TH2 puts it in the overflow (negligible for a double)
+    return dict(boards=found, pid=pid,
+                ch=ach[:, 1:-1].reshape(nb, 6, hg_bins),
+                px=apx[:, 1:-1].reshape(nb, 6, 8, 8, hg_bins),
+                hits=apx.sum(axis=1).reshape(nb, 6, 8, 8))
+
+
 def calibrate(cs_spec, co_spec, centers, args, ch_line=None):
     """one pair of spectra -> dict(p0, p1, src, pos, quality); ch_line = (p0, p1) of the ch sum for the
     fallback (None: this is the ch sum)"""
     min_hits = args.min_hits if ch_line is not None else 0
     enough = lambda s: s is not None and s.sum() >= min_hits
-    cs = fit_cs(centers, cs_spec, args.peak_min, args.hg_max) if enough(cs_spec) else None
+    cs = fit_cs(centers, cs_spec, args.peak_min, args.hg_max, args.cs_prominence) if enough(cs_spec) else None
     if cs is None:
         return None if ch_line is None else dict(p0=ch_line[0], p1=ch_line[1], src="ch", pos=[], quality="ok")
     co = fit_co(centers, co_spec, cs[0]) if enough(co_spec) else None
@@ -186,9 +271,12 @@ def main():
                          "'' if the inputs were made without them (all hits)")
     ap.add_argument("--boards", type=int, nargs="*")
     ap.add_argument("--min-hits", type=int, default=1000, help="fewer hits in a pixel (per source): not fitted")
-    ap.add_argument("--hg-max", type=float, default=150e3)
-    ap.add_argument("--hg-bins", type=int, default=600)
+    ap.add_argument("--hg-max", type=float, default=350e3,
+                    help="upper end of the spectra (the Co lines are at hg_corr 1.5e5-1.7e5 on high-gain boards)")
+    ap.add_argument("--hg-bins", type=int, default=1400)
     ap.add_argument("--peak-min", type=float, default=15e3, help="the Cs line is looked for above this")
+    ap.add_argument("--cs-prominence", type=float, default=0.1,
+                    help="the Cs line is the highest-hg peak with a prominence of at least this x the maximum")
     ap.add_argument("--co-ratio", type=float, nargs=2, default=(1.55, 1.95),
                     help="allowed (1173 keV position) / (662 keV position) [energy_calib.py]")
     ap.add_argument("--p1-relerr", type=float, default=0.03, help="allowed relative error of p1 [energy_calib.py]")
@@ -199,35 +287,40 @@ def main():
     sel = "!satu_h && !satu_l && pixel >= 0"
     if args.boards:
         sel += " && (" + " || ".join(f"board == {b}" for b in args.boards) + ")"
-    cols = ["board", "ch", "pix_n", "pix_m", "hg_corr", "peak_id", "temp_mean"]
-    data = [read_tree(args.cs, cols, sel)] + ([read_tree(args.co, cols, sel)] if args.co else [])
     edges = np.linspace(0, args.hg_max, args.hg_bins + 1)
     centers = 0.5 * (edges[:-1] + edges[1:])
-    spec = lambda k, x: np.histogram(data[k]["hg_corr"][x], bins=edges)[0] if k < len(data) else None
+    data = [spectra(f, sel, args.temp_gain_dir, args.hg_max, args.hg_bins, args.boards)
+            for f in [args.cs] + ([args.co] if args.co else [])]
     os.makedirs(args.out_dir, exist_ok=True)
 
-    for b in sorted(np.unique(data[0]["board"])):
+    def spec(k, b, c, n=None, m=None):
+        """spectrum of source k (0 Cs, 1 Co) of the ch sum (n None) or of the pixel; None: no such source"""
+        if k >= len(data):
+            return None
+        d = data[k]
+        if b not in d["pid"]:
+            return np.zeros(args.hg_bins, dtype=np.int64)
+        return d["ch"][b, c] if n is None else d["px"][b, c, n - 1, m - 1]
+
+    def n_hits(k, b, c, n, m):
+        d = data[k]
+        return int(d["hits"][b, c, n - 1, m - 1]) if b in d["pid"] else 0
+
+    for b in data[0]["boards"]:
         out = os.path.join(args.out_dir, f"energy_ha{b:02d}.csv")
         if os.path.exists(out) and not args.overwrite:
             print(f"ha{b:02d}: {out} exists, skipped (--overwrite to replace)")
             continue
         trange = temp_ranges(args.temp_gain_dir, b)
-        sels, pid = [], []
-        for d in data:
-            m = d["board"] == b
-            lo, hi = on_time_range(d["peak_id"][m]) if m.any() else (0, -1)
-            pid.append((lo, hi))
-            sels.append(m & (d["peak_id"] >= lo) & (d["peak_id"] <= hi))
+        pid = [d["pid"].get(b, (0, -1)) for d in data]
         rows, qa = [], {}
         no_table = [c for c in range(6) if c not in trange]
         if no_table:
             print(f"ha{b:02d}: no temperature gain table for ch {no_table} "
                   f"(PSA_Calibration: hg_corr = hg); all temperatures used")
         for c in range(6):
-            # without a table PSA_Calibration does not correct (hg_corr = hg): no temperature cut
-            tlo, thi = trange.get(c, (-np.inf, np.inf))
-            mc = [s & (d["ch"] == c) & (d["temp_mean"] >= tlo) & (d["temp_mean"] <= thi) for s, d in zip(sels, data)]
-            ch_cs, ch_co = spec(0, mc[0]), (spec(1, mc[1]) if args.co else None)
+            # without a table PSA_Calibration does not correct (hg_corr = hg): no temperature cut (in spectra())
+            ch_cs, ch_co = spec(0, b, c), spec(1, b, c)
             ch = calibrate(ch_cs, ch_co, centers, args)
             if ch is None:
                 print(f"ha{b:02d} ch{c}: no Cs line in the ch sum; ch skipped")
@@ -244,10 +337,9 @@ def main():
             qa[c] = dict(ch, spec=(ch_cs, ch_co))
             for n in range(1, 9):
                 for mm in range(1, 9):
-                    px = [x & (d["pix_n"] == n) & (d["pix_m"] == mm) for x, d in zip(mc, data)]
-                    r = calibrate(spec(0, px[0]), spec(1, px[1]) if use_co else None, centers, args,
+                    r = calibrate(spec(0, b, c, n, mm), spec(1, b, c, n, mm) if use_co else None, centers, args,
                                   ch_line=(ch["p0"], ch["p1"]))
-                    hits = [int(x.sum()) for x in px] + ([] if args.co else [0])
+                    hits = [n_hits(k, b, c, n, mm) for k in range(len(data))] + ([] if args.co else [0])
                     rows.append((c, n, mm, r, hits))
         if not rows:
             print(f"ha{b:02d}: nothing written")
@@ -297,11 +389,28 @@ def qa_figure(path, b, rows, qa, centers):
         for s, lab in zip(q["spec"], ("Cs-137", "Co-60")):
             if s is not None:
                 ax.step(centers, s, where="mid", lw=0.8, label=lab)
+        # fitted curves: the whole model (solid) and its Gaussians and background (dotted)
+        for f in ([q["pos"][0]] + (q["pos"][1:2] or q.get("co_pos", [])[:1])):
+            if getattr(f, "params", None) is None:
+                continue
+            xx = np.linspace(*f.window, 300)
+            ax.plot(xx, f.model(xx, *f.params), color="k", lw=1)
+            if f.model is model_cs:
+                a, mu, sg, slope, off = f.params
+                parts = [gauss(xx, a, mu, sg)]
+                bg = slope * (xx - mu) + off
+            else:
+                a1, mu1, s1, ar, mr, slope, off = f.params
+                parts = [gauss(xx, a1, mu1, s1), gauss(xx, a1 * ar, mu1 * mr, s1 * np.sqrt(mr))]
+                bg = slope * (xx - mu1) + off
+            for g in parts:
+                ax.plot(xx, g, ":", color="C2", lw=1.2)
+            ax.plot(xx, bg, ":", color="gray", lw=1)
         for (mu, err, sg), e in zip(q["pos"] + q.get("co_pos", []), (E_CS, E_CO1, E_CO2)):
             ax.axvline(mu, color="r", lw=0.6, ls="-" if e == E_CS or "co_pos" not in q else ":")
             ax.text(mu, 0.97, f"{e:g}", color="r", fontsize=7, rotation=90, va="top",
                     transform=ax.get_xaxis_transform())
-        ax.set_xlim(0, 100e3); ax.set_xlabel("hg_corr"); ax.legend(fontsize=7)
+        ax.set_xlim(0, min(centers[-1], 2.6 * q["pos"][0][0])); ax.set_xlabel("hg_corr"); ax.legend(fontsize=7)
         ax.set_title(f"ha{b:02d} ch{c}: ch sum ({q['src']}, {q['quality']})")
         ax = axs[1, c]
         mu = np.array([p[0] for p in q["pos"]])

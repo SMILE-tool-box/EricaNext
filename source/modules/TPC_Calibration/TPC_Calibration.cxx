@@ -167,9 +167,15 @@ ANLStatus TPC_Calibration::mod_analyze(){
 
     if(total>0){
       double charge = Q_TPC->Get_Qanode(i);
-      for(int j=0; j<Nc; j++)
-	Energy += (charge * cal_a[i*Nc+j] + cal_b[i*Nc+j])
-	  * ((double)(HitPanel.at(i*Nc+j))/total);
+      // An anode channel without charge adds nothing: Ka Q + Kb would leave the intercept Kb, which made
+      // events with coincidences but no anode charge "valid" (Energy = Kb != 0) once a gain map is used.
+      // A pair with a negative intercept gives Ka Q + Kb < 0 for a small charge (Q < -Kb / Ka): such a pair
+      // adds nothing (no negative energies; an event with only such pairs has Energy = 0, not TPC_Ee_Valid).
+      if(charge > 0)
+        for(int j=0; j<Nc; j++){
+          const double e = charge * cal_a[i*Nc+j] + cal_b[i*Nc+j];
+          if(e > 0)  Energy += e * ((double)(HitPanel.at(i*Nc+j))/total);
+        }
     if(no_cal_data)  Energy += charge;   // sum of the anode channels with coincidences
     }
   }

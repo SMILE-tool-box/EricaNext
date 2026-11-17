@@ -28,7 +28,52 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from psa_calib_common import header, on_time_range, photopeak, read_tree
+from psa_calib_common import (N_BOARDS, board_peak_ranges, declare, header, hist_array, peak_range_filter,
+                              photopeak, rdataframe)
+
+
+def fill_spectra(files, sel, boards, peak_id_window, w, hg_max, hg_bins):
+    """hg spectra per board, ch and temperature bin filled inside RDataFrame (the hits are never held in
+    memory). Three passes over the files:
+      1. peak_id per board -> the trigger-time range of the board (on_time_range),
+      2. min / max of temp_mean per board at the trigger time -> the temperature bins of the board
+         (np.arange(floor(tmin / w) w, tmax, w); a hit is in every bin with low <= temp_mean < low + w),
+      3. hg of those hits per (board, ch, temperature bin).
+    Returns pid {board: (lo, hi)}, lows {board: array of the bin lows}, counts [board][ch][bin][hg bin] (int64,
+    hg bins of np.linspace(0, hg_max, hg_bins + 1) with the under/overflow at both ends)."""
+    df = rdataframe(files, sel)
+    pid = board_peak_ranges(df, boards, peak_id_window)
+    d = df.Filter(f"{peak_range_filter(pid)}(board, peak_id)")
+    mm = {b: (d.Filter(f"board == {b}").Min("temp_mean"), d.Filter(f"board == {b}").Max("temp_mean")) for b in pid}
+    lows = {}
+    for b, (tmin, tmax) in mm.items():
+        # as the numpy version: temp_mean is float32, so are the bin lows and low + w
+        tmin, tmax = np.float32(tmin.GetValue()), np.float32(tmax.GetValue())
+        lows[b] = np.arange(np.floor(tmin / w) * w, tmax, w)
+    nt = max([len(v) for v in lows.values()] + [1])
+    tlo, thi = np.full((N_BOARDS, nt), np.nan), np.full((N_BOARDS, nt), np.nan)
+    for b, v in lows.items():
+        tlo[b, :len(v)] = v
+        thi[b, :len(v)] = v + w   # computed in the dtype of the lows, as the comparison of the numpy version
+    cpp = lambda a: ", ".join("NAN" if np.isnan(x) else repr(float(x)) for x in a.ravel())
+    keys = declare(lambda name: f"""
+    #include <cmath>
+    ROOT::RVec<int> {name}(int b, int c, double t) {{
+        static const double lo[] = {{{cpp(tlo)}}}, hi[] = {{{cpp(thi)}}};
+        ROOT::RVec<int> k;
+        if (b < 0 || b >= {N_BOARDS} || c < 0 || c >= 6) return k;
+        for (int i = 0; i < {nt}; ++i) {{
+            const int j = b * {nt} + i;
+            if (!std::isnan(lo[j]) && t >= lo[j] && t < hi[j]) k.push_back((b * 6 + c) * {nt} + i);
+        }}
+        return k;
+    }}""")
+    nb = max(pid) + 1 if pid else 1
+    h = (d.Define("tkey", f"{keys}(board, ch, temp_mean)")
+         .Define("thg", "ROOT::RVec<double>(tkey.size(), hg)")
+         .Histo2D(("tg", "", nb * 6 * nt, 0, nb * 6 * nt, hg_bins, 0, hg_max), "tkey", "thg"))
+    counts = hist_array(h.GetValue(), nb * 6 * nt, hg_bins)[1:-1].reshape(nb, 6, nt, hg_bins + 2)
+    return pid, lows, counts
 
 
 def main():
@@ -51,36 +96,31 @@ def main():
     sel = "!satu_h && !satu_l"
     if args.boards:
         sel += " && (" + " || ".join(f"board == {b}" for b in args.boards) + ")"
-    d = read_tree(args.root, ["board", "ch", "hg", "peak_id", "temp_mean"], sel)
     edges = np.linspace(0, args.hg_max, args.hg_bins + 1)
     centers = 0.5 * (edges[:-1] + edges[1:])
     os.makedirs(args.out_dir, exist_ok=True)
+    pid, lows, counts = fill_spectra(args.root, sel, args.boards, args.peak_id_window, args.temp_width,
+                                args.hg_max, args.hg_bins)
+    w = args.temp_width
 
-    for b in np.unique(d["board"]):
+    for b in sorted(pid):
         out = os.path.join(args.out_dir, f"temp_gain_ha{b:02d}.csv")
         if os.path.exists(out) and not args.overwrite:
             print(f"ha{b:02d}: {out} exists, skipped (--overwrite to replace)")
             continue
-        m = d["board"] == b
-        lo, hi = on_time_range(d["peak_id"][m], args.peak_id_window)
-        m &= (d["peak_id"] >= lo) & (d["peak_id"] <= hi)
-        t = d["temp_mean"][m]
-        w = args.temp_width
-        lows = np.arange(np.floor(t.min() / w) * w, t.max(), w)
+        lo, hi = pid[b]
         rows, notes, spectra = [], [], {}
         for c in range(6):
-            mc = m & (d["ch"] == c)
             pts = []
-            for low in lows:
-                s = mc & (d["temp_mean"] >= low) & (d["temp_mean"] < low + w)
-                n = int(s.sum())
+            for k, low in enumerate(lows[b]):
+                n = int(counts[b, c, k].sum())   # incl. hits outside 0..hg_max
                 if n < args.min_hits:
                     continue
-                counts = np.histogram(d["hg"][s], bins=edges)[0]
-                pk = photopeak(counts, centers, args.peak_min)
+                counts_bin = counts[b, c, k, 1:-1]
+                pk = photopeak(counts_bin, centers, args.peak_min)
                 if np.isfinite(pk):
                     pts.append((low + w / 2, pk, n))
-                    spectra[(c, low + w / 2)] = counts / n
+                    spectra[(c, low + w / 2)] = counts_bin / n
             if not pts:
                 notes.append(f"ch{c}: no temperature bin with {args.min_hits} hits")
                 continue

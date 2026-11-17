@@ -40,12 +40,14 @@
       }
     },
     "TPC_Calibration": {
-      "NoCalData": true,
+      "NoCalData": false,
+      "ParameterFile": "/mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261113/tpc_gain_20261113_run13-17/gain_map.dat",
       "Coinci_TH": false,
       "Image_XY_TH": false,
       "Spectrum_TH": false,
       "_doc": {
         "NoCalData": "true: ゲインマップを使わず、エネルギー = 電荷 [ADU] とする(ParameterFile は読まない)。false のときは ParameterFile にゲインマップ(E = Ka Q + Kb)を指定する",
+        "ParameterFile": "TPCゲインマップ。各行はアノードch、カソードch、Ka [keV/(ADU × sample)]、Kb [keV]",
         "Coinci_TH": "true: アノードとカソードが同じクロック・同じパネル(384 ストリップごと)で鳴ったヒット(ストリップ × クロック)の図 Coinci_A / Coinci_C を作る(イベントごとに作り直す)",
         "Image_XY_TH": "true: 同時ヒットのアノード × カソードの位置の図 Image_XY を作る",
         "Spectrum_TH": "true: エネルギーのスペクトル Spectrum(0–400 keV、2000 ビン)を作る。NoCalData: true のときは中身が電荷 [ADU] なので、範囲に入らないことが多い",
@@ -59,7 +61,7 @@
       "pitch_z_mm_per_clock": 0.383,
       "clock_offset": 85.0,
       "z_gem_mm": 10.0,
-      "drift_velocity_file": "",
+      "drift_velocity_file": "/mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261115/etcc_drift_20261115_run03/drift_velocity.dat",
       "flag_pixel_cut": false,
       "flag_save_cloud": true,
       "_units": {

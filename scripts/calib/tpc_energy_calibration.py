@@ -9,26 +9,50 @@ def gaussian_linear(x,amplitude,mean,sigma,b0,b1):
     return amplitude*np.exp(-.5*((x-mean)/sigma)**2)+b0+b1*(x-mean)
 
 
-def fit_peak(edges,counts,window,chi2ndf_max=5.,significance_min=3.):
+PEAK_PARAMETERS=('amplitude','mean','sigma','b0','b1')
+
+
+def fit_peak(edges,counts,window,chi2ndf_max=5.,significance_min=3.,initial=None,fixed=None):
+    """Gaussian + line fitted in window. initial: {name: value} overriding the automatic start values
+    (names PEAK_PARAMETERS; b0 is the background at the mean, b1 its slope per keV). fixed: {name: value}
+    of parameters held fixed (not the mean: its error is what the calibration needs)."""
     edges=np.asarray(edges,float);counts=np.asarray(counts,float);centres=(edges[:-1]+edges[1:])/2
     lo,hi=map(float,window)
     if not np.isfinite([lo,hi]).all() or hi<=lo:raise ValueError('fit範囲が不正です')
+    initial=dict(initial or {});fixed=dict(fixed or {})
+    unknown=sorted((set(initial)|set(fixed))-set(PEAK_PARAMETERS))
+    if unknown:raise ValueError(f'不明なパラメータ名: {unknown}(使えるのは {PEAK_PARAMETERS})')
+    if 'mean' in fixed:raise ValueError('meanは固定できません(中心の誤差が較正に要るため)')
     sel=(centres>=lo)&(centres<=hi);x=centres[sel];y=counts[sel]
     if len(x)<=6 or y.sum()<30:raise ValueError('ピークfitに十分なビン・統計がありません')
-    dx=float(np.median(np.diff(centres)));bg=float(np.quantile(y,.25))
-    p0=[max(1.,float(y.max()-bg)),float(x[np.argmax(y)]),(hi-lo)/7,bg,0.]
-    p,cov=curve_fit(gaussian_linear,x,y,p0=p0,sigma=np.sqrt(np.maximum(y,1)),absolute_sigma=True,
-        bounds=([0,lo,dx/2,-np.inf,-np.inf],[np.inf,hi,hi-lo,np.inf,np.inf]),maxfev=50000)
+    dx=float(np.median(np.diff(centres)))
+    # Start from the largest excess over the chord between the window ends: on a falling continuum the
+    # largest bin is the left edge of the window, not the line.
+    slope=float((y[-1]-y[0])/(x[-1]-x[0]));chord=y[0]+slope*(x-x[0]);excess=y-chord;i=int(np.argmax(excess))
+    p0=dict(zip(PEAK_PARAMETERS,[max(1.,float(excess[i])),float(x[i]),(hi-lo)/7,float(chord[i]),slope]))
+    if 'mean' in initial and 'b0' not in initial:p0['b0']=float(np.interp(initial['mean'],x,chord))
+    p0.update(initial);p0.update(fixed)
+    lower=dict(zip(PEAK_PARAMETERS,[0,lo,dx/2,-np.inf,-np.inf]));upper=dict(zip(PEAK_PARAMETERS,[np.inf,hi,hi-lo,np.inf,np.inf]))
+    for k,v in p0.items():
+        if k not in fixed and not lower[k]<=v<=upper[k]:raise ValueError(f'{k}の初期値 {v} が範囲 [{lower[k]}, {upper[k]}] の外です')
+    free=[k for k in PEAK_PARAMETERS if k not in fixed]
+    def model_free(xx,*q):
+        v=dict(p0);v.update(zip(free,q));return gaussian_linear(xx,*(v[k] for k in PEAK_PARAMETERS))
+    q,qcov=curve_fit(model_free,x,y,p0=[p0[k] for k in free],sigma=np.sqrt(np.maximum(y,1)),absolute_sigma=True,
+        bounds=([lower[k] for k in free],[upper[k] for k in free]),maxfev=50000)
+    values=dict(p0);values.update(zip(free,q));p=np.array([values[k] for k in PEAK_PARAMETERS])
+    cov=np.zeros((5,5));idx=[PEAK_PARAMETERS.index(k) for k in free];cov[np.ix_(idx,idx)]=qcov
     errors=np.sqrt(np.maximum(0,np.diag(cov)));model=gaussian_linear(x,*p)
-    chi2=float(np.sum((y-model)**2/np.maximum(y,1)));ndf=len(x)-5
+    chi2=float(np.sum((y-model)**2/np.maximum(y,1)));ndf=len(x)-len(free)
     reasons=[]
     if not np.isfinite(cov).all() or errors[1]<=0:reasons.append('invalid mean uncertainty')
     if chi2/ndf>chi2ndf_max:reasons.append('chi2/ndf')
-    if errors[0]<=0 or p[0]/errors[0]<significance_min:reasons.append('amplitude significance')
+    if 'amplitude' not in fixed and (errors[0]<=0 or p[0]/errors[0]<significance_min):reasons.append('amplitude significance')
     if p[1]-lo<2*p[2] or hi-p[1]<2*p[2]:reasons.append('fit window truncates the peak')
     if np.any(model<0):reasons.append('negative model expectation')
     return {'mean':float(p[1]),'mean_error':float(errors[1]),'sigma':float(p[2]),
             'parameters':p.tolist(),'covariance':cov.tolist(),'window':[lo,hi],
+            'initial':{k:float(v) for k,v in p0.items()},'fixed':{k:float(v) for k,v in fixed.items()},
             'chi2':chi2,'ndf':ndf,'chi2ndf':chi2/ndf,'accepted':not reasons,'reasons':reasons}
 
 
