@@ -15,6 +15,9 @@ The SMILE-3 configs leave data_dir empty, so reading SMILE-3 raw data needs --da
     python3 run_chain.py smile3_reconstruct -o run04.root --data-dir <NAS>/20261102/calltt/20261102_run04 \
         --extra-data-dir <NAS>/20261102/killua/20261102_run04
 --raw runs only the reader and the raw data tree writer (ReadData -> RawTreeWriter, ReadData_2p -> RawTreeWriter_2p).
+--first-entry N (with --root-input) starts at row N of the raw ROOT; with -n M it reads rows N to N+M-1, so a long
+run can be split over several processes (scripts/calib/parallel_chain.py does that):
+    python3 run_chain.py smile3_psa --root-input raw.root -o part01.root --first-entry 10000000 -n 10000000
 --set Module.param=value overrides a parameter of the config (repeatable), e.g.
     python3 run_chain.py smile3_tpc_only -o out.root --set CalcFADC.threshold=30.0
 """
@@ -44,6 +47,8 @@ def main():
                     help="another directory of the same run (the other storage node), added to ReadData.extra_data_dirs "
                          "and PSA_ReadData.extra_data_dirs; repeatable")
     ap.add_argument("--root-input", help="RawTreeWriter ROOT input for SMILE-3 downstream chains")
+    ap.add_argument("--first-entry", type=int, default=0,
+                    help="with --root-input: first row of the raw ROOT to read (with -n, one part of a run)")
     ap.add_argument("--raw", action="store_true",
                     help="ReadData -> RawTreeWriter (SMILE-3) or ReadData_2p -> RawTreeWriter_2p (SMILE-2+) only")
     ap.add_argument("--compression", type=int, default=-1,
@@ -83,6 +88,10 @@ def main():
         for m in ("ReadData", "PSA_ReadData"):
             if m in chain:
                 params.setdefault(m, {})["root_file"] = os.path.abspath(args.root_input)
+                if args.first_entry:
+                    params[m]["root_first_entry"] = args.first_entry
+    elif args.first_entry:
+        ap.error("--first-entry needs --root-input")
     for m in readers:
         if m not in chain:
             continue

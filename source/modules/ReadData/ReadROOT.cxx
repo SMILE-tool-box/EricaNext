@@ -44,6 +44,8 @@ ANLStatus ReadData::InitializeROOT(){
     bind("rec_a_board",&root_ab_);bind("rec_a_clock",&root_ar_);
     bind("rec_c_board",&root_cb_);bind("rec_c_clock",&root_cr_);
     bind("fadc_ch",&root_ch_);bind("fadc_wave",&root_wave_);
+    if(root_first_entry_<0 || root_first_entry_>=root_tree_->GetEntries()) throw std::runtime_error("root_first_entry out of range");
+    root_entry_=root_first_entry_;
     define_evs("IDcheck_Loopback");
     if(!N_anode.empty()) define_evs("Anode_Data");
     if(!N_cathode.empty()) define_evs("Cathode_Data");

@@ -9,6 +9,7 @@
 
 ANLStatus PSA_ReadData::mod_define(){
   define_parameter("root_file", &mod_class::root_file_);
+  define_parameter("root_first_entry", &mod_class::root_first_entry_);
   define_parameter("data_dir",         &mod_class::data_dir_);
   define_parameter("extra_data_dirs",  &mod_class::extra_data_dirs_);
   define_parameter("sync_tpc",         &mod_class::sync_tpc_);

@@ -24,6 +24,8 @@ ANLStatus PSA_ReadData::InitializeROOT(){
   bind("event_id",&root_trig_);bind("sevt_id",&root_sevt_);bind("epoch",&root_epoch_);
   bind("board",&root_board_);bind("board_epoch",&root_board_epoch_);bind("clk",&root_clk_);
   bind("hit_mask",&root_mask_);bind("time",&root_time_);bind("temp_raw",&root_temp_);bind("adc",&root_adc_);
+  if(root_first_entry_<0 || root_first_entry_>=root_tree_->GetEntries()) throw std::runtime_error("root_first_entry out of range");
+  root_entry_=root_first_entry_;
   return AS_OK;
  }catch(const std::exception& e){std::cerr<<"PSA_ReadData: "<<root_file_<<": "<<e.what()<<std::endl;return AS_CRITICAL_ERROR_TO_FINALIZE;}
 }

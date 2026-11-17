@@ -61,6 +61,7 @@ class PSA_ReadData : public BasicModule {
   std::unique_ptr<TFile> root_input_;
   TTree* root_tree_ = nullptr;
   Long64_t root_entry_ = 0;
+  int root_first_entry_ = 0;   // first row of root_file to read (to split a run over several processes)
   unsigned root_trig_=0,root_sevt_=0; int root_epoch_=0;
   std::vector<int> *root_board_=nullptr,*root_board_epoch_=nullptr;
   std::vector<unsigned> *root_clk_=nullptr,*root_mask_=nullptr;

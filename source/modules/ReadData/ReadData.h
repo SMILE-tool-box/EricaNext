@@ -74,6 +74,7 @@ public:
   std::unique_ptr<TFile> root_input_;
   TTree* root_tree_ = nullptr;
   Long64_t root_entry_ = 0;
+  int root_first_entry_ = 0;   // first row of root_file to read (to split a run over several processes)
   int root_loopback_ = 0;
   std::vector<unsigned>* root_at_ = nullptr;
   std::vector<unsigned>* root_ct_ = nullptr;

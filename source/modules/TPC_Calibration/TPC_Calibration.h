@@ -28,6 +28,13 @@ class TPC_Calibration : public BasicModule {
   double    Get_Energy()  const {return Energy;};
 
  private:
+  static constexpr int  kStrips = 128*12;   // strips per side (ReadData Track_A/C x axis)
+  static constexpr int  kClockBins = 1024;  // clock bins of Track_A/C; larger clocks share the overflow row
+  struct Cell { int row; int strip; int count; };
+  void BuildCells(const std::vector<ReadData::Hit>& hits, std::vector<Cell>& cells);
+  std::vector<int>      cell_keys_;
+  std::vector<Cell>     cells_a_, cells_c_;
+
   const ReadData       *RawData = nullptr;
   const CalcFADC       *Q_TPC = nullptr;
 

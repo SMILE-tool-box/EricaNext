@@ -1,4 +1,5 @@
 #include "TPC_Calibration.h"
+#include <algorithm>
 
 ANLStatus TPC_Calibration::mod_define(){
   define_parameter("energy_correction_file", &mod_class::energy_correction_file_);
@@ -25,15 +26,14 @@ ANLStatus TPC_Calibration::mod_initialize(){
 
   }
 
-  if (!RawData->Get_Track_A() || !RawData->Get_Track_C())
+  if (RawData->Get_AnodeID()->empty() || RawData->Get_CathodeID()->empty())
     return AS_QUIT;
 
-  int Nbin = RawData->Get_Track_A()->GetXaxis()->GetNbins();
-  max_anode = RawData->Get_Track_A()->GetXaxis()->GetBinUpEdge(Nbin+1);
-  Nbin = RawData->Get_Track_C()->GetXaxis()->GetNbins();
-  max_cathode = RawData->Get_Track_C()->GetXaxis()->GetBinUpEdge(Nbin+1);
-  Nbin = RawData->Get_Track_C()->GetYaxis()->GetNbins();
-  max_clock = RawData->Get_Track_A()->GetYaxis()->GetBinUpEdge(Nbin+1);
+  // Same ranges as ReadData's Track_A/C (1536 strips x 1024 clocks). The coincidences are counted from the hit
+  // lists, so the Track_A/C histograms are not requested here (they cost a 3 MB reset and fill per event).
+  max_anode = kStrips;
+  max_cathode = kStrips;
+  max_clock = kClockBins;
   // FADC channel = 4 board + ch = strip / 32 (0-47), the index of CalcFADC's Get_Qanode/Get_Qcathode, also
   // when boards are missing (until 2026-11-06 the channel was strip / (1536 / (4 x boards present)), wrong
   // and out of range when a board was missing, e.g. c01 of run_20260623T072649Z)
@@ -117,39 +117,45 @@ ANLStatus TPC_Calibration::mod_analyze(){
 	//     Image_XY->Fill(ai-1, cj-1);
 	//     HitPanel.at(a_adc*Nc+c_adc) += 1;
 
-  //20260605 小野田修正
-   for(int clk=min_d; clk<=max_d; clk++){
-    for(int ai=min_a; ai<=max_a; ai++){
-      char hit_a = RawData->Get_Track_A()->GetBinContent(ai+1, clk+1);
-      int a_adc = ai / 32;   // FADC channel 4 board + ch
-      int div_a = (ai) / 384;
-      if(hit_a){
-	for(int cj=min_c; cj<=max_c; cj++){
-	  char hit_c = RawData->Get_Track_C()->GetBinContent(cj+1, clk+1);
-	  int c_adc = cj / 32;
-    int div_c = (cj) / 384;
-
-	  if(hit_a & hit_c & (div_a == div_c)){
-	    if(Coinci_TH){ Coinci_A->Fill(ai, clk); Coinci_C->Fill(cj, clk); }
-	    if(Image_XY_TH) Image_XY->Fill(ai, cj);
-	    HitPanel.at(a_adc*Nc+c_adc) += 1;
-      // short tx, ty;
-      // if(div_a ==0){
-      //   tx = 384+ai%384; ty = cj%384;
-      // }
-      // else if(div_a ==1){
-      //   tx = 767-cj%384; ty = 384+ai%384;
-      // }
-      // else if(div_a ==2){
-      //   tx = 383-ai%384; ty = 767-cj%384;
-      // }
-      // else {
-      //   tx = cj%384; ty = 383-ai%384;
-      // }
-   
-	  }
-	}
+  //20260605 小野田修正 (anode/cathode coincidence in the same clock and the same panel of 384 strips)
+  // Until 2026-11-17 this scanned every (clock, strip) of the bounding box of Track_A/C with GetBinContent,
+  // which was most of the CPU time of the chain. Now the occupied cells are built from the hit lists and only
+  // they are paired; the result is identical to the scan, including the TH2C details it relied on:
+  //  - a cell holds the number of hits in it, saturated at 127 (TH2C);
+  //  - the condition was hit_a & hit_c & (div_a == div_c), bitwise with the bool as 1, i.e. both counts odd
+  //    (a cell with 2 hits never coincides);
+  //  - clocks >= 1024 all fall into the overflow row, which the scan read once for each clock in
+  //    [max(min_d, 1024), max_d], so a coincidence there counts that many times.
+  if(max_d >= 0){
+    BuildCells(RawData->Get_Anode_Hits(), cells_a_);
+    BuildCells(RawData->Get_Cathode_Hits(), cells_c_);
+    const int n_overflow = (max_d >= kClockBins) ? max_d - std::max(min_d, kClockBins) + 1 : 0;
+    size_t ia = 0, ic = 0;
+    while(ia < cells_a_.size() && ic < cells_c_.size()){
+      const int row = cells_a_[ia].row;
+      if(cells_c_[ic].row < row){ ++ic; continue; }
+      size_t ea = ia;
+      while(ea < cells_a_.size() && cells_a_[ea].row == row) ++ea;
+      if(cells_c_[ic].row > row){ ia = ea; continue; }
+      size_t ec = ic;
+      while(ec < cells_c_.size() && cells_c_[ec].row == row) ++ec;
+      const int repeat = (row < kClockBins) ? 1 : n_overflow;
+      for(size_t a = ia; a < ea; ++a){
+        const int ai = cells_a_[a].strip;
+        const int a_adc = ai / 32;   // FADC channel 4 board + ch
+        const int div_a = ai / 384;
+        for(size_t c = ic; c < ec; ++c){
+          const int cj = cells_c_[c].strip;
+          if(cj / 384 != div_a || !(cells_a_[a].count & cells_c_[c].count & 1)) continue;
+          HitPanel.at(a_adc*Nc + cj/32) += repeat;
+          for(int k = 0; k < repeat; ++k){
+            const int clk = (row < kClockBins) ? row : std::max(min_d, kClockBins) + k;
+            if(Coinci_TH){ Coinci_A->Fill(ai, clk); Coinci_C->Fill(cj, clk); }
+            if(Image_XY_TH) Image_XY->Fill(ai, cj);
+          }
+        }
       }
+      ia = ea; ic = ec;
     }
   }
 
@@ -178,6 +184,24 @@ ANLStatus TPC_Calibration::mod_analyze(){
 
 
   return AS_OK;
+}
+
+// Occupied cells of Track_A/C as (row, strip, count), sorted by row then strip: row = min(clock, 1024) (the
+// overflow row), count saturated at 127 like TH2C.
+void TPC_Calibration::BuildCells(const std::vector<ReadData::Hit>& hits, std::vector<Cell>& cells){
+  cell_keys_.clear();
+  for(const auto& h : hits){
+    const int row = std::min<int>(h.clock, kClockBins);
+    cell_keys_.push_back(row*kStrips + h.strip);
+  }
+  std::sort(cell_keys_.begin(), cell_keys_.end());
+  cells.clear();
+  for(size_t i = 0; i < cell_keys_.size();){
+    size_t j = i;
+    while(j < cell_keys_.size() && cell_keys_[j] == cell_keys_[i]) ++j;
+    cells.push_back({cell_keys_[i] / kStrips, cell_keys_[i] % kStrips, (int)std::min<size_t>(j - i, 127)});
+    i = j;
+  }
 }
 
 ANLStatus TPC_Calibration::mod_finalize(){

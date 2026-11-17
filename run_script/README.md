@@ -33,6 +33,7 @@ python3 run_chain.py <設定名> -o <出力ファイル> (--data-dir <ラン> | 
 | `-o`, `--output` | 出力する ROOT ファイル(必須) |
 | `-n`, `--n-events` | 処理するイベント数。省略すると全イベント(`-1`) |
 | `--root-input <ROOT>` | SMILE-3のRawTreeWriter ROOTを後段解析の入力にする。生データ用オプションや `--raw` と併用不可。1ファイル/run。出力先の親ディレクトリは自動作成する |
+| `--first-entry <N>` | `--root-input` と一緒に使う。raw ROOT の N 行目(0 から数える)から読む。`-n M` と合わせると N〜N+M−1 行目だけを読むので、1 つのランを複数のプロセスに分けて流せる(`ReadData.root_first_entry`、`PSA_ReadData.root_first_entry` に入る)。分けて同時に流し、出力をまとめて扱うのは `scripts/calib/parallel_chain.py` の `run_parallel` |
 | `--data-dir` | ランのディレクトリ(`tpc_enc_a*.raw`、`ha*.dat` などがある所)。設定ファイルの `ReadData.data_dir`(と `PSA_ReadData.data_dir`、chain にあれば)に入る。SMILE-3 の設定ファイルでは空なので、生データを読むときは必須 |
 | `--extra-data-dir <ディレクトリ>` | 同じランの別のディレクトリ(FM では 2 つの storage の片方)。`ReadData.extra_data_dirs` と `PSA_ReadData.extra_data_dirs` に足す(何回でも) |
 | `--set モジュール.パラメータ=値` | 設定ファイルのパラメータをその場で上書き(何回でも)。値は JSON として読むので、小数のパラメータは `30.0` のように書く(`30` だと整数になり、型が合わずに止まる)。例: `--set CalcFADC.threshold=30.0` |

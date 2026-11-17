@@ -2,6 +2,7 @@
 
 ANLStatus ReadData::mod_define(){
   define_parameter("root_file", &mod_class::root_file_);
+  define_parameter("root_first_entry", &mod_class::root_first_entry_);
   define_parameter("data_dir", &mod_class::DataDir);
   define_parameter("extra_data_dirs", &mod_class::ExtraDataDirs);
   define_parameter("reverse_TPC", &mod_class::Reverse);
