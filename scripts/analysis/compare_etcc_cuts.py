@@ -90,7 +90,7 @@ def masks(d, scale, margin, alpha):
     ke = np.maximum(d['Ke'], 0)
     lower = scale * (913.9 * (ke / 1000)**2 + 2.2)
     upper = scale * (1975.9 * (ke / 1000)**1.4 + 7.0)
-    dedx = (ke >= 5) & (ke <= 400) & (d['Len'] > lower) & (d['Len'] < upper) & (d['Len'] < scale * 270)
+    dedx = (d['Len'] > lower) & (d['Len'] < upper) & (d['Len'] < scale * 270)
     both = track & fid & dedx
     return [('Track, no additional cut', track), ('Fiducial only', track & fid),
             ('dE/dx only', track & dedx), ('Fiducial + dE/dx', both),
@@ -100,7 +100,7 @@ def masks(d, scale, margin, alpha):
 def spectra(d, stages, out, label):
     colors = plt.cm.tab10(np.arange(len(stages)))
     fig, axs = plt.subplots(1, 3, figsize=(18, 5.8))
-    for ax, key, high in zip(axs, ['Eg', 'Ke', 'E0'], [1500, 400, 1500]):
+    for ax, key, high in zip(axs, ['Eg', 'Ke', 'E0'], [1500, 600, 1500]):
         edges = np.arange(0, high + 5, 5)
         h, _ = np.histogram(d[key], edges)
         ax.stairs(h, edges, color='0.65', ls=':', label=f'All single_hit (N={len(d[key]):,})')
@@ -124,7 +124,7 @@ def dedx_plot(d, stages, out, args):
     """Show the Ke-length selection before/after cuts with shared count scales."""
     panels = [stages[0], stages[1], stages[3]]
     window = (d['E0'] >= args.emin) & (d['E0'] <= args.emax) & (np.abs(d['cos_phi']) <= 1)
-    xe = np.linspace(0., 400., 101)
+    xe = np.linspace(0., 600., 151)
     ye = np.linspace(0., 300., 101)
     histograms, audit = [], []
     for windowed in (False, True):
@@ -141,7 +141,7 @@ def dedx_plot(d, stages, out, args):
     vmax = max(float(h.max()) for row in histograms for h in row)
     norm = LogNorm(vmin=1., vmax=max(2., vmax))
     fig, axs = plt.subplots(2, 3, figsize=(18, 10), sharex=True, sharey=True, constrained_layout=True)
-    energy = np.linspace(0., 400., 801)
+    energy = np.linspace(0., 600., 1201)
     for r, row in enumerate(histograms):
         for c, h in enumerate(row):
             ax = axs[r, c]
@@ -153,10 +153,9 @@ def dedx_plot(d, stages, out, args):
                 ax.plot(energy, lower, style, color=colour, lw=1.2, label=label)
                 ax.plot(energy, upper, style, color=colour, lw=1.2)
             ax.axhline(270*args.len_scale, color='black', ls='--', lw=1, label='Used length maximum')
-            ax.axvline(5., color='black', ls='-.', lw=1, label='Ke minimum: 5 keV')
             entry = audit[3*r+c]
             ax.set(title=f"{panels[c][0]}\nN={entry['selected_events']:,}; shown={entry['displayed_events']:,}",
-                   xlabel='Ke [keV]', ylabel='Track length [mm]', xlim=(0, 400), ylim=(0, 300))
+                   xlabel='Ke [keV]', ylabel='Track length [mm]', xlim=(0, 600), ylim=(0, 300))
             ax.text(.97, .97, 'No E0 window' if r == 0 else f'E0 {args.emin:g}-{args.emax:g} keV; |cos phi| <= 1',
                     ha='right', va='top', transform=ax.transAxes, fontsize=9,
                     bbox={'facecolor': 'white', 'alpha': .8, 'edgecolor': 'none'})
@@ -165,7 +164,7 @@ def dedx_plot(d, stages, out, args):
     fig.suptitle(f'{args.label}: Ke vs track length (dE/dx selection); no Eg cut; common logarithmic count scale')
     fig.savefig(out / 'dedx_cut_comparison.png', dpi=150)
     plt.close(fig)
-    return {'Ke_range_keV': [0., 400.], 'Len_range_mm': [0., 300.],
+    return {'Ke_range_keV': [0., 600.], 'Len_range_mm': [0., 300.],
             'Ke_bin_width_keV': 4., 'Len_bin_width_mm': 3., 'panels': audit}
 
 
@@ -292,7 +291,7 @@ def main():
     ap.add_argument('--emax', type=float, default=700., help='Map E0 maximum [keV]')
     ap.add_argument('--alpha', type=float, default=.5, help='Maximum absolute delta cos alpha [dimensionless]')
     ap.add_argument('--margin', type=float, default=5., help='Fiducial margin from outer walls and drift ends [mm]')
-    ap.add_argument('--len-scale', type=float, default=2/3, help='SMILE-2+ dE/dx length scale; assumed 2 atm / 3 atm')
+    ap.add_argument('--len-scale', type=float, default=1., help='SMILE-2+ dE/dx length scale; default 1 for the same 2 atm pressure')
     ap.add_argument('--projection', choices=('zenith', 'lambert'), default='zenith', help='Sky map: zenith-angle radius or Lambert equal-area')
     ap.add_argument('--bins', type=int, default=45, help='Sky map bins per axis')
     args = ap.parse_args()
@@ -314,13 +313,13 @@ def main():
     metadata = {'arguments': {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
                 'dedx_plot': dedx_audit, 'inputs': audit, 'all_single_hit': len(d['E0']), 'cuts': counts,
                 'fiducial_mm': {'xy': [-153.6+args.margin, 153.6-args.margin], 'z': [10+args.margin, 317-args.margin]},
-                'dedx': '5 <= Ke <= 400 keV; s*(913.9*(Ke/1000)^2+2.2) < Len < s*(1975.9*(Ke/1000)^1.4+7); Len < s*270 mm',
+                'dedx': 'No additional Ke range cut; s*(913.9*(Ke/1000)^2+2.2) < Len < s*(1975.9*(Ke/1000)^1.4+7); Len < s*270 mm',
                 'alpha': 'abs(cos_alpha_geo - cos_alpha_kin) < alpha',
                 'notes': ['No additional Eg cut; PSA_Event upstream energy selection is retained.',
                           'Spectra have no E0 window; maps require E0 window and abs(cos_phi)<=1.',
                           'All map comparisons use tracked events and common colour limits.',
                           'TPC and PSA frames are assumed aligned, as in the inherited analysis.',
-                          'dE/dx band is inherited from SMILE-2+ with assumed pressure scaling; not a measured SMILE-3 band.',
+                          'Both measurements use 2 atm: the default length scale is 1 (SMILE-2+ band and 270 mm maximum); no 5-400 keV selection. The band is not optimized on SMILE-3 data.',
                           'Cones sample 360 azimuths per event, each weight 1/360; hemisphere clipping loses weight.',
                           ('Zenith-radius bins are not equal solid angle.' if args.projection == 'zenith' else 'Lambert bins have equal area; partial boundary-bin areas are not corrected.'),
                           'Maps show raw counts without acceptance correction.']}

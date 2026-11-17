@@ -240,6 +240,8 @@ TPC 1-hitの定義（2026-11-14更新）: `make_tpc_spec1hit.py` は全μPICを�
 
 2026-11-17: ETCC の事象表示 `scripts/analysis/plot_etcc_event.py`(1 イベントの TPC の飛跡の点、TOT_Skewness の Pe・Ve、HA のヒット点 Pg、Pe → Pg、TPC のドリフト領域と geometry.csv の HA のブロック)。入力は `TOT_Skewness.flag_save_cloud=true` で流した `smile3_reconstruct` の出力。tot_skewness と single_hit は Pe で対応させる(Reconstruct は Ve を単位ベクトルにして書くので、Ve では対応しない)。20261115_run03 の 2 万イベントで見えたこと: μ-PIC に平行な部分(同じクロック)で偽の点が四角く大量に出る、Pe が飛跡から離れた 1 点になることがある(TOT_Skewness は飛跡の端の点を Pe にする)、Ve_z = 0(Pe の周り 10 mm で傾きの fit ができず XY 面の向きだけ)が track ありの 8 %。
 
+※以下の当初の2/3倍・180 mm・Ke=5–400 keVの条件と件数は旧条件の記録。両測定が2気圧であるとの訂正を受け、現行条件は末尾の訂正記録を参照。
+
 2026-11-17: ETCC のカット比較を `scripts/analysis/compare_etcc_cuts.py` に追加。再構成 ROOT の single_hit と tot_skewness をファイルごとの evt_id で結び、Pe も検証。Eg の追加カットなしで、追加カットなし・fiducial のみ・dE/dx のみ・両方・両方＋|Δcosα| < 0.5 のスペクトルと方向図・ARM を比較する。スペクトルは E0 窓なし、方向図は既定630–700 keV。fiducial は全飛跡の外接範囲が壁から5 mm内側、dE/dx は SMILE-2+ の帯を気圧比2/3倍した仮定（Ke=5–400 keV、Len<180 mm併用）。CLI の説明は README。入力と残存数は selection_summary.json。11/16 run03+06 の E0 窓の基準23,114件・上半球20,026件は Claude の図と一致。24×24ビン版も出力した。
 
 11/15 run03 の既存再構成 ROOT は evt_id・track_min/max が tot_skewness にないため、同じ raw ROOT から比較用に再構成。作業用出力は /home/onoda/ericanext_out/etcc_cut_comparison/、ROOT は /home/onoda/ericanext_out/20261115_selected/。再構成を速める一時 SingleHitGate（PSA_SingleHit && TPC_Ee_Valid のときだけ TOT_Skewness 以降を実行）は出力先の replay_helper/ に置いた。一時ゲートはリポジトリのチェーンには組み込んでいない。先頭5000イベントで通常処理と single_hit 全ブランチ、および選ばれた tot_skewness 全ブランチが一致（557件）。この作業用 ROOT の tot_skewness は候補事象に限定される。
@@ -259,3 +261,7 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 
 2026-11-17: compare_etcc_cuts.py と ETCC_CutComparison.ipynb に dE/dx 確認図を追加。Ke–Len を4 keV×3 mm/bin、空ビンをマスクした LogNorm(vmin=1) の共通スケールで表示。追加カットなし・fiducial・fiducial+dE/dx を、E0窓なし／方向図と同じ窓の2段で比較し、元のSMILE-2+帯・使用する帯・Ke/Lenの境界を重ねる。表示範囲外のイベントも分かるよう、全選択数と表示数を記録。
 両ラン全件で実行し、6パネルの全選択数が既存のスペクトル／E0窓の件数と一致することを確認。ノートブックに両ランの図を埋め込み済み。
+
+
+2026-11-17 訂正: ユーザー確認により SMILE-3 も SMILE-2+ と同じ2気圧。3気圧を仮定した帯の2/3倍と180 mm上限は誤りだった。compare_etcc_cuts.py の --len-scale とチュートリアルの LENGTH_SCALE の既定を1.0にし、帯と飛程上限270 mmをSMILE-2+と同じに戻した。Ke=5–400 keVの選別はユーザー指定で削除し、基準のKe>0のみ維持。高エネルギー側も確認できるようKeの表示範囲は0–600 keVに変更（表示範囲は選別ではない）。旧条件の件数・図と混同しないこと。
+訂正後の両ラン・両投影法で ETCC_CutComparison 全体を再実行し、スペクトル・件数・方向図・ARM・dE/dx図を更新。最終段のE0窓の件数は11/16が3820、11/15が41595。追加カットなしのE0窓の件数（23114／247040）は不変で、変更が選別段だけであることを確認。Ke=4/450 keVが通り、Ke=500 keV・Len=269 mmが通って270 mmが落ちるテストも通過。

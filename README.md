@@ -379,8 +379,8 @@ FM のデータのように同じランが 2 つの storage に分かれてい�
 `--projection zenith` は天頂角を半径にする図（既定）、`--projection lambert` は Lambert 正積投影です。
 
 fiducial は飛跡全体が外壁・ドリフト領域の両端から `--margin` (既定5 mm) 内側に入る条件です。
-dE/dx は SMILE-2+ の Ke–Len の帯を `--len-scale` (既定2/3)倍し、Ke = 5–400 keV と
-長さ上限180 mmを併用します。この帯は気圧比を仮定した比較用で、SMILE-3 の実測から決めた帯ではありません。
+dE/dx は SMILE-2+ と同じ2気圧のため、Ke–Len の帯と飛程上限270 mmをそのまま使います（`--len-scale` 既定1.0）。
+Ke = 5–400 keV の範囲カットは行いません。再構成の基準である Ke > 0 は維持します。この帯は SMILE-3 の実測で最適化したものではありません。
 正確な式、入力ファイル、残存数は出力の `selection_summary.json` に保存します。
 `dedx_cut_comparison.png` は Ke–飛程の分布に帯と境界を重ね、fiducial・dE/dx の前後を比較します（上段はE0窓なし、下段は方向図と同じ窓）。
 天頂角を半径にした図は等立体角ビンではありません。Lambert は正積ですが、円周の部分ビンの面積と検出効率は補正していません。
