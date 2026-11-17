@@ -52,6 +52,7 @@ class TOT_Skewness : public BasicModule {
 
   // Per-event results
   double Pe[3], Ve[3], Len;
+  unsigned evt_id = 0;   // trigger counter of ReadData (Reconstruct/single_hit evt_id, PSA trig)
   double skewness_x, skewness_y;
   double Track_Min[3], Track_Max[3];
   int    NUM[2];

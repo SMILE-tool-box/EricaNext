@@ -5,22 +5,31 @@
     python3 run_script/run_chain.py smile3_reconstruct --root-input <etcc raw.root> -o recon_cloud.root \
         --first-entry 2000000 -n 20000 --set TOT_Skewness.flag_save_cloud=true
     /usr/bin/python3 scripts/analysis/plot_etcc_event.py recon_cloud.root calib/psa/geometry.csv <out prefix> [evt_id ...]
+        [--min-len 15 --max-len 120 --top 6 --order points|length]
 
 - Input: a smile3_reconstruct output made with TOT_Skewness.flag_save_cloud=true (TOT_Skewness/tot_skewness with
   cloud_x/y/z) and Reconstruct/single_hit. The rows of the two trees are matched by Pe (Reconstruct copies it;
   Ve is written there as a unit vector, so it is only checked to be parallel).
-- Without evt_id: up to 6 single_hit events with a track, >= 40 points, Len 15-120 mm, Ke 30-400 keV and a
-  fitted Ve_z (not the in-plane fallback of TOT_Skewness, Ve_z = 0), the ones with the most points first.
+- Without evt_id: up to --top single_hit events with a track, >= 40 points, Len in [--min-len, --max-len] mm,
+  Ke 30-400 keV and a fitted Ve_z (not the in-plane fallback of TOT_Skewness, Ve_z = 0), the ones with the most
+  points (--order points) or the longest (--order length) first.
 - Drawn: track points (blue), Pe (orange star) and the line through it along Ve (orange), Pg (green square),
   Pe -> Pg (green dashed), the TPC drift volume (uPIC +-153.6 mm, Z 10-317 mm) and the HA blocks of geometry.csv.
 - The track is in the frame of TOT_Skewness (centre of the uPIC, Z along the drift) and the HA in the frame of
   geometry.csv (X: E, Y: S, Z: down). That the two frames are the same is not yet checked (AGENTS.md).
 - Needs PyROOT, numpy, matplotlib: /usr/bin/python3.
 """
-import sys, csv, numpy as np, ROOT, matplotlib
+import argparse, csv, numpy as np, ROOT, matplotlib
 matplotlib.use("Agg"); import matplotlib.pyplot as plt
 ROOT.gROOT.SetBatch(True)
-fn, geo, out = sys.argv[1:4]; want = [int(a) for a in sys.argv[4:]]
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument("root"); ap.add_argument("geometry"); ap.add_argument("out"); ap.add_argument("evt", nargs="*", type=int)
+ap.add_argument("--min-len", type=float, default=15.0, help="[mm]")
+ap.add_argument("--max-len", type=float, default=120.0, help="[mm]")
+ap.add_argument("--top", type=int, default=6)
+ap.add_argument("--order", choices=("points", "length"), default="points")
+args = ap.parse_args()
+fn, geo, out, want = args.root, args.geometry, args.out, args.evt
 f = ROOT.TFile.Open(fn)
 sh = f.Get("Reconstruct/single_hit"); ts = f.Get("TOT_Skewness/tot_skewness")
 # tot_skewness rows by Pe (Reconstruct copies Pe as it is, but writes Ve as a unit vector); Ve checked to be parallel
@@ -41,8 +50,9 @@ print(f"single_hit with track and cloud: {len(rows)}")
 if want:
     sel = [r for r in rows if r["evt"] in want]
 else:   # clear tracks: many points, a few cm long, a TPC energy that makes a track
-    sel = [r for r in rows if len(r["cloud"][0]) >= 40 and 15 <= r["Len"] <= 120 and 30 <= r["Ke"] <= 400 and r["Ve"][2] != 0]
-    sel = sorted(sel, key=lambda r: -len(r["cloud"][0]))[:6]
+    sel = [r for r in rows if len(r["cloud"][0]) >= 40 and args.min_len <= r["Len"] <= args.max_len
+           and 30 <= r["Ke"] <= 400 and r["Ve"][2] != 0]
+    sel = sorted(sel, key=lambda r: -(len(r["cloud"][0]) if args.order == "points" else r["Len"]))[:args.top]
 for r in sel:
     print(f"evt {r['evt']}: Eg {r['Eg']:.0f} keV, Ke {r['Ke']:.1f} keV, points {len(r['cloud'][0])}, Len {r['Len']:.1f} mm, "
           f"Pe {np.round(r['Pe'], 1)}, Ve {np.round(r['Ve'], 3)}, Pg {np.round(r['Pg'], 1)}, "

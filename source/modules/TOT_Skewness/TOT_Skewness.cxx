@@ -80,9 +80,12 @@ ANLStatus TOT_Skewness::mod_initialize() {
     sf->GetDirectory()->cd("TOT_Skewness");
 
     tree_ = new TTree("tot_skewness", "TOT Skewness Analysis");
+    tree_->Branch("evt_id",     &evt_id,     "evt_id/i");
     tree_->Branch("Pe",          Pe,          "Pe[3]/D");
     tree_->Branch("Ve",          Ve,          "Ve[3]/D");
     tree_->Branch("Len",        &Len,        "Len/D");
+    tree_->Branch("track_min",  Track_Min,   "track_min[3]/D");   // bounding box of the track points [mm]
+    tree_->Branch("track_max",  Track_Max,   "track_max[3]/D");
     tree_->Branch("skewness_x", &skewness_x, "skewness_x/D");
     tree_->Branch("skewness_y", &skewness_y, "skewness_y/D");
     tree_->Branch("can",        &can,        "can/I");
@@ -114,6 +117,7 @@ ANLStatus TOT_Skewness::mod_initialize() {
 
 ANLStatus TOT_Skewness::mod_analyze() {
   ClearEvent();
+  evt_id = RawData->Get_EventID_coincidence();
   TOT_Correction();
 
   if (NUM[0] == 0 || NUM[1] == 0) return AS_SKIP;
