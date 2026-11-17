@@ -255,3 +255,7 @@ ETCC の現時点の較正・判断の注意点（Claude の2026-11-17引き継�
 2026-11-17: `tutorials/3_Reconstruction/ETCC_CutComparison.ipynb` を追加し、11/15 run03全件（104分割）と11/16 run03+06（12分割）で実行・図を埋め込み。天頂角半径図と Lambert 正積図を併記し、投影法を変えても全5カットの選択件数・上半球件数が不変であることを確認。11/15の基準はE0窓247040件・上半球226773件で既存ROOTと一致し、fiducial+dE/dx+|Δcosα|<0.5では28752件・上半球27446件（ARM中央値28.2°）。11/16の最終段は2742件・上半球2613件（中央値19.9°）。通常のビルドも成功。
 
 TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)、3:(-X,-Y)。11/15 PSA較正は /mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261115/HA_cal/calib_psa に保持。run07のgrid法で12ボード72ch、格子内94.5〜97.6%。Cs run04〜06とCo run07で68chが3点、4ch（ha01 ch3/5、ha09 ch1、ha13 ch0）はCs単点。4608ピクセルのうち4230が3点、378がcs+ch。UVSOR11/03の旧較正はcalib/psaに保持。
+
+
+2026-11-17: compare_etcc_cuts.py と ETCC_CutComparison.ipynb に dE/dx 確認図を追加。Ke–Len を4 keV×3 mm/bin、空ビンをマスクした LogNorm(vmin=1) の共通スケールで表示。追加カットなし・fiducial・fiducial+dE/dx を、E0窓なし／方向図と同じ窓の2段で比較し、元のSMILE-2+帯・使用する帯・Ke/Lenの境界を重ねる。表示範囲外のイベントも分かるよう、全選択数と表示数を記録。
+両ラン全件で実行し、6パネルの全選択数が既存のスペクトル／E0窓の件数と一致することを確認。ノートブックに両ランの図を埋め込み済み。

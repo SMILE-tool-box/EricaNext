@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+from matplotlib.colors import LogNorm
 
 ROOT.gROOT.SetBatch(True)
 
@@ -116,6 +117,56 @@ def spectra(d, stages, out, label):
     fig.savefig(out / 'energy_cut_comparison.png', dpi=160)
     plt.close(fig)
 
+
+
+
+def dedx_plot(d, stages, out, args):
+    """Show the Ke-length selection before/after cuts with shared count scales."""
+    panels = [stages[0], stages[1], stages[3]]
+    window = (d['E0'] >= args.emin) & (d['E0'] <= args.emax) & (np.abs(d['cos_phi']) <= 1)
+    xe = np.linspace(0., 400., 101)
+    ye = np.linspace(0., 300., 101)
+    histograms, audit = [], []
+    for windowed in (False, True):
+        row = []
+        for name, mask in panels:
+            selected = mask & np.isfinite(d['Len'])
+            if windowed:
+                selected &= window
+            h = np.histogram2d(d['Ke'][selected], d['Len'][selected], bins=(xe, ye))[0]
+            row.append(h)
+            audit.append({'cut': name, 'E0_window': windowed, 'selected_events': int(selected.sum()),
+                          'displayed_events': int(h.sum())})
+        histograms.append(row)
+    vmax = max(float(h.max()) for row in histograms for h in row)
+    norm = LogNorm(vmin=1., vmax=max(2., vmax))
+    fig, axs = plt.subplots(2, 3, figsize=(18, 10), sharex=True, sharey=True, constrained_layout=True)
+    energy = np.linspace(0., 400., 801)
+    for r, row in enumerate(histograms):
+        for c, h in enumerate(row):
+            ax = axs[r, c]
+            im = ax.pcolormesh(xe, ye, np.ma.masked_less(h.T, 1), cmap='turbo', norm=norm, shading='flat')
+            for scale, style, colour, label in [(1., ':', '0.5', 'SMILE-2+ band'),
+                                                (args.len_scale, '-', 'black', f'Used band x {args.len_scale:g}')]:
+                lower = scale * (913.9 * (energy/1000)**2 + 2.2)
+                upper = scale * (1975.9 * (energy/1000)**1.4 + 7.)
+                ax.plot(energy, lower, style, color=colour, lw=1.2, label=label)
+                ax.plot(energy, upper, style, color=colour, lw=1.2)
+            ax.axhline(270*args.len_scale, color='black', ls='--', lw=1, label='Used length maximum')
+            ax.axvline(5., color='black', ls='-.', lw=1, label='Ke minimum: 5 keV')
+            entry = audit[3*r+c]
+            ax.set(title=f"{panels[c][0]}\nN={entry['selected_events']:,}; shown={entry['displayed_events']:,}",
+                   xlabel='Ke [keV]', ylabel='Track length [mm]', xlim=(0, 400), ylim=(0, 300))
+            ax.text(.97, .97, 'No E0 window' if r == 0 else f'E0 {args.emin:g}-{args.emax:g} keV; |cos phi| <= 1',
+                    ha='right', va='top', transform=ax.transAxes, fontsize=9,
+                    bbox={'facecolor': 'white', 'alpha': .8, 'edgecolor': 'none'})
+    axs[0, 0].legend(loc='lower right', fontsize=8, framealpha=.9)
+    fig.colorbar(im, ax=axs.ravel().tolist(), label='Events / (4 keV x 3 mm)', fraction=.025, pad=.02)
+    fig.suptitle(f'{args.label}: Ke vs track length (dE/dx selection); no Eg cut; common logarithmic count scale')
+    fig.savefig(out / 'dedx_cut_comparison.png', dpi=150)
+    plt.close(fig)
+    return {'Ke_range_keV': [0., 400.], 'Len_range_mm': [0., 300.],
+            'Ke_bin_width_keV': 4., 'Len_bin_width_mm': 3., 'panels': audit}
 
 
 def sky_radius(theta_deg, projection):
@@ -258,9 +309,10 @@ def main():
     else:
         stages = masks(d, args.len_scale, args.margin, args.alpha)
     spectra(d, stages, args.out, args.label)
+    dedx_audit = None if args.baseline_only else dedx_plot(d, stages, args.out, args)
     counts = maps(d, stages, args.out, args)
     metadata = {'arguments': {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                'inputs': audit, 'all_single_hit': len(d['E0']), 'cuts': counts,
+                'dedx_plot': dedx_audit, 'inputs': audit, 'all_single_hit': len(d['E0']), 'cuts': counts,
                 'fiducial_mm': {'xy': [-153.6+args.margin, 153.6-args.margin], 'z': [10+args.margin, 317-args.margin]},
                 'dedx': '5 <= Ke <= 400 keV; s*(913.9*(Ke/1000)^2+2.2) < Len < s*(1975.9*(Ke/1000)^1.4+7); Len < s*270 mm',
                 'alpha': 'abs(cos_alpha_geo - cos_alpha_kin) < alpha',

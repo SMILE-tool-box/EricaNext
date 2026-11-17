@@ -19,7 +19,7 @@
 | ├ [`11_Reconstruct/`](1_DataIO/modules/11_Reconstruct/Reconstruct.ipynb) | 1 イベント 1 行の再構成ツリー(今は例の値で仕組みだけ) |
 | └ [`12_TPC_RawTreeWriter/`](1_DataIO/modules/12_TPC_RawTreeWriter/TPC_RawTreeWriter.ipynb) | 同期した TPC の生データの TTree |
 | [`2_Diagnostics/TPC_FADC_Accumulation`](2_Diagnostics/TPC_FADC_Accumulation.ipynb) | raw ROOT → 全ボード・全chのFADC波形積算TH2Dを1つのROOTに保存（ボードごとのPNGも出力可） |
-| [`3_Reconstruction/ETCC_CutComparison`](3_Reconstruction/ETCC_CutComparison.ipynb) | ETCC のカットごとのエネルギースペクトル・Compton cone・ETCC 方向図・ARM（Eg追加カットなし） |
+| [`3_Reconstruction/ETCC_CutComparison`](3_Reconstruction/ETCC_CutComparison.ipynb) | ETCC のカットごとのエネルギースペクトル・dE/dx 分布・Compton cone・ETCC 方向図・ARM（Eg追加カットなし） |
 | `4_MakeCalibration/` | 較正ファイルを作る(チェーンは作成済みの較正ファイルを読む) |
 | ├ [`TPC_DriftVelocity`](4_MakeCalibration/TPC_DriftVelocity.ipynb) | RawTreeWriterのROOT → 飛跡積算図・クロック分布 → ドリフト速度 |
 | ├ [`TPC_GainMap`](4_MakeCalibration/TPC_GainMap.ipynb) | RawTreeWriterのROOT → 1-hitスペクトル・2本の線のfit → TPCゲインマップ |
