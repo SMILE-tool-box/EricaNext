@@ -83,7 +83,7 @@
     "PSA_Calibration": {
       "position_dir": "{repo}/calib/psa",
       "energy_dir": "{repo}/calib/psa",
-      "temp_gain_dir": "{repo}/calib/psa",
+      "temp_gain_dir": "",
       "save_maps": true,
       "hg_max": 400000.0,
       "hg_bins": 400,
