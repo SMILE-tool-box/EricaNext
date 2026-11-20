@@ -288,3 +288,5 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 - 同じ解析で: μPIC の境目(upic1|2、upic3|2)をまたぐ飛跡は、両側の直線が段差 1〜2 mm・角度 1.5° でつながる(upic0 は鳴っていないので確かめられない)。飽和した HA のヒットは重心がブロックの中央に寄る(HG だけ飽和で約 1/3、HG・LG とも飽和でほぼ 0。93 % が中央の 4 × 4 ピクセル)。ドリフト速度を ±30 % 変えても HA との合い方はほぼ変わらない。
 - 確認用の図: `calib/detector_coordinates/ha_views.png`(底面を上から、側面を外から見て、HA・ch・ピクセル (1, 1)・n と m の向き)、`ha_layout.png`(配置図と同じ展開図)。`plot_detector_coordinates.py` が作る。
 - `plot_muon_tracks.py` は飽和したヒットを紫の白抜きの四角と `>E sat HG` で描く(`read_ha_hits` が飽和の印を返す)。
+
+2026-11-20: ETCC_CutComparison を、GEM 5 mm・ドリフト速度(z_gem 5 mm で作り直したもの)・PSA の ch = ADC 番号・配置図通りの geometry.csv で流し直した(再構成の出力は `~/ericanext_out/20261116_zgem5`、`20261115_selected_zgem5`。行の分け方は前と同じ)。全カット後(fiducial + dE/dx + α)の ARM の中央値: 20261116 run03+06 で 23.0° → 15.4°(IQR 34°)、20261115 run03 で 30.2° → 29.0°。20261116 の ETCC の像は線源の方向(+)にピークが来る。fiducial の Z の範囲は 10〜312 mm(前は 15〜312 mm)だが、z の変換も変わったので残る事象の数はほぼ同じ。
