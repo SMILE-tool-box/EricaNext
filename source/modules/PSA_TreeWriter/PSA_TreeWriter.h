@@ -5,6 +5,8 @@
 #include <vector>
 
 #include <TTree.h>
+#include <TNamed.h>
+#include <TDirectory.h>
 
 #include "SaveFile.h"
 #include "PSA_ReadData.h"

@@ -18,6 +18,9 @@ ANLStatus PSA_TreeWriter::mod_initialize(){
   saveModule->cd();
   saveModule->GetDirectory()->mkdir("PSA_TreeWriter");
   saveModule->GetDirectory()->cd("PSA_TreeWriter");
+  // How ch is numbered (trees written before 2026-11-20 have no such object: their ch is 5 - ADC number).
+  TNamed chNumbering("ch_numbering", "ADC number: adc_num 1, 2, 4, 8, 16, 32 -> ch 0-5 (since 2026-11-20)");
+  gDirectory->WriteTObject(&chNumbering);
 
   tree_ = new TTree("psa", "PSA hits, one row per hit channel");
   tree_->Branch("sevt_id",   &sevt_id_,   "sevt_id/i");

@@ -274,6 +274,7 @@ DataCount のビットは逆順(ビット 5 が ch0、ビット 0 が ch5)なの
 - `psa_decode.py` の出力や、2026-11-19 までに作った ch ごとのファイルと比べるときは、ch を 5 − ch に読み替えてください。`calib/psa/` の位置・エネルギーの表は付け替え済みです(各ファイルのコメントの行に書いた ch 番号は古い番号のまま)。
 - raw ROOT(`PSA_RawTreeWriter`)の `run_info` の `schema_version` が 2 なら ch = ADC 番号、1(2026-11-19 までに作ったもの)なら ch = 5 − ADC 番号です。
   `PSA_ReadData` は schema 1 のファイルを読むときに ch を付け替える(警告を 1 行出す)ので、前の raw ROOT はそのまま使えます。
+- 処理済みのツリー(`PSA_TreeWriter/psa`)は、同じディレクトリに `ch_numbering`(TNamed)があれば ch = ADC 番号です。無いもの(2026-11-19 までに作ったもの)は ch = 5 − ADC 番号なので、較正ファイルを作るのに使わないでください(`make_psa_*.py` はツリーの `ch` をそのまま使います)。
 
 ---
 

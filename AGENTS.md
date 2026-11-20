@@ -290,3 +290,5 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 - `plot_muon_tracks.py` は飽和したヒットを紫の白抜きの四角と `>E sat HG` で描く(`read_ha_hits` が飽和の印を返す)。
 
 2026-11-20: ETCC_CutComparison を、GEM 5 mm・ドリフト速度(z_gem 5 mm で作り直したもの)・PSA の ch = ADC 番号・配置図通りの geometry.csv で流し直した(再構成の出力は `~/ericanext_out/20261116_zgem5`、`20261115_selected_zgem5`。行の分け方は前と同じ)。全カット後(fiducial + dE/dx + α)の ARM の中央値: 20261116 run03+06 で 23.0° → 15.4°(IQR 34°)、20261115 run03 で 30.2° → 29.0°。20261116 の ETCC の像は線源の方向(+)にピークが来る。fiducial の Z の範囲は 10〜312 mm(前は 15〜312 mm)だが、z の変換も変わったので残る事象の数はほぼ同じ。
+
+2026-11-20: `PSA_TreeWriter` の出力に `PSA_TreeWriter/ch_numbering`(TNamed、ch = ADC 番号の印)を書く。2026-11-19 までの処理済みツリー(NAS の `HA_cal/psa_cal_*.root`、`psa_20261115_run07.root` など)には無く、ch は 5 − ADC 番号。`make_psa_*.py` はツリーの ch をそのまま使うので、古いツリーから較正ファイルを作ると前の番号の表になる(`PSA_Energy.ipynb` は出力があれば流し直さないので注意)。確認: 古い run07 のツリーを ch → 5 − ch に読み替えて `make_psa_position.py` を流すと、付け替え済みの `calib/psa/position_haNN.csv` と 12 ボードとも一致、`make_psa_energy.py`(Cs run04〜06、Co run07、当時と同じ引数)も `energy_haNN.csv` と 12 ボードとも一致。
