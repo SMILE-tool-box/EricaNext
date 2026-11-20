@@ -22,7 +22,8 @@ Method (EricaNext_try tutorials_caldata/4_MakeCalibration/DriftVelocity, drift_s
      and 890 clock). Look at the clock distribution and set them for the run.
   5. velocity = (drift_length - z_gem) / (top edge - clock_offset).
   clock_offset and velocity are the means of anode and cathode.
-SMILE-3: z_gem = 10 mm (uPIC - GEM), drift length = 317 mm (uPIC - top plate), so 307 mm between the edges.
+SMILE-3: z_gem = 5 mm (uPIC - GEM; 10 mm with the second GEM, as in the CAD), drift length = 317 mm
+(uPIC - top plate), so 312 mm between the edges.
 
 The run must have the electrons uniformly in the drift volume (the clock distribution must be a box). The
 file is written only when the checks pass (--force writes it anyway); look at <output dir>/qa/<name>.png.
@@ -174,7 +175,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("inputs", nargs="+", help="output ROOT files of smile3_tpc_raw (TPC_RawTreeWriter/raw)")
     ap.add_argument("-o", "--output", required=True, help="output file (e.g. calib/tpc/drift_velocity.dat)")
-    ap.add_argument("--z-gem", type=float, default=10.0, help="uPIC - GEM [mm] (SMILE-3 10)")
+    ap.add_argument("--z-gem", type=float, default=5.0, help="uPIC - GEM [mm] (SMILE-3 5; 10 with the second GEM)")
     ap.add_argument("--drift-length", type=float, default=317.0, help="uPIC - top plate [mm] (SMILE-3 317)")
     ap.add_argument("--gem-range", type=float, nargs=2, default=(20, 300), help="clocks to look for the GEM side edge")
     ap.add_argument("--top-range", type=float, nargs=2, default=(800, 1000), help="clocks to look for the top side edge")

@@ -8,14 +8,14 @@ TPC の較正ファイルの置き場です。
 | --- | --- | --- | --- |
 | `gain_map.dat`(`gain_map.json` に作り方・fit の結果・誤差) | 1 行に `アノード ch  カソード ch  Ka [keV/(ADU × sample)]  Kb [keV]`。ch は FADC のチャンネル(= ストリップ / 32、0〜47)。較正できなかった組は Ka = Kb = 0 | `TPC_Calibration`(`ParameterFile`、`NoCalData: false`) | 20261113 run13〜17(TPC_GainMap.ipynb) |
 | `tpc_energy_correction.dat`(`tpc_energy_correction.json` に係数の共分散・fit の結果) | ゲインマップ適用後のイベント全体のエネルギーの二次補正 | `TPC_Calibration`(`energy_correction_file`) | 20261113 run13〜17(TPC_EnergyCalibration.ipynb) |
-| `drift_velocity.dat` | `clock_offset <クロック>` と `velocity <mm/クロック>` の 2 行(`#` はコメント)。z = velocity × (クロック − clock_offset) + `z_gem_mm` | `TOT_Skewness`(`drift_velocity_file`) | 20261115 run03(ETCC)。天板側の端がなだらか(幅 36.7 クロック)で確認には通らず、`--force` で書いたもの |
+| `drift_velocity.dat` | `clock_offset <クロック>` と `velocity <mm/クロック>` の 2 行(`#` はコメント)。z = velocity × (クロック − clock_offset) + `z_gem_mm` | `TOT_Skewness`(`drift_velocity_file`) | 20261115 run03(ETCC)。2026-11-20 に z_gem = 5 mm で作り直した(端のクロックは同じで velocity だけ変わる。TPC_DriftVelocity.ipynb の `tracks.root` のクロック分布から)。天板側の端がなだらか(幅 36.7 クロック)で確認には通らず、`--force` で書いたもの |
 
 `qa/` は作ったときの確認の図のコピー(git には入れない)。
 
 ## TPC の寸法とドリフト速度
 
-- μ-PIC から GEM 面まで 10 mm（`z_gem_mm`）、ドリフト長（μ-PIC から天板まで）317 mm です（[detector_coordinates](../detector_coordinates/README.md)）。
-- ドリフト速度は、全ヒットのクロックの分布（箱の形）から決めます。GEM 側の端を `clock_offset` とし、天板側の端までのクロック数で 317 − 10 = 307 mm を割ったものを `velocity` にします。
+- μ-PIC から GEM 面まで 5 mm（`z_gem_mm`。GEM 1 枚の今の構成。2 枚目の GEM を入れた構成では 10 mm で、CAD の値はこちら）、ドリフト長（μ-PIC から天板まで）317 mm です（[detector_coordinates](../detector_coordinates/README.md)）。
+- ドリフト速度は、全ヒットのクロックの分布（箱の形）から決めます。GEM 側の端を `clock_offset` とし、天板側の端までのクロック数で 317 − 5 = 312 mm を割ったものを `velocity` にします。
 
 ## 作り方
 

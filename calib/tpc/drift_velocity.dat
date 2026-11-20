@@ -1,8 +1,9 @@
-# made by scripts/calib/make_tpc_drift_velocity.py, 2026-11-16T14:13:42
+# made by scripts/calib/make_tpc_drift_velocity.py analyze(), 2026-11-20T11:34:42
 # input: /mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261115/etcc_raw_20261115_run03.root
+# (clock distributions clock_a / clock_c of /mnt/nas_eureka/onoda/analysis2/SMILE3-FM_analysis/20261115/etcc_drift_20261115_run03/tracks.root, made from the input by TPC_DriftVelocity.ipynb; same edges as the 2026-11-16 file made with z_gem 10 mm)
 # gem range 20-300 (fit +- 40), top range 800-1000 clock, rebin 8
-# z_gem 10.0 mm, drift length 317.0 mm: 307.0 mm between the edges
-# anode: clock_offset 133.60 +- 0.00, top edge 926.70 +- 0.01, velocity 0.38709 (NG: top edge width 36.7 clock (>= 30): not a sharp edge)
-# cathode: clock_offset 133.79 +- 0.00, top edge 926.12 +- 0.01, velocity 0.38747 (NG: top edge width 36.7 clock (>= 30): not a sharp edge)
+# z_gem 5.0 mm, drift length 317.0 mm: 312.0 mm between the edges
+# anode: clock_offset 133.60 +- 0.00, top edge 926.70 +- 0.01, velocity 0.39339 (NG: top edge width 36.7 clock (>= 30): not a sharp edge)
+# cathode: clock_offset 133.79 +- 0.00, top edge 926.12 +- 0.01, velocity 0.39378 (NG: top edge width 36.7 clock (>= 30): not a sharp edge)
 clock_offset 133.69
-velocity 0.38728
+velocity 0.39358

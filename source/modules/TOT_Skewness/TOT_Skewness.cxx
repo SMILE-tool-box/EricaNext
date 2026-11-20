@@ -524,7 +524,7 @@ TOT_Skewness::TOT_Skewness(){
   Pitch_Y          = 0.8;
   Pitch_Z          = 0.383;   // SMILE-2+ 2019-07-01 Per02/Per03 drift_velocity.dat (mean 0.383 mm/clock)
   TPC_Clock_Offset = 85.0;    // SMILE-2+ 2019-07-01 Per02/Per03 drift_velocity.dat
-  Z_GEM            = 10.0;    // SMILE-3: uPIC - GEM 10 mm (SMILE-2+: 27 mm)
+  Z_GEM            = 5.0;     // SMILE-3: uPIC - GEM 5 mm (10 mm with the second GEM, as in the CAD; SMILE-2+: 27 mm)
   Flag_Pixel_Cut   = false;
   Flag_Save_Cloud  = false;
   TPC_STRIP_ALL    = 384;

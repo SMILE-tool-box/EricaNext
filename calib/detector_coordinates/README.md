@@ -51,7 +51,7 @@ CAD で確かめた寸法（EricaNext の Z）:
 | 位置 | Z |
 | --- | --- |
 | μ-PIC | 0 mm |
-| GEM | 10.0 mm |
+| GEM | 5.0 mm（GEM 1 枚の今の構成。CAD の 10.0 mm は 2 枚目の GEM を入れた構成の位置） |
 | ドリフトケージの天板の内側の面 | 317.0 mm |
 
 座標系の説明は [tutorials/0_Introduction](../../tutorials/0_Introduction/Introduction.ipynb) にもあります。

@@ -9,7 +9,8 @@ direction of the pixel numbers, come from the layout figure of the HA modules (t
 Coordinates (tutorials/0_Introduction): origin at the centre of the uPIC readout plane, X: W -> E, Y: N -> S,
 Z: downward. CAD: z upward from the bottom plate; the uPIC board (TGV uPIC) has its lower face at z = 427.04 mm.
 The CAD is symmetric in x and y, so CAD +y is taken as East:  X = y_cad,  Y = x_cad,  Z = Z_UPIC_CAD - z_cad
-(right-handed). The CAD gives GEM at Z = 10.0 mm and the inner face of the drift top plate at Z = 317.0 mm.
+(right-handed). The CAD gives the inner face of the drift top plate at Z = 317.0 mm and GEM at Z = 10.0 mm, the position with
+the second GEM; the present single GEM is at Z = 5.0 mm (TOT_Skewness.z_gem_mm).
 
 Module frame (layout figure, inset of HA15): the 6 blocks are  0 1 / 2 3 / 4 5 ; "c" = direction ch0 -> ch1 and of
 increasing pixel n (0-7 in the figure = n 1-8), "r" = direction ch0 -> ch2 -> ch4 and of increasing pixel m. Every HA

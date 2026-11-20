@@ -149,7 +149,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
      そのランが取れたら、`energy_haNN.csv` に温度の列を足して温度ごとに `p0`, `p1` を持たせ、`PSA_Calibration` で温度の間を線形に補間する形にするのが素直(温度ゲインの表と同じ扱い。`hg_corr` は使わず `hg` から直接でもよい)。
 2. **ジオメトリ**(`geometry.csv`): CAD から作った(5 節の表)。残り:
    - ピクセルの向き(u, v)をデータで確かめる(例えば、線源の位置を変えたランで、ピクセルの番号と位置の対応を見る)。
-   - シミュレーター(Geant4)の配置と同じ元(この STEP と `HA_LAYOUT`)からそろえる。SMILE-2+ では `HAs.pos` が 2 つあって、底面の z がシミュレーションと実データで 11 mm 違っていた(EricaNext_try の `docs/simulation_port_log.md`)。シミュレーターの製作ログの TPC の Z(10.5〜308 mm)は、この CAD(GEM 10 mm、天板 317 mm)と違うので、古い形状のはず。
+   - シミュレーター(Geant4)の配置と同じ元(この STEP と `HA_LAYOUT`)からそろえる。SMILE-2+ では `HAs.pos` が 2 つあって、底面の z がシミュレーションと実データで 11 mm 違っていた(EricaNext_try の `docs/simulation_port_log.md`)。シミュレーターの製作ログの TPC の Z(10.5〜308 mm)は、この CAD(GEM 10 mm = 2 枚目の GEM を入れた構成、天板 317 mm)と違うので、古い形状のはず。
 3. **イベントの選び方の確認**
    - `PSA_Event` の「1 ヒット」は「ピクセルとエネルギー > `energy_min` があり、geometry にあるヒットが 1 つ」。ノイズのヒットで MultiHit になりすぎないかを、実データで見る。
 4. **チュートリアル**: モジュールの解説(`tutorials/1_DataIO/modules/1〜12`)と `4_MakeCalibration/PSA_*` はある。まだ無いものは 1_DataIO の全体の流れの本(EricaNext_try の `DataIO_example`)。TPC のゲインマップとドリフト速度の較正の本は2026-11-13に追加済み（`tutorials/4_MakeCalibration/TPC_GainMap.ipynb`, `TPC_DriftVelocity.ipynb`）。TPC_RawTreeWriterのROOTを入力とし、前者は1-hitスペクトルと指定した2線のfit、後者は飛跡積算図と既存の速度算出スクリプトを使う。実測較正値はまだ確定していない。生成スクリプトはリポジトリに無い(ノートブックを直接直す)。
@@ -161,7 +161,7 @@ EricaNext_try のゲインマップ・ドリフト速度と同じ扱い: **較�
      TPC のゲインマップが無いので `Ke` は ADU で、角度の値にはまだ意味が無い。
    - 2026-06-23 の TPC_cal には、鳴りっぱなしのストリップを拾って `Len` が数百 mm になるイベントが多い。
    - TOT 補正の係数、skewness のオフセットは SMILE-2+ の値のまま。
-   - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 10 mm(SMILE-3)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。ファイルを作るスクリプト `scripts/calib/make_tpc_drift_velocity.py` はある(SMILE-2+ の Per02 で EricaNext_try と同じ値を確認)。測定ができたら流して `calib/tpc/drift_velocity.dat` を置き、`smile3_tpc_only.json` の `drift_velocity_file` に書く。
+   - ドリフト速度: `clock_offset` = 85、`pitch_z_mm_per_clock` = 0.383 は SMILE-2+ の典型値(Per02/Per03)。SMILE-3 の測定はまだで、`drift_velocity_file` が空だと TOT_Skewness が警告を出す。GEM 面は `z_gem_mm` = 5 mm(SMILE-3、GEM 1 枚。2 枚目の GEM を入れた構成では 10 mm で、CAD の値はこちら)、ドリフト長(μ-PIC〜天板)317 mm。6/23 の TPC_cal はクロックの分布が箱の形にならず、ドリフト速度は出せない。ファイルを作るスクリプト `scripts/calib/make_tpc_drift_velocity.py` はある(SMILE-2+ の Per02 で EricaNext_try と同じ値を確認)。測定ができたら流して `calib/tpc/drift_velocity.dat` を置き、`smile3_tpc_only.json` の `drift_velocity_file` に書く。
    ノートブックの生成と実行: `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=ericanext <nb>`(`/usr/bin/python3 -m jupyter`)。
 6. **SMILE-2+ のデータも同じ EricaNext で扱う**: 2026-11-06 に取り込んだ(README の「SMILE-2+ のデータ」)。
    - EricaNext_try の `source/modules/` の 8 つ(ReadData、CalcFADC、TPC_Calibration、TOT_Skewness、HA_CenterGravity、HA_Calc、Reconstruct、RawTreeWriter)を `<名前>_2p/` にコピーし、クラス名・ファイル名・`get_module` の名前・補助クラス(`CP80256`、`TPC_Encoder`、`MDF`)・インクルードガードに `_2p` を付けた。印の名前も `TOT_Skewness_2p` など変わったものがある。ANLNext は名前でモジュールを探して `static_cast` するので、中身の違う同名クラスは置けない。
@@ -276,3 +276,5 @@ TPCのTOT座標の面番号（strip/384）は0:(+X,-Y)、1:(+X,+Y)、2:(-X,+Y)�
 
 
 2026-11-18: `calib/` を `config/stage2/smile3_reconstruct.json` が NAS から読んでいた較正ファイルに置き換え、設定ファイルを `{repo}/calib/...` に戻した。`calib/tpc/` に `gain_map.dat`(+ `.json`)、`tpc_energy_correction.dat`(+ `.json`、どちらも 20261113 run13〜17)、`drift_velocity.dat`(20261115 run03、天板の端がなだらかで確認には通っていない)。`calib/psa/` の位置・エネルギーは 20261115 の HA_cal の 12 ボードに置き換え、温度ゲインの表と ha00・ha16 の表は消した(git の履歴にある)。`smile3_psa.json` の `temp_gain_dir` も空に。`smile3_tpc_only.json` もゲインマップ・エネルギーの補正・ドリフト速度に `calib/tpc` を使う(エネルギーの補正は前は空だった)。補正を作る `smile3_tpc_energy.json` は補正なしのまま。11-17 夜の ETCC のチュートリアル(ETCC_CutComparison、ETCC_MuonTracks)の再構成の出力は、全パートのログで補正を読んでいる。etcc_raw_20261115_run03 の 2 万イベントで、全ファイルを読んで完走することを確かめた。
+
+2026-11-20: GEM の位置 `z_gem_mm` を 10 mm → 5 mm に(`smile3_tpc_only`、`smile3_reconstruct`、`make_tpc_drift_velocity.py` の既定、TPC_DriftVelocity.ipynb、`plot_detector_coordinates.py`)。CAD の 10 mm は 2 枚目の GEM を入れた構成の位置で、今の構成(GEM 1 枚)は 5 mm(`calib/detector_coordinates/README.md` などの説明もそう直した)。`calib/tpc/drift_velocity.dat` を z_gem = 5 mm で作り直した: 端のクロック(clock_offset 133.69、天板 926.4)は同じで、端の間が 307 → 312 mm になり velocity 0.38728 → 0.39358 mm/clock。生データは読み直さず、TPC_DriftVelocity.ipynb が保存した `etcc_drift_20261115_run03/tracks.root` のクロック分布に同じ `analyze()` をかけた(10 mm で前のファイルと全桁一致を確認)。

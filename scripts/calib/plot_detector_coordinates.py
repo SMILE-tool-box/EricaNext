@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-Z_GEM = 10.0      # [mm] GEM from the μ-PIC (CAD; TOT_Skewness.z_gem_mm)
+Z_GEM = 5.0       # [mm] GEM from the μ-PIC (TOT_Skewness.z_gem_mm; 10 mm with the second GEM, as in the CAD)
 Z_TOP = 317.0     # [mm] inner face of the drift cage top plate (CAD)
 HALF = 153.6      # [mm] half width of the μ-PIC (2 x 384 strips x 0.4 mm)
 PLANES = [(0.0, "μ-PIC", "tab:red"), (Z_GEM, "GEM", "tab:orange"), (Z_TOP, "top plate", "tab:blue")]

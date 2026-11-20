@@ -180,7 +180,7 @@
       "pitch_y_mm_per_strip": 0.4,
       "pitch_z_mm_per_clock": 0.383,
       "clock_offset": 85.0,
-      "z_gem_mm": 10.0,
+      "z_gem_mm": 5.0,
       "drift_velocity_file": "{repo}/calib/tpc/drift_velocity.dat",
       "flag_pixel_cut": false,
       "flag_save_cloud": false,
@@ -198,7 +198,7 @@
         "clock_offset": "GEM 面で電離した電子が届くクロック。drift_velocity_file が無いときだけ使う。既定値85は仮値。測定に対応する較正ファイルを指定する[clock]",
         "flag_pixel_cut": "true: PixelMask で選んだピクセルを除く(今の PixelMask は除くピクセルが無く、h_cut_pixel に詰めるだけ)",
         "flag_save_cloud": "true: 飛跡の点群(cloud_x, cloud_y, cloud_z)を tot_skewness ツリーに保存する(run_script/plot_track3d.py で描く)",
-        "z_gem_mm": "GEM 面の z(μ-PIC からの距離)。SMILE-3 は 10 mm。ドリフト長(μ-PIC から天板まで)は 317 mm [mm]",
+        "z_gem_mm": "GEM 面の z(μ-PIC からの距離)。SMILE-3 は 5 mm(GEM 1 枚。2 枚目の GEM を入れた構成では 10 mm で、CAD の値はこちら)。ドリフト長(μ-PIC から天板まで)は 317 mm [mm]",
         "drift_velocity_file": "ドリフト速度の較正ファイル(calib/tpc/。\"clock_offset <クロック>\" と \"velocity <mm/クロック>\" の 2 行、# はコメント)。空なら pitch_z_mm_per_clock と clock_offset を使い、較正ファイルが要ると警告を出す。SMILE-3 の値は calib/tpc/drift_velocity.dat(20261115_run03 の ETCC ランから。天板側の端がなだらかで確認には通っていない)"
       }
     },
