@@ -14,7 +14,7 @@
   Ke 30-400 keV and a fitted Ve_z (not the in-plane fallback of TOT_Skewness, Ve_z = 0), the ones with the most
   points (--order points) or the longest (--order length) first.
 - Drawn: track points (blue), Pe (orange star) and the line through it along Ve (orange), Pg (green square),
-  Pe -> Pg (green dashed), the TPC drift volume (uPIC +-153.6 mm, Z 10-317 mm) and the HA blocks of geometry.csv.
+  Pe -> Pg (green dashed), the TPC drift volume (uPIC +-153.6 mm, Z 5-317 mm) and the HA blocks of geometry.csv.
 - The track is in the frame of TOT_Skewness (centre of the uPIC, Z along the drift) and the HA in the frame of
   geometry.csv (X: E, Y: S, Z: down). That the two frames are the same is not yet checked (AGENTS.md).
 - Needs PyROOT, numpy, matplotlib: /usr/bin/python3.
@@ -62,7 +62,7 @@ def block_corners(b):
     c = np.array([b["x0"], b["y0"], b["z0"]]); u = np.array([b["ux"], b["uy"], b["uz"]]); v = np.array([b["vx"], b["vy"], b["vz"]])
     h = 4 * b["pitch"]
     return np.array([c + su * h * u + sv * h * v for su, sv in ((-1, -1), (1, -1), (1, 1), (-1, 1), (-1, -1))])
-HX, ZG, ZT = 153.6, 10.0, 317.0     # uPIC half width (4 x 384 strips x 0.4 mm), GEM and top of the drift [mm]
+HX, ZG, ZT = 153.6, 5.0, 317.0      # uPIC half width (4 x 384 strips x 0.4 mm), GEM (TOT_Skewness.z_gem_mm) and top of the drift [mm]
 box = [np.array(p) for p in ([-HX, -HX], [HX, -HX], [HX, HX], [-HX, HX], [-HX, -HX])]
 proj = [("x", "y", 0, 1), ("x", "z", 0, 2), ("y", "z", 1, 2)]
 for r in sel:

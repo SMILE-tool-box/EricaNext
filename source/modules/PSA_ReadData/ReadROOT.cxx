@@ -1,5 +1,6 @@
 #include "PSA_ReadData.h"
 #include "ReadData.h"
+#include <algorithm>
 #include <iostream>
 #include <set>
 #include <stdexcept>
@@ -15,7 +16,10 @@ ANLStatus PSA_ReadData::InitializeROOT(){
     throw std::runtime_error("missing PSA schema metadata");
   std::vector<int>* ids=nullptr;
   if(info->SetBranchAddress("board_ids",&ids)<0 || info->GetEntry(0)<=0 || !ids) throw std::runtime_error("invalid board_ids");
-  if(version!=1 || ns!=50 || nsignal!=8)throw std::runtime_error("unsupported PSA raw schema");
+  if((version!=1 && version!=2) || ns!=50 || nsignal!=8)throw std::runtime_error("unsupported PSA raw schema");
+  // schema 1 (written before 2026-11-20): ch = 5 - ADC number; converted to ch = ADC number when read
+  root_psa_version_=version;
+  if(version==1)std::cerr<<"PSA_ReadData: "<<root_file_<<": PSA raw schema 1 (ch = 5 - ADC number), converted to ch = ADC number"<<std::endl;
   board_ids_=*ids;info->ResetBranchAddresses();delete ids;
   std::set<int> seen;
   for(int id:board_ids_){if(id<0 || id>=100 || !seen.insert(id).second)throw std::runtime_error("invalid board ID");boards_.push_back(new PSA_Board(id,{}));}
@@ -53,7 +57,14 @@ ANLStatus PSA_ReadData::ReadROOT(){
   for(size_t j=0;j<n;++j){
     int i=Index(root_board_->at(j));if(i<0 || present_[i] || root_mask_->at(j)>63)throw std::runtime_error("invalid/duplicate PSA board or mask");
     for(size_t k=j*2400;k<(j+1)*2400;++k)if(root_adc_->at(k)>16383)throw std::runtime_error("invalid PSA ADC");
-    boards_[i]->Restore(root_trig_,root_clk_->at(j),root_board_epoch_->at(j),root_time_->at(j),root_mask_->at(j),root_temp_->data()+j*6,root_adc_->data()+j*2400);
+    const unsigned short* adc=root_adc_->data()+j*2400; unsigned mask=root_mask_->at(j);
+    static thread_local unsigned short flipped[2400];
+    if(root_psa_version_==1){   // ch c of the file is ch 5 - c (the ADC number)
+      unsigned m=0;
+      for(int c=0;c<6;++c){ if((mask>>c)&1) m|=1u<<(5-c); std::copy(adc+c*400,adc+(c+1)*400,flipped+(5-c)*400); }
+      mask=m; adc=flipped;
+    }
+    boards_[i]->Restore(root_trig_,root_clk_->at(j),root_board_epoch_->at(j),root_time_->at(j),mask,root_temp_->data()+j*6,adc);
     present_[i]=true;++n_present_;
     if(hit_pattern_)for(int ch=0;ch<6;++ch)if(boards_[i]->Hit(ch))hit_pattern_->Fill(boards_[i]->ID(),ch);
   }

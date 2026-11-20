@@ -12,17 +12,22 @@ The CAD is symmetric in x and y, so CAD +y is taken as East:  X = y_cad,  Y = x_
 (right-handed). The CAD gives the inner face of the drift top plate at Z = 317.0 mm and GEM at Z = 10.0 mm, the position with
 the second GEM; the present single GEM is at Z = 5.0 mm (TOT_Skewness.z_gem_mm).
 
-Module frame (layout figure, inset of HA15): the 6 blocks are  0 1 / 2 3 / 4 5 ; "c" = direction ch0 -> ch1 and of
-increasing pixel n (0-7 in the figure = n 1-8), "r" = direction ch0 -> ch2 -> ch4 and of increasing pixel m. Every HA
+Module frame (layout figure, inset of HA15): the 6 blocks are  0 1 / 2 3 / 4 5 ; "c" = direction ch0 -> ch1 of the
+figure, "r" = direction ch0 -> ch2 -> ch4 of the figure (figure numbering; see FIG_CH for the data ch). Every HA
 looks the same in the orientation it is drawn in the figure (its connector and head-amp bar); the side walls are drawn
 unfolded outward about their bottom edges (arrows: top -> bottom), so
   bottom (HA0-5), seen from above:          c = N (-Y),  r = E (+X)
   side walls, seen from inside the TPC:     c = to the right,  r = down (+Z)
                                             (N wall c = +X, E wall c = +Y, S wall c = -X, W wall c = -Y)
-PSA_Event: absorption point of pixel (n, m) = (x0, y0, z0) + pitch ((n - 4.5) u + (m - 4.5) v), with u = c, v = r and
-(x0, y0, z0) = centre of the block (middle of the crystal depth).
-The pixel directions also depend on the wiring of the 4 corner signals (sign of the centre-of-gravity formula):
-check them with data before trusting them.
+The data ch c is at the block of ch FIG_CH[c] of this frame (FIG_CH below: identity, the data ch being the ADC number
+since 2026-11-20). The pixels follow the data ch order as in the inset of the figure:
+pixel (1, 1) at the corner on the ch0 side, n increasing along ch0 -> ch1 (u), m along ch0 -> ch2 (v). Result:
+  bottom, seen from above:        ch0 at the SW of each module, ch1 N of it, ch2 E of it; pixel (1, 1) at the SW
+                                  corner of every block, u = N (-Y), v = E (+X)
+  side walls, seen from outside:  ch0 top right, ch1 left of it, ch2 below it; pixel (1, 1) top right, u = left,
+                                  v = down (seen from inside: as drawn in the layout figure)
+PSA_Event: absorption point of pixel (n, m) = (x0, y0, z0) + pitch ((n - 4.5) u + (m - 4.5) v), (x0, y0, z0) = centre of
+the block (middle of the crystal depth).
 """
 import argparse
 import datetime
@@ -36,6 +41,10 @@ from step_reader import Step  # noqa: E402
 
 Z_UPIC_CAD = 427.04       # lower face of the TGV uPIC board in the CAD [mm]
 BLOCK_STEP = 54.0         # centre-to-centre distance of the blocks in a module [mm]
+# FIG_CH[c]: the block of the layout figure (its ch numbering) where the data ch c is, every HA. Since 2026-11-20 the data
+# ch is the ADC number (PSA_Board), which is the numbering of the figure: identity. Muon tracks of 20261115 run03: the HA
+# hit is in the block the track crosses for 96 % (bottom) / 88-100 % (walls) of the tracks with this order.
+FIG_CH = [0, 1, 2, 3, 4, 5]
 E = {"N": (0, -1, 0), "S": (0, 1, 0), "E": (1, 0, 0), "W": (-1, 0, 0), "down": (0, 0, 1)}
 
 # HA: (approximate centre of the module (X, Y) [mm], c, r)  -- from the layout figure
@@ -102,8 +111,17 @@ def main():
         else:
             near = np.argsort(dxy + 1e3 * (centres[:, 2] < 330))[:6]
         mc = centres[near].mean(0)
+        # pixel directions follow the ch order of the data (as in the inset of the layout figure: with the module
+        # turned so that ch0 is at the top left, pixel (1, 1) is at the top left of every block, n increases along
+        # ch0 -> ch1 and m along ch0 -> ch2)
+        sc = FIG_CH[1] % 2 - FIG_CH[0] % 2          # +1: ch0 -> ch1 along c of the figure, -1: against it
+        sr = FIG_CH[2] // 2 - FIG_CH[0] // 2        # +1: ch0 -> ch2 along r of the figure, -1: against it
+        if abs(sc) != 1 or abs(sr) != 1 or FIG_CH[1] // 2 != FIG_CH[0] // 2 or FIG_CH[2] % 2 != FIG_CH[0] % 2:
+            sys.exit(f"FIG_CH {FIG_CH}: ch0 -> ch1 must be a step along c and ch0 -> ch2 a step along r")
+        pu, pv = sc * c, sr * r
         for ch in range(6):
-            col, row = ch % 2, ch // 2
+            fig_ch = FIG_CH[ch]
+            col, row = fig_ch % 2, fig_ch // 2
             want = mc + (col - 0.5) * BLOCK_STEP * c + (row - 1) * BLOCK_STEP * r
             k = int(np.argmin(np.linalg.norm(centres - want, axis=1)))
             dist = np.linalg.norm(centres[k] - want)
@@ -115,7 +133,7 @@ def main():
             # the pixel plane must be the face of the block, the depth along the third axis
             if abs(size @ np.abs(c) - size @ np.abs(r)) > 0.5 or (size @ np.abs(c)) < 40:
                 sys.exit(f"HA{ha} ch{ch}: c / r are not the face of the block (size {np.round(size, 2)})")
-            rows.append((ha, ch, *p0, *c, *r, pitch))
+            rows.append((ha, ch, *p0, *pu, *pv, pitch))
     if len(used) != len(blocks):
         print(f"WARNING: {len(blocks) - len(used)} CAD blocks have no HA", file=sys.stderr)
 
@@ -127,7 +145,9 @@ def main():
                 " X = y_CAD, Y = x_CAD).\n")
         f.write("# (x0, y0, z0): centre of the 8x8 block (middle of the depth); u: increasing pixel n; v: increasing m.\n")
         f.write("# Absorption point of pixel (n, m) = (x0, y0, z0) + pitch * ((n - 4.5) u + (m - 4.5) v).\n")
-        f.write("# ch order and pixel directions from the HA layout figure; the pixel directions are to be checked with data.\n")
+        f.write(f"# ch order: data ch c is at the block of ch FIG_CH[c] of the HA layout figure, FIG_CH = {FIG_CH};"
+                " pixel (1, 1) and the directions of n (ch0 -> ch1) and m (ch0 -> ch2) follow this order"
+                " (inset of the figure), to be checked with data.\n")
         f.write("board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch\n")
         for r in rows:
             f.write(",".join([str(r[0]), str(r[1])] + [f"{v:.3f}" if isinstance(v, float) else str(v)

@@ -79,13 +79,16 @@ def read_events(files, require_tracks=True):
     return {key: np.concatenate([p[key] for p in pieces]) for key in pieces[0]}, audit
 
 
+Z_GEM, Z_TOP = 5.0, 317.0   # drift region: GEM (TOT_Skewness.z_gem_mm) and top plate [mm]
+
+
 def masks(d, scale, margin, alpha):
     track = (d['has_track'] == 1) & (d['Ke'] > 0)
     for name in ['E0', 'Ke', 'cos_phi', 'delta_cos_alpha'] + [f'{v}{j}' for v in ['Pe', 'Pg', 'Vi'] for j in range(3)]:
         track &= np.isfinite(d[name])
     fid = np.ones(len(track), dtype=bool)
     for j in range(3):
-        low, high = (-153.6, 153.6) if j < 2 else (10., 317.)
+        low, high = (-153.6, 153.6) if j < 2 else (Z_GEM, Z_TOP)
         fid &= (d[f'track_min{j}'] > low + margin) & (d[f'track_max{j}'] < high - margin)
     ke = np.maximum(d['Ke'], 0)
     lower = scale * (913.9 * (ke / 1000)**2 + 2.2)
@@ -312,7 +315,7 @@ def main():
     counts = maps(d, stages, args.out, args)
     metadata = {'arguments': {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
                 'dedx_plot': dedx_audit, 'inputs': audit, 'all_single_hit': len(d['E0']), 'cuts': counts,
-                'fiducial_mm': {'xy': [-153.6+args.margin, 153.6-args.margin], 'z': [10+args.margin, 317-args.margin]},
+                'fiducial_mm': {'xy': [-153.6+args.margin, 153.6-args.margin], 'z': [Z_GEM+args.margin, Z_TOP-args.margin]},
                 'dedx': 'No additional Ke range cut; s*(913.9*(Ke/1000)^2+2.2) < Len < s*(1975.9*(Ke/1000)^1.4+7); Len < s*270 mm',
                 'alpha': 'abs(cos_alpha_geo - cos_alpha_kin) < alpha',
                 'notes': ['No additional Eg cut; PSA_Event upstream energy selection is retained.',

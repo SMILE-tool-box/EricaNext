@@ -1,10 +1,10 @@
-# made by scripts/calib/make_psa_geometry.py, 2026-11-06T23:06:37
-# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/calib/cad/SM3_Inner_3atm.step
+# made by scripts/calib/make_psa_geometry.py, 2026-11-20T13:27:42
+# input: /home/onoda/ANLNext/Erica_git_dev/EricaNext/calib/detector_coordinates/SM3_Inner_3atm.step
 # PSA_Event geometry: one row per scintillator block (HA board, ch 0-5). Units: mm.
 # Coordinates: origin at the centre of the uPIC, X: W -> E, Y: N -> S, Z: downward (Z = 427.04 - z_CAD, X = y_CAD, Y = x_CAD).
 # (x0, y0, z0): centre of the 8x8 block (middle of the depth); u: increasing pixel n; v: increasing m.
 # Absorption point of pixel (n, m) = (x0, y0, z0) + pitch * ((n - 4.5) u + (m - 4.5) v).
-# ch order and pixel directions from the HA layout figure; the pixel directions are to be checked with data.
+# ch order: data ch c is at the block of ch FIG_CH[c] of the HA layout figure, FIG_CH = [0, 1, 2, 3, 4, 5]; pixel (1, 1) and the directions of n (ch0 -> ch1) and m (ch0 -> ch2) follow this order (inset of the figure), to be checked with data.
 board,ch,x0,y0,z0,ux,uy,uz,vx,vy,vz,pitch
 0,0,27.000,-81.000,346.060,0.000,-1.000,0.000,1.000,0.000,0.000,5.960
 0,1,27.000,-135.000,346.060,0.000,-1.000,0.000,1.000,0.000,0.000,5.960

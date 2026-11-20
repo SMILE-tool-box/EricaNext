@@ -8,6 +8,8 @@ with the functions of ~/analysis_sm3_FM/PSA_analysis/src_onoda/psa_decode.py ($P
 x_hg, y_hg with RBFInterpolator(thin_plate_spline) through the 64 points (x, y) -> (n, m) of the position file.
 --constpeak: the run was made with PSA_CalcFADC.fixed_window = true.
 --detail: for x_hg / x_lg, the number of rows that differ and the largest |hg| / |lg| of them.
+ch is compared as the ADC number (psa_decode.py's ch c is 5 - c here); the position file is one of calib/psa
+(ch = ADC number since 2026-11-20).
 Expected: identical trig, ch, hitnum, peak_id, satu_h/l, pix_n/m; hg etc. within float32 rounding
 (relative 1e-6; x, y differ only for hits with |hg| or |lg| near 0).
 Needs numpy, scipy, h5py, numba, natsort and PyROOT: /usr/bin/python3 on this machine.
@@ -40,7 +42,8 @@ for f in sorted(glob.glob(f"{run_dir}/{ha}_*.dat")):
     (trig, clk, hit, temp_raw, temp_corr, ped, wave_sum, hg, lg, x_hg, y_hg, x_lg, y_lg,
      peak_id, hitnum, satu_h, satu_l, _) = pd.decode_events(buf, sizes, constpeak, ta, tb, False)
     ev, j = np.where(hit == 1)
-    ref["trig"].append(trig[ev]); ref["ch"].append(5 - j); ref["hitnum"].append(hitnum[ev])
+    # psa_decode.py writes ch = 5 - j (j = ADC number); EricaNext uses ch = ADC number since 2026-11-20
+    ref["trig"].append(trig[ev]); ref["ch"].append(j); ref["hitnum"].append(hitnum[ev])
     for k, a in [("hg", hg), ("lg", lg), ("x_hg", x_hg), ("y_hg", y_hg), ("x_lg", x_lg), ("y_lg", y_lg),
                  ("peak_id", peak_id), ("satu_h", satu_h), ("satu_l", satu_l), ("wave_sum", wave_sum), ("ped", ped)]:
         ref[k].append(a[ev, j])
@@ -48,7 +51,7 @@ for f in sorted(glob.glob(f"{run_dir}/{ha}_*.dat")):
 ref = {k: np.concatenate(v) for k, v in ref.items()}
 
 # pixel_id.py, with the n, m of the position file
-pos = np.genfromtxt(position, delimiter=",", names=True)
+pos = np.genfromtxt([l for l in open(position) if not l.startswith("#")], delimiter=",", names=True)
 xc = np.full(len(ref["ch"]), np.nan); yc = xc.copy()
 for ch in range(6):
     p = pos[pos["ch"] == ch]

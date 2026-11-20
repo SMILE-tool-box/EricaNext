@@ -38,7 +38,7 @@ class RawTreeWriter : public BasicModule {
   TTree* psa_tree_ = nullptr;
   std::vector<int> psa_ids_;
   PSA_RawEvent psa_row_;
-  int psa_schema_version_=1, psa_n_sample_=50, psa_n_sig_=8;
+  int psa_schema_version_=2, psa_n_sample_=50, psa_n_sig_=8;
   const ReadData* RawData = nullptr;
 
   int tpc_schema_version_ = 2;

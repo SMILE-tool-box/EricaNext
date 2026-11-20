@@ -20,6 +20,7 @@ SMILE-3 の検出器の構成(μ-PIC の 4 分割、ストリップ 0.4 mm、MPP
 - [解析チェーン](#解析チェーン)
   - [設定ファイルからチェーンを組む](#設定ファイルからチェーンを組む)
   - [モジュールのつながり](#モジュールのつながり)
+  - [PSA の raw ファイルの読み方とチャンネル番号](#psa-の-raw-ファイルの読み方とチャンネル番号)
 - [依存関係](#依存関係)
 - [インストール](#インストール)
   - [0. EricaNext を取ってくる](#0-ericanext-を取ってくる)
@@ -247,6 +248,32 @@ flowchart TD
 | `PSA_Event` | ピクセルとジオメトリから吸収点 `Pg` [mm]、使えるヒットの数(`PSA_SingleHit` / `MultiHit` / `NoHits`)。`Reconstruct` に渡す | `PSA_Event/NHits`, `SingleHitEnergy` |
 | `Reconstruct` | TPC と PSA(`PSA_Event`)を合わせたイベント再構成。運動学の角度、飛跡があれば幾何の α と入射ガンマ線の方向 | `Reconstruct/single_hit`(TTree、`evt_id` = トリガーカウンタ) |
 | `RawTreeWriter` | チェーンにあるTPC・PSAの生情報を保存する。`ReadData`・`PSA_ReadData`の後につなぐ | `TPC_RawTreeWriter/raw`, `TPC_RawTreeWriter/run_info`(TTree) |
+
+### PSA の raw ファイルの読み方とチャンネル番号
+
+`PSA_ReadData`(`source/modules/PSA_ReadData/PSA_Board.cxx`)は、HA のボードごとの `ha<NN>_<番号>.dat` を次のように読みます。
+形式は `psa_decode.py`(`analysis_sm3_FM/PSA_analysis/src_onoda`)と同じです。
+
+| 場所 | 中身 |
+| --- | --- |
+| ヘッダー・フッター | `EB 90 19 64` から `75 50 49 43` までが 1 フレーム(1 トリガー) |
+| `0x04` | トリガーカウンタ(`trig`) |
+| `0x08` | クロック(1 MHz。`time` = (clock − 先頭の clock) / 10⁶ s) |
+| `0x0D`〜`0x0E` の 16 ビットのビット 6〜11 | DataCount: どのチャンネルのデータがあるか。**ビット (5 − ch) が ch の印** |
+| `0x14`〜`0x1F` | 温度センサー 6 個(TL, TR, ML, MR, BL, BR)の ADC 値 |
+| `0x24` から 16 バイトずつ | 波形のブロック。先頭の 6 ビットが **ADC 番号**(1, 2, 4, 8, 16, 32 のどれか 1 ビット)、次がサンプル番号(1〜50)、続いて HG 4 つと LG 4 つ(14 ビットずつ、16383 で飽和) |
+
+**チャンネル番号(ch)は ADC 番号から決めます: ADC 番号 1, 2, 4, 8, 16, 32 → ch 0, 1, 2, 3, 4, 5。**
+これは HA の配置図(`calib/detector_coordinates/` の説明、`scripts/calib/make_psa_geometry.py` の `HA_LAYOUT`)の ch 0〜5 と同じ番号です。
+DataCount のビットは逆順(ビット 5 が ch0、ビット 0 が ch5)なので、ch の印はビット (5 − ch) から取ります(全イベントで、印のビットと波形の ADC 番号がこの関係で一致することを確かめた)。
+
+注意:
+
+- `psa_decode.py` の出力(HDF5)の ch は、**5 − ADC 番号**(DataCount のビットの順)です(資料「PSA 解析」の「出力 ch = 5 − 内部チャンネル番号」)。EricaNext も 2026-11-19 まではこの番号でした。
+  2026-11-20 に ADC 番号へ変えました。20261115 run03 のミューオンの飛跡で、飛跡の通った HA のブロックとヒットのあったブロックが、ADC 番号と配置図で 96 %(底面)・91 %(側面)一致し、5 − ADC 番号では配置図とモジュールが 180° 回った向きになったためです。
+- `psa_decode.py` の出力や、2026-11-19 までに作った ch ごとのファイルと比べるときは、ch を 5 − ch に読み替えてください。`calib/psa/` の位置・エネルギーの表は付け替え済みです(各ファイルのコメントの行に書いた ch 番号は古い番号のまま)。
+- raw ROOT(`PSA_RawTreeWriter`)の `run_info` の `schema_version` が 2 なら ch = ADC 番号、1(2026-11-19 までに作ったもの)なら ch = 5 − ADC 番号です。
+  `PSA_ReadData` は schema 1 のファイルを読むときに ch を付け替える(警告を 1 行出す)ので、前の raw ROOT はそのまま使えます。
 
 ---
 

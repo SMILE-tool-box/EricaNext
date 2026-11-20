@@ -162,8 +162,11 @@ void PSA_Board::Decode(const unsigned char* ev, size_t len){
 
   unsigned dc = datacnt(ev);
   hit_mask_ = 0;
-  for(int j=0; j<N_CH; j++)
-    if((dc >> (5 - j)) & 1)  hit_mask_ |= 1u << (5 - j);   // ADC j -> ch 5-j
+  // ch = ADC number (adc_num 1, 2, 4, ... of the data blocks = ch 0, 1, 2, ...; the numbering of the HA layout
+  // figure, checked with muon tracks 2026-11-20). datacnt bit (5 - ch) flags ch. Until 2026-11-20 ch was 5 - ADC
+  // number (the datacnt bit order, as psa_decode.py writes it).
+  for(int ch=0; ch<N_CH; ch++)
+    if((dc >> (5 - ch)) & 1)  hit_mask_ |= 1u << ch;
 
   unsigned w[3] = {be32(ev + 0x14), be32(ev + 0x18), be32(ev + 0x1C)};
   for(int k=0; k<3; k++){
@@ -194,7 +197,7 @@ void PSA_Board::Decode(const unsigned char* ev, size_t len){
     v[5] = ((r3 << 4) & 0x3ff0) | ((r4 >> 26) & 0x000f);
     v[6] = (r4 >> 14) & 0x3fff;
     v[7] =  r4        & 0x3fff;
-    int ch = 5 - j;
+    int ch = j;                                   // ch = ADC number (see the hit mask above)
     for(int s=0; s<N_SIG; s++){
       adc_[ch][sample][s] = v[s];
       if(v[s] >= ADC_MAX){

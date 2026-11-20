@@ -67,6 +67,7 @@ class PSA_ReadData : public BasicModule {
   unsigned root_trig_=0,root_sevt_=0; int root_epoch_=0;
   std::vector<int> *root_board_=nullptr,*root_board_epoch_=nullptr;
   std::vector<unsigned> *root_clk_=nullptr,*root_mask_=nullptr;
+  int root_psa_version_=0;   // PSA raw schema: 1 = ch is 5 - ADC number (before 2026-11-20), 2 = ch is the ADC number
   std::vector<double>* root_time_=nullptr;
   std::vector<unsigned short> *root_temp_=nullptr,*root_adc_=nullptr;
   ANLStatus InitializeROOT();
